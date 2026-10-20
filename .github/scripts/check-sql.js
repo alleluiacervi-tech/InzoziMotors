@@ -109,6 +109,14 @@ function resolve(sql) {
       + ' AND sub.voided_at IS NULL AND sub.starts_on <= CURRENT_DATE AND sub.ends_on >= CURRENT_DATE'
     )
     .replace(/\$\{MIN_COMPARABLES\}/g, '3')
+    // lib/rental-alerts.js builds "is in the public rental catalogue right now"
+    // from the router's own fragments at call time (the three above, joined with
+    // the provider checks). Expanded to a statement shape the grammar can check;
+    // the real fragments are already substituted individually where they appear.
+    .replace(
+      /\$\{publicRentalFromWhere\(\)\}/g,
+      "FROM rental_cars rc JOIN users u ON u.id = rc.provider_id WHERE rc.status = 'active'"
+    )
     .replace(/\$\{conditions\.join\([^)]*\)\}/g, 'TRUE')
     .replace(/\$\{where\}/g, '')
     .replace(/\$\{whereClause\}/g, '')

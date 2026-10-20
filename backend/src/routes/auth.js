@@ -10,6 +10,7 @@ const {
   CLOSURE_REASONS, REASON_VALUES, RECOVERY_DAYS, closeAccount, reopenAccount,
 } = require('../lib/account-closure');
 const { withTransaction } = require('../lib/tx');
+const { LANGUAGES } = require('../lib/notification-copy');
 
 const router = express.Router();
 
@@ -366,7 +367,7 @@ router.get('/me', requireAuth, async (req, res) => {
               whatsapp_visible, contact_consent_at, role, id_verified, account_status,
               seller_type, business_name, business_verified, trust_score,
               response_rate, completed_sales, avatar_url, message_email_notifications,
-              alert_search_matches, alert_price_drops,
+              alert_search_matches, alert_price_drops, alert_daily_digest, preferred_language,
               marketplace_terms_accepted_at, marketplace_terms_version, created_at,
               (password_hash IS NOT NULL) AS has_password,
               ARRAY(SELECT provider FROM user_identities ui WHERE ui.user_id = users.id ORDER BY provider)
@@ -386,11 +387,11 @@ router.get('/me', requireAuth, async (req, res) => {
 // PATCH /auth/me — update own profile
 const PROFILE_BOOLEANS = [
   'phone_visible', 'whatsapp_visible', 'message_email_notifications',
-  'alert_search_matches', 'alert_price_drops',
+  'alert_search_matches', 'alert_price_drops', 'alert_daily_digest',
 ];
 
 router.patch('/me', requireAuth, async (req, res) => {
-  const EDITABLE = ['name', 'phone', 'whatsapp_phone', 'avatar_url', ...PROFILE_BOOLEANS];
+  const EDITABLE = ['name', 'phone', 'whatsapp_phone', 'avatar_url', 'preferred_language', ...PROFILE_BOOLEANS];
   const fields = EDITABLE.filter((field) => req.body[field] !== undefined);
   if (!fields.length) return res.status(400).json({ error: 'No editable profile fields provided' });
   if (req.body.name !== undefined && !String(req.body.name).trim()) {
@@ -401,6 +402,11 @@ router.patch('/me', requireAuth, async (req, res) => {
     if (value !== undefined && value !== null && value !== '' && !/^\+?[0-9 ()-]{9,24}$/.test(String(value))) {
       return res.status(400).json({ error: `${field} is not a valid phone number` });
     }
+  }
+  // The language pushes are written in (lib/notification-copy.js). null clears it.
+  if (req.body.preferred_language !== undefined && req.body.preferred_language !== null
+    && !LANGUAGES.includes(req.body.preferred_language)) {
+    return res.status(400).json({ error: `preferred_language must be one of: ${LANGUAGES.join(', ')}` });
   }
   for (const field of PROFILE_BOOLEANS) {
     if (req.body[field] !== undefined && typeof req.body[field] !== 'boolean') {
@@ -454,7 +460,8 @@ router.patch('/me', requireAuth, async (req, res) => {
          RETURNING id, name, email, phone, whatsapp_phone, phone_visible,
                    whatsapp_visible, contact_consent_at, role, id_verified, account_status,
                    seller_type, business_name, business_verified, trust_score, avatar_url,
-                   message_email_notifications, alert_search_matches, alert_price_drops`,
+                   message_email_notifications, alert_search_matches, alert_price_drops, alert_daily_digest,
+                   preferred_language`,
         params
       );
       return { status: 200, body: rows[0] };

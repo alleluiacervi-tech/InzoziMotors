@@ -2036,3 +2036,7 @@ router.delete('/:id', requireAdmin, requireUuid('id'), async (req, res) => {
 });
 
 module.exports = router;
+
+// The public-catalogue rule, shared with lib/rental-alerts.js so "a car that just
+// became public" is decided by exactly the predicate the catalogue uses.
+module.exports.PUBLIC_RENTAL = { RENTAL_EVIDENCE, ACTIVE_RENTAL_SUBSCRIPTION, RENTAL_EVIDENCE_OK };

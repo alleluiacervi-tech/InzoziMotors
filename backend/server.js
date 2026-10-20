@@ -437,6 +437,9 @@ if (require.main === module) {
   server.listen(PORT, '0.0.0.0', () => {
     log.info('Sawa API listening', { port: PORT, env: process.env.NODE_ENV || 'development' });
   });
+  // The clock-driven jobs (held pushes, the daily summary, the unread-message
+  // email) share one runner with a lock per job. See src/lib/scheduler.js.
+  require('./src/lib/scheduler').startScheduler();
 
   // A rejected promise nobody caught used to vanish, or take the process down
   // with a bare stack trace depending on the Node flags. Either way nothing

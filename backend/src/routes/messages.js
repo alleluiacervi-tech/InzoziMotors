@@ -4,7 +4,6 @@ const pool = require('../db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 const { requireUuid, paginate } = require('../middleware/validate');
 const { notifyUser } = require('../lib/notify');
-const { sendNewMessageEmail } = require('../lib/mailer');
 const { screenUserText } = require('../lib/moderation');
 const { CHECKLIST_VERSION, PUBLISH_THRESHOLD } = require('../lib/inspection-policy');
 
@@ -44,34 +43,9 @@ async function emitNewMessage(io, conv, msg, sender, recipientId) {
   }
 }
 
-// D3 in docs/WEB-PARITY-PLAN.md — "while you were away". Only for a recipient
-// with NO live socket at all (both routes below already compute this for the
-// push-skip decision, so it's free here), never carries the message text, and
-// is capped at one per conversation per hour via `conversations.last_offline_email_at`
-// (migration 0048) so a fast back-and-forth cannot spam an inbox. Never allowed
-// to fail the request it's attached to — mailer.sendTemplate already never throws.
-async function maybeSendOfflineEmail(conv, recipientId, recipientOnline) {
-  if (recipientOnline) return;
-  if (conv.last_offline_email_at && Date.now() - new Date(conv.last_offline_email_at).getTime() < 60 * 60 * 1000) {
-    return;
-  }
-  try {
-    const { rows } = await pool.query(
-      `SELECT u.email, u.name, u.message_email_notifications, c.title AS car_title
-       FROM users u LEFT JOIN cars c ON c.id = $2
-       WHERE u.id = $1`,
-      [recipientId, conv.car_id]
-    );
-    const recipient = rows[0];
-    if (!recipient || recipient.message_email_notifications === false) return;
-    const sent = await sendNewMessageEmail(recipient.email, recipient.name, recipient.car_title);
-    if (sent) {
-      await pool.query('UPDATE conversations SET last_offline_email_at = NOW() WHERE id = $1', [conv.id]);
-    }
-  } catch (err) {
-    log.error('offline message email failed', { error: err.message });
-  }
-}
+// The "while you were away" email is no longer sent here: it goes out from
+// lib/unread-message-email.js, only if the message is still unread after a grace
+// period, so the push (or the live socket) always comes first.
 
 // GET /messages/conversations — user's conversation list
 router.get('/conversations', requireAuth, paginate(), async (req, res) => {
@@ -222,16 +196,18 @@ router.post('/conversations', requireAuth, async (req, res) => {
     // Deliver in realtime AND notify — emitting here (not only in the append
     // route) is what makes the first message of a thread land live for the
     // seller instead of only on their next refresh. The notification row is
-    // always written; the push is skipped when the seller is already connected.
-    const recipientOnline = await emitNewMessage(req.app.get('io'), conv, msgRes.rows[0], req.user, car.seller_id);
+    // always written, and so is the push: a live socket on one device (an open
+    // browser tab, a phone backgrounded for under a minute) says nothing about the
+    // person's other devices. The clients hide the banner for the thread on screen.
+    await emitNewMessage(req.app.get('io'), conv, msgRes.rows[0], req.user, car.seller_id);
     await notifyUser(pool, {
       user_id: car.seller_id,
       type: 'new_message',
       title: 'New message about your car',
       body: `Someone sent you a message about your ${car.title}.`,
       meta: JSON.stringify({ conversationId: conv.id, carId: car_id }),
-    }, { skipPush: recipientOnline });
-    await maybeSendOfflineEmail(conv, car.seller_id, recipientOnline);
+      copy: { key: 'new_message_about_car', vars: { car: car.title } },
+    });
 
     res.status(201).json({ conversation: conv, message: msgRes.rows[0] });
   } catch (err) {
@@ -292,19 +268,17 @@ router.post('/conversations/:id', requireAuth, requireUuid('id'), async (req, re
 
     // Single delivery path, shared with the start route: fan out to both
     // participants' user rooms and learn whether the recipient is connected.
-    const recipientOnline = await emitNewMessage(req.app.get('io'), conv, rows[0], req.user, otherId);
+    await emitNewMessage(req.app.get('io'), conv, rows[0], req.user, otherId);
 
-    // A recipient with a live socket already saw the message land — a push on
-    // top of that is a duplicate ping. The notification ROW is still written
-    // either way (the Notification Center is the record of truth).
+    // Always pushed (see the start route): the clients decide whether to show it.
     await notifyUser(pool, {
       user_id: otherId,
       type: 'new_message',
       title: 'New message',
       body: screened.text.slice(0, 80),
       meta: JSON.stringify({ conversationId: conv.id }),
-    }, { skipPush: recipientOnline });
-    await maybeSendOfflineEmail(conv, otherId, recipientOnline);
+      copy: { key: 'new_message', vars: { preview: screened.text.slice(0, 80) } },
+    });
 
     res.status(201).json(rows[0]);
   } catch (err) {
