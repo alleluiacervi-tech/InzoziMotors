@@ -13,6 +13,7 @@ function contactAvailability(user) {
     user.id_verified === 'approved' &&
     user.account_status === 'active' &&
     !user.deleted_at &&
+    !user.is_test &&
     (user.seller_type !== 'showroom' || user.business_verified === true)
   );
   return {

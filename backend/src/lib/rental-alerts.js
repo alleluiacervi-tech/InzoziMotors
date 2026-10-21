@@ -32,7 +32,7 @@ function publicRentalFromWhere() {
        ${ACTIVE_RENTAL_SUBSCRIPTION}
        WHERE rc.status = 'active' AND u.role = 'seller'
          AND u.id_verified = 'approved' AND u.business_verified = TRUE
-         AND u.account_status = 'active' AND u.deleted_at IS NULL
+         AND u.account_status = 'active' AND u.deleted_at IS NULL AND u.is_test = FALSE
          AND ${RENTAL_EVIDENCE_OK}`;
 }
 
@@ -150,7 +150,7 @@ async function rentalMatchCounts(userIds, since) {
         AND ${matchSql({ instantOnly: false })}
         AND ss.user_id <> rc.provider_id
         AND u.role = 'seller' AND u.id_verified = 'approved' AND u.business_verified = TRUE
-        AND u.account_status = 'active' AND u.deleted_at IS NULL
+        AND u.account_status = 'active' AND u.deleted_at IS NULL AND u.is_test = FALSE
         AND ${RENTAL_EVIDENCE_OK}
       GROUP BY ss.user_id`,
     [userIds, since]

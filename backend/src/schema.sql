@@ -404,6 +404,17 @@ ALTER TABLE users       ADD COLUMN IF NOT EXISTS contact_consent_at TIMESTAMPTZ;
 ALTER TABLE users       ADD COLUMN IF NOT EXISTS marketplace_terms_accepted_at TIMESTAMPTZ;
 ALTER TABLE users       ADD COLUMN IF NOT EXISTS marketplace_terms_version TEXT;
 
+-- Test accounts and the showroom storefront (migration 0066). A test account
+-- can sign in but nothing it owns is ever public; only a test account can be
+-- erased by the team. The business_* fields are a showroom's own details.
+ALTER TABLE users       ADD COLUMN IF NOT EXISTS is_test            BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE users       ADD COLUMN IF NOT EXISTS test_marked_at     TIMESTAMPTZ;
+ALTER TABLE users       ADD COLUMN IF NOT EXISTS test_marked_by     UUID REFERENCES users(id) ON DELETE SET NULL;
+ALTER TABLE users       ADD COLUMN IF NOT EXISTS business_about     TEXT;
+ALTER TABLE users       ADD COLUMN IF NOT EXISTS business_address   TEXT;
+ALTER TABLE users       ADD COLUMN IF NOT EXISTS business_hours     JSONB;
+ALTER TABLE users       ADD COLUMN IF NOT EXISTS business_cover_url TEXT;
+
 -- Account lifecycle (Apple 5.1.1(v) / Google Play deletion requirements).
 -- Soft delete: the row survives so completed handovers, reviews and platform
 -- fees keep their foreign keys, but every piece of personal data on it is

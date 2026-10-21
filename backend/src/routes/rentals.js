@@ -177,7 +177,8 @@ const PROVIDER_COLUMNS = `
   u.phone_visible AS provider_phone_visible,
   u.whatsapp_visible AS provider_whatsapp_visible,
   u.account_status AS provider_account_status,
-  u.deleted_at AS provider_deleted_at`;
+  u.deleted_at AS provider_deleted_at,
+  u.is_test AS provider_is_test`;
 
 const CHECK_EXPIRY_WARNING_DAYS = 30;
 
@@ -278,6 +279,7 @@ function rentalPublicBlockers(row, today = kigaliToday()) {
   if (row.provider_id_verified !== 'approved') providerProblems.push('identity not verified');
   if (row.provider_business_verified !== true) providerProblems.push('not business-verified');
   if (row.provider_account_status !== 'active' || row.provider_deleted_at) providerProblems.push('account suspended or closed');
+  if (row.provider_is_test) providerProblems.push('marked as a test account');
   if (providerProblems.length) {
     blockers.push({ code: 'provider', message: `Provider: ${providerProblems.join(', ')}. Fix it in Users.` });
   }
@@ -350,6 +352,7 @@ function publicRental(row, includeContact = false, { forOwner = false } = {}) {
     business_verified: row.provider_business_verified,
     account_status: row.provider_account_status,
     deleted_at: row.provider_deleted_at,
+    is_test: row.provider_is_test,
     phone: row.provider_phone,
     whatsapp_phone: row.provider_whatsapp,
     phone_visible: row.provider_phone_visible,
@@ -369,6 +372,7 @@ function publicRental(row, includeContact = false, { forOwner = false } = {}) {
   delete result.provider_whatsapp_visible;
   delete result.provider_account_status;
   delete result.provider_deleted_at;
+  delete result.provider_is_test;
   result.rental_check = rentalCheckSummary(row, { forOwner });
   if (forOwner) {
     result.check_status = rentalCheckStatus(row);
@@ -391,7 +395,7 @@ router.get('/', async (_req, res) => {
        ${ACTIVE_RENTAL_SUBSCRIPTION}
        WHERE rc.status = 'active' AND u.role = 'seller'
          AND u.id_verified = 'approved' AND u.business_verified = TRUE
-         AND u.account_status = 'active' AND u.deleted_at IS NULL
+         AND u.account_status = 'active' AND u.deleted_at IS NULL AND u.is_test = FALSE
          AND ${RENTAL_EVIDENCE_OK}
        ORDER BY rc.daily_rate ASC`
     );
@@ -611,7 +615,7 @@ router.post('/:id/inquire', requireAuth, requireUuid('id'), async (req, res) => 
          WHERE rc.id = $1 AND rc.status = 'active'
            AND u.role = 'seller' AND u.id_verified = 'approved'
            AND u.business_verified = TRUE AND u.account_status = 'active'
-           AND u.deleted_at IS NULL
+           AND u.deleted_at IS NULL AND u.is_test = FALSE
            AND ${RENTAL_EVIDENCE_OK}
          FOR UPDATE OF rc`,
         [req.params.id, req.user.id]
@@ -632,6 +636,7 @@ router.post('/:id/inquire', requireAuth, requireUuid('id'), async (req, res) => 
         business_verified: car.provider_business_verified,
         account_status: car.provider_account_status,
         deleted_at: car.provider_deleted_at,
+        is_test: car.provider_is_test,
         phone: car.provider_phone,
         whatsapp_phone: car.provider_whatsapp,
         phone_visible: car.provider_phone_visible,
@@ -1580,7 +1585,7 @@ router.get('/:id', requireUuid('id'), async (req, res) => {
        ${ACTIVE_RENTAL_SUBSCRIPTION}
        WHERE rc.id = $1 AND rc.status = 'active' AND u.role = 'seller'
          AND u.id_verified = 'approved' AND u.business_verified = TRUE
-         AND u.account_status = 'active' AND u.deleted_at IS NULL
+         AND u.account_status = 'active' AND u.deleted_at IS NULL AND u.is_test = FALSE
          AND ${RENTAL_EVIDENCE_OK}`,
       [req.params.id]
     );

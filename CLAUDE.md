@@ -98,7 +98,24 @@ business name — every public `seller_name` goes through
 `backend/src/lib/seller-display.js` — and its brands are read off its live cars,
 never chosen (`GET /showrooms`). The team sets its photo
 (`POST /admin/users/:userId/avatar`). Storefronts: app `ShowroomScreen`, web
-`/sellers/[id]`. Plan and status: `docs/SHOWROOMS-AND-POLISH.md`.
+`/sellers/[id]`. The team also writes each showroom's storefront details in
+Admin → Users → Edit (about, address with an *Open in Maps* link, opening hours
+shown as *Open now* in Kigali time, a cover photo of the showroom itself;
+migration 0066, `lib/showroom-profile.js`); never a phone number. Seller and
+showroom pages show only true facts: cars, brands, average inspection score,
+and *Replies within …* measured from real conversations (shown only after 3+
+enquiries, at least half answered). The old sales count, rating, reviews and
+trust score are gone from every public page (they came from the retired deal
+flow and pinned every seller at 50/100). Plan and status: `docs/SHOWROOMS-AND-POLISH.md`.
+
+**Test accounts** (migration 0066). Admin → Users → *Mark as test account*: the
+account still signs in (App Review's demo account must keep working) but every
+public read requires `is_test = FALSE`, so its cars, rentals, profile, reports
+and alerts disappear at once; unmarking restores exactly what was there. Only a
+marked account can be erased by the team (`POST /admin/users/:id/erase`, the
+email typed to confirm, never an admin or yourself, refused while it has
+payment records), using the same anonymisation as the 30-day purge. Insights
+does not yet leave test accounts out (the flag survives erasure so it can).
 
 **Admin** runs the Action Center triage queue, submissions, inspections,
 rental inquiries, listings, users/ID checks, imports, reported content, the
@@ -222,7 +239,8 @@ Enforced in code and locked in `platform_settings` (rows are `editable = FALSE`;
    Every disclosure writes a `listing_contact_events` row — **without the
    number**, keeping PII out of analytics. Public payloads never carry numbers.
 4. **Seller eligibility**: `role='seller'` + `id_verified='approved'` +
-   `account_status='active'` + not deleted + (not a showroom OR `business_verified`).
+   `account_status='active'` + not deleted + not a test account (`is_test`) +
+   (not a showroom OR `business_verified`).
 5. **Sessions are re-checked every request** (`verifyLiveSession`): deleted or
    suspended takes effect on the *next request*, not the next login. Only a
    session JWT is a session (`verifySessionToken`): the web's socket ticket
@@ -378,7 +396,7 @@ password never signs you out). Demo fixtures are `__DEV__`-only.
 - **`uptime.yml`** polls production on a schedule; **`ops.yml`** holds manual levers.
 - Postgres has **no published ports** — reachable only on the container network.
 - Migrations are forward-only files in `backend/migrations/`, applied by
-  `node src/db-init.js` (delegates to `src/migrate.js`). Currently through `0065`.
+  `node src/db-init.js` (delegates to `src/migrate.js`). Currently through `0066`.
   **`src/schema.sql` is never executed** — db-init runs migrations only, so that
   file is documentation. `test/schema-drift.test.js` fails if it ever describes a
   column no migration creates, and reports how far behind it is otherwise.
@@ -467,7 +485,8 @@ label above, full width in the mobile menu), the same redirect flow as `/signin`
 approval — Apple 5.1.1(v) requires deletion to *complete* in-app, so an operator
 queue that could block one would fail review. The row survives 30 days
 (reopenable), then an operator purges it. The purge stays manual on purpose: the
-in-process runner (section 5) never deletes anything.
+in-process runner (section 5) never deletes anything. The team's only other way
+to erase an account is a marked test account (section 2, *Test accounts*).
 
 **Brands** live in `vehicle_makes`, served by `GET /makes` — not bundled in the
 app. `aliases` collapses "Mercedes"/"benz"/"VW" onto one row. No logo files are

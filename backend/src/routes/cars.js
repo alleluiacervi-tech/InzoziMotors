@@ -282,7 +282,7 @@ const PRICE_DROP_IS_REAL = `(
 const FEATURED_MAX = 12;
 const SELLER_IS_ELIGIBLE = `(
   u.role = 'seller' AND u.id_verified = 'approved'
-  AND u.account_status = 'active' AND u.deleted_at IS NULL
+  AND u.account_status = 'active' AND u.deleted_at IS NULL AND u.is_test = FALSE
   AND (COALESCE(u.seller_type, 'individual') <> 'showroom' OR u.business_verified = TRUE)
 )`;
 router.get('/featured', async (req, res) => {
@@ -421,7 +421,7 @@ router.get('/:id/history', requireUuid('id'), async (req, res) => {
        JOIN users u ON u.id = c.seller_id
        WHERE c.id = $1 AND c.status = 'live'
          AND u.role = 'seller' AND u.id_verified = 'approved'
-         AND u.account_status = 'active' AND u.deleted_at IS NULL
+         AND u.account_status = 'active' AND u.deleted_at IS NULL AND u.is_test = FALSE
          AND (COALESCE(u.seller_type, 'individual') <> 'showroom' OR u.business_verified = TRUE)
          AND ${validInspectionExists('c')}`,
       [req.params.id]
@@ -554,7 +554,7 @@ router.get('/:id/model-safety', requireUuid('id'), async (req, res) => {
        JOIN users u ON u.id = c.seller_id
        WHERE c.id = $1 AND c.status = 'live'
          AND u.role = 'seller' AND u.id_verified = 'approved'
-         AND u.account_status = 'active' AND u.deleted_at IS NULL
+         AND u.account_status = 'active' AND u.deleted_at IS NULL AND u.is_test = FALSE
          AND (COALESCE(u.seller_type, 'individual') <> 'showroom' OR u.business_verified = TRUE)
          AND ${validInspectionExists('c')}`,
       [req.params.id]
@@ -626,7 +626,7 @@ router.post('/:id/contact', requireAuth, requireUuid('id'), async (req, res) => 
       `SELECT c.id, c.seller_id, c.status,
               u.phone, u.whatsapp_phone, u.phone_visible, u.whatsapp_visible,
               u.role, u.id_verified, u.account_status, u.deleted_at,
-              u.seller_type, u.business_verified,
+              u.seller_type, u.business_verified, u.is_test,
               buyer.marketplace_terms_accepted_at,
               buyer.marketplace_terms_version,
               ${validInspectionExists('c')} AS has_valid_inspection
@@ -636,7 +636,7 @@ router.post('/:id/contact', requireAuth, requireUuid('id'), async (req, res) => 
        WHERE c.id = $1`,
       [req.params.id, req.user.id]
     );
-    if (!rows.length || ((!rows[0].has_valid_inspection || rows[0].status !== 'live')
+    if (!rows.length || ((!rows[0].has_valid_inspection || rows[0].status !== 'live' || rows[0].is_test)
         && req.user.role !== 'admin' && rows[0].seller_id !== req.user.id)) {
       return res.status(404).json({ error: 'Live listing not found', code: 'LISTING_NOT_FOUND' });
     }
@@ -705,6 +705,7 @@ router.get('/:id', requireUuid('id'), optionalAuth, async (req, res) => {
               u.whatsapp_visible AS seller_whatsapp_visible,
               u.account_status AS seller_account_status,
               u.deleted_at AS seller_deleted_at,
+              u.is_test AS seller_is_test,
               u.trust_score AS seller_trust,
               u.response_rate AS seller_response_rate, u.completed_sales AS seller_sales,
               u.id_verified AS seller_id_verified,
@@ -734,7 +735,8 @@ ${MARKET_LATERALS}
       req.user && (req.user.role === 'admin' || req.user.id === car.seller_id);
     const sellerEligible = car.seller_role === 'seller' && car.seller_id_verified === 'approved' &&
       car.seller_account_status === 'active' && !car.seller_deleted_at &&
-      (car.seller_type !== 'showroom' || car.seller_business_verified === true);
+      (car.seller_type !== 'showroom' || car.seller_business_verified === true) &&
+      !car.seller_is_test;
     if (!sellerEligible && !isInsider) {
       return res.status(404).json({ error: 'Car not found' });
     }
@@ -753,6 +755,7 @@ ${MARKET_LATERALS}
       business_verified: car.seller_business_verified,
       account_status: car.seller_account_status,
       deleted_at: car.seller_deleted_at,
+      is_test: car.seller_is_test,
     });
     if (!isInsider) {
       car.seller_phone = null;
@@ -781,6 +784,7 @@ ${MARKET_LATERALS}
     delete car.seller_whatsapp_visible;
     delete car.seller_account_status;
     delete car.seller_deleted_at;
+    delete car.seller_is_test;
 
     // Fire-and-forget, but never unhandled: a DB blip here must not become an
     // unhandled rejection that takes the process down under --unhandled-rejections.
@@ -825,7 +829,7 @@ router.post('/save/:id', requireAuth, requireUuid('id'), async (req, res) => {
           `SELECT 1 FROM cars c JOIN users u ON u.id = c.seller_id
            WHERE c.id = $1 AND c.status = 'live'
              AND u.role = 'seller' AND u.id_verified = 'approved'
-             AND u.account_status = 'active' AND u.deleted_at IS NULL
+             AND u.account_status = 'active' AND u.deleted_at IS NULL AND u.is_test = FALSE
              AND (COALESCE(u.seller_type, 'individual') <> 'showroom' OR u.business_verified = TRUE)
              AND ${validInspectionExists('c')}`,
           [car_id]
@@ -873,7 +877,7 @@ router.get('/saved/list', requireAuth, paginate(), async (req, res) => {
        JOIN users u ON u.id = c.seller_id
        WHERE sc.user_id = $1 AND c.status = 'live'
          AND u.role = 'seller' AND u.id_verified = 'approved'
-         AND u.account_status = 'active' AND u.deleted_at IS NULL
+         AND u.account_status = 'active' AND u.deleted_at IS NULL AND u.is_test = FALSE
          AND (COALESCE(u.seller_type, 'individual') <> 'showroom' OR u.business_verified = TRUE)
          AND ${validInspectionExists('c')}
        ORDER BY sc.saved_at DESC

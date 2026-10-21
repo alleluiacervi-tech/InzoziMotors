@@ -34,6 +34,7 @@ function publiclyVisibleSql(carAlias = 'c', sellerAlias = 'eligible_seller') {
     AND ${sellerAlias}.id_verified = 'approved'
     AND ${sellerAlias}.account_status = 'active'
     AND ${sellerAlias}.deleted_at IS NULL
+    AND ${sellerAlias}.is_test = FALSE
     AND (COALESCE(${sellerAlias}.seller_type, 'individual') <> 'showroom' OR ${sellerAlias}.business_verified = TRUE)
     AND ${validInspectionExists(carAlias)}
   )`;

@@ -31,7 +31,7 @@ router.get('/', async (_req, res) => {
             AND u.role = 'seller'
             AND u.id_verified = 'approved'
             AND u.account_status = 'active'
-            AND u.deleted_at IS NULL
+            AND u.deleted_at IS NULL AND u.is_test = FALSE
             AND u.seller_type = 'showroom'
             AND u.business_verified = TRUE
             AND ${validInspectionExists('c')}
@@ -41,9 +41,11 @@ router.get('/', async (_req, res) => {
               u.avatar_url,
               u.created_at AS member_since,
               (SELECT COUNT(*)::int FROM live l WHERE l.seller_id = u.id) AS live_count,
-              (SELECT l.images[1] FROM live l
-                WHERE l.seller_id = u.id AND cardinality(l.images) > 0
-                ORDER BY l.listed_at DESC NULLS LAST LIMIT 1) AS cover_image,
+              -- The showroom's own photo when the team set one, else its newest car.
+              COALESCE(u.business_cover_url,
+                (SELECT l.images[1] FROM live l
+                  WHERE l.seller_id = u.id AND cardinality(l.images) > 0
+                  ORDER BY l.listed_at DESC NULLS LAST LIMIT 1)) AS cover_image,
               (SELECT l.location FROM live l
                 WHERE l.seller_id = u.id AND NULLIF(BTRIM(l.location), '') IS NOT NULL
                 GROUP BY l.location ORDER BY COUNT(*) DESC, l.location LIMIT 1) AS location,
