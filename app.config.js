@@ -53,7 +53,12 @@ export default ({ config }) => ({
   // forged value rather than the binary's real one, so the app misreports its
   // own version. The build and the publish must agree on this number, and the
   // only way to guarantee that is for it not to be configurable.
-  version: '2.0.0',
+  // 2.0.1, not 2.0.0: Apple closed 2.0.0 to new builds once it was approved
+  // (App Store Connect 90062 / 90186), and a build uploaded under a closed version
+  // is refused. `runtimeVersion` below follows this number, so installs of 2.0.0
+  // stop receiving over-the-air updates once this ships; they keep working with
+  // the bundle they have.
+  version: '2.0.1',
   orientation: 'portrait',
   icon: './assets/icon.png',
   scheme: 'sawa',
