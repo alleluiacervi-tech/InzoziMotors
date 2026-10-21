@@ -180,6 +180,53 @@ Description:
 >
 > Support: contact@sawacars.com · +250 788 308 611
 
+## Release notes — 2.0.1 (October 2026)
+
+Every line was checked against the code. Do not press **Submit for review** on
+the App Store until an iPhone has received a test notification, because this
+text promises alerts. The two showroom lines are true only once the showroom
+pull request is merged (and, on an existing iPhone install, once the
+over-the-air update has run).
+
+Promotional text (Apple, 163/170):
+
+`Find inspected cars from verified sellers across Rwanda. New: alerts for messages, price drops and new cars, in your language and calm enough to leave switched on.`
+
+What's New (Apple):
+
+> Alerts that reach you, in your language, and stay calm.
+>
+> • Alerts arrive whether the app is open or closed: new messages, new cars that match a saved search, price drops on cars you saved, and cars listed for hire that match a saved rental search. Tap one to go straight to the right place.
+> • Alerts come in the language you use in the app.
+> • Calmer by design. A saved search tells you about a car once. A price drop is sent only when the price falls by 1% or more, and at most once a day per car. New-car and price alerts that arrive between 9 pm and 7 am (Kigali time) wait until 7 am. Messages always arrive straight away.
+> • Choose how each saved search reaches you: instantly, or in a daily summary.
+> • New: an optional daily summary of the cars listed that day, sent at about 6 pm and only on days when something new is listed. It stays off until you turn it on.
+> • Turn alerts for new cars and price drops on or off in Settings > Car alerts.
+> • The number on the app icon shows your unread messages and notifications.
+> • Settings now tells you whether notifications are allowed on your phone, and "Send a test notification" lets you check in seconds.
+>
+> Also in this version
+> • Showroom pages with the address, directions to the showroom, opening hours and whether it is open now.
+> • Seller pages now show only verified facts: identity checks, inspection scores and how quickly the seller usually replies.
+> • The app starts faster, and the last list of cars is already on screen while it refreshes.
+> • A WhatsApp button next to "Message seller" when the seller accepts WhatsApp.
+> • Clear messages in your language when you contact a seller or ask about a rental.
+> • You can ask about a rental that starts today.
+
+Release notes (Google Play, 476/500 with tags):
+
+```
+<en-US>
+Alerts that reach you, in your language, and stay calm.
+• Messages, new cars matching a saved search and price drops arrive with the app open or closed.
+• New-car and price alerts wait until 7 am if they arrive between 9 pm and 7 am (Kigali).
+• Optional daily summary of new cars, off until you turn it on.
+• Showroom pages with address, directions and opening hours.
+• Seller pages show only verified facts.
+• Faster start and a WhatsApp button on car pages.
+</en-US>
+```
+
 ## Screenshot order
 
 Use actual app screens, not splash/login-only art:

@@ -106,7 +106,12 @@ showroom pages show only true facts: cars, brands, average inspection score,
 and *Replies within …* measured from real conversations (shown only after 3+
 enquiries, at least half answered). The old sales count, rating, reviews and
 trust score are gone from every public page (they came from the retired deal
-flow and pinned every seller at 50/100). Plan and status: `docs/SHOWROOMS-AND-POLISH.md`.
+flow and pinned every seller at 50/100). **Sawa's own stock** is sold by a
+separate selling company listed as an ordinary showroom (decided 21 Oct 2026, so
+Sawa stays not a party to any deal); its account carries `sawa_affiliated`
+(Admin → Users → Storefront details), and its storefront and every listing say
+"Owned by the company behind Sawa Cars" and that Sawa inspected the car. It
+changes no rule, ranking or eligibility. Plan and status: `docs/SHOWROOMS-AND-POLISH.md`.
 
 **Test accounts** (migration 0066). Admin → Users → *Mark as test account*: the
 account still signs in (App Review's demo account must keep working) but every

@@ -1662,6 +1662,9 @@ export const TRANSLATIONS = {
       "rateNoteAgreedInRwf": ". Prices are set and agreed in Rwandan francs."
     },
     "browse": {
+      "sawaAffiliated": "Owned by the company behind Sawa Cars",
+      "sawaAffiliatedBody": "{{name}} is a separate company owned by the company behind Sawa Cars. Its cars go through the same 150-point Sawa inspection and the same listing rules as every other seller’s, with no special placement. You buy from {{name}}, not from the Sawa Cars marketplace.",
+      "sawaAffiliatedCar": "Sawa Cars inspected this car on the same 150-point checklist it uses for every seller. You buy from the showroom, not from the marketplace.",
       "aboutRate": "About the dollar figure",
       "allBrands": "All brands",
       "allBrandsChip": "All",
@@ -1716,7 +1719,7 @@ export const TRANSLATIONS = {
       "replyWithinHours": "Within hours",
       "replyWithinDay": "Within a day",
       "aboutShowroom": "About",
-      "visitShowroom": "Visit the showroom",
+      "visitShowroomTitle": "Visit the showroom",
       "openInMaps": "Open in Maps",
       "openNow": "Open now",
       "closedNow": "Closed now",
@@ -3721,6 +3724,9 @@ export const TRANSLATIONS = {
       "rateNoteAgreedInRwf": ". Ibiciro bishyirwaho kandi byumvikanyweho mu mafaranga y'u Rwanda."
     },
     "browse": {
+      "sawaAffiliated": "Ni iy’ikigo kiri inyuma ya Sawa Cars",
+      "sawaAffiliatedBody": "{{name}} ni ikigo cyigenga gifitwe n’ikigo kiri inyuma ya Sawa Cars. Imodoka zacyo zisuzumwa ku ngingo 150 za Sawa kandi zigakurikiza amategeko amwe n’iz’abandi bacuruzi, nta mwanya wihariye zihabwa. Ugura kuri {{name}}, si ku isoko rya Sawa Cars.",
+      "sawaAffiliatedCar": "Sawa Cars yasuzumye iyi modoka ku ngingo 150 nk’iz’abandi bacuruzi bose. Ugura ku iduka, si ku isoko.",
       "aboutRate": "Ibijyanye n'igiciro mu madolari",
       "allBrands": "Ibirango byose",
       "allBrandsChip": "Byose",
@@ -3775,7 +3781,7 @@ export const TRANSLATIONS = {
       "replyWithinHours": "Mu masaha make",
       "replyWithinDay": "Mu munsi umwe",
       "aboutShowroom": "Ibyerekeye",
-      "visitShowroom": "Sura iduka",
+      "visitShowroomTitle": "Sura iduka",
       "openInMaps": "Fungura muri Maps",
       "openNow": "Rirafunguye ubu",
       "closedNow": "Rirafunze ubu",
@@ -5780,6 +5786,9 @@ export const TRANSLATIONS = {
       "rateNoteAgreedInRwf": ". Les prix sont fixés et convenus en francs rwandais."
     },
     "browse": {
+      "sawaAffiliated": "Appartient à la société qui exploite Sawa Cars",
+      "sawaAffiliatedBody": "{{name}} est une société distincte appartenant à la société qui exploite Sawa Cars. Ses voitures passent la même inspection Sawa en 150 points et suivent les mêmes règles de publication que celles des autres vendeurs, sans mise en avant particulière. Vous achetez auprès de {{name}}, pas auprès de la place de marché Sawa Cars.",
+      "sawaAffiliatedCar": "Sawa Cars a inspecté cette voiture avec la même grille de 150 points que pour tous les vendeurs. Vous achetez auprès du showroom, pas de la place de marché.",
       "aboutRate": "À propos du montant en dollars",
       "allBrands": "Toutes les marques",
       "allBrandsChip": "Toutes",
@@ -5834,7 +5843,7 @@ export const TRANSLATIONS = {
       "replyWithinHours": "En quelques heures",
       "replyWithinDay": "Dans la journée",
       "aboutShowroom": "À propos",
-      "visitShowroom": "Visiter le showroom",
+      "visitShowroomTitle": "Visiter le showroom",
       "openInMaps": "Ouvrir dans Maps",
       "openNow": "Ouvert maintenant",
       "closedNow": "Fermé actuellement",
@@ -7839,6 +7848,9 @@ export const TRANSLATIONS = {
       "rateNoteAgreedInRwf": ". Bei huwekwa na kukubaliwa katika faranga za Rwanda."
     },
     "browse": {
+      "sawaAffiliated": "Inamilikiwa na kampuni inayoendesha Sawa Cars",
+      "sawaAffiliatedBody": "{{name}} ni kampuni tofauti inayomilikiwa na kampuni inayoendesha Sawa Cars. Magari yake hupitia ukaguzi uleule wa Sawa wa vipengele 150 na sheria zilezile za kuorodhesha kama ya wauzaji wengine, bila nafasi maalum. Unanunua kutoka kwa {{name}}, si kutoka soko la Sawa Cars.",
+      "sawaAffiliatedCar": "Sawa Cars ilikagua gari hili kwa orodha ileile ya vipengele 150 inayotumia kwa kila muuzaji. Unanunua kutoka showroom, si kutoka sokoni.",
       "aboutRate": "Kuhusu kiasi cha dola",
       "allBrands": "Chapa zote",
       "allBrandsChip": "Zote",
@@ -7893,7 +7905,7 @@ export const TRANSLATIONS = {
       "replyWithinHours": "Ndani ya saa chache",
       "replyWithinDay": "Ndani ya siku moja",
       "aboutShowroom": "Kuhusu",
-      "visitShowroom": "Tembelea showroom",
+      "visitShowroomTitle": "Tembelea showroom",
       "openInMaps": "Fungua kwenye Ramani",
       "openNow": "Imefunguliwa sasa",
       "closedNow": "Imefungwa sasa",
@@ -9898,6 +9910,9 @@ export const TRANSLATIONS = {
       "rateNoteAgreedInRwf": "입니다. 거래 가격은 르완다 프랑(RWF)으로 결정되고 합의됩니다."
     },
     "browse": {
+      "sawaAffiliated": "Sawa Cars 운영사 소유",
+      "sawaAffiliatedBody": "{{name}}은(는) Sawa Cars 운영사가 소유한 별도 회사입니다. 이 쇼룸의 차량도 다른 판매자와 똑같이 Sawa의 150개 항목 점검과 등록 규칙을 거치며, 별도의 우대 노출은 없습니다. 구매 상대는 Sawa Cars 마켓플레이스가 아니라 {{name}}입니다.",
+      "sawaAffiliatedCar": "Sawa Cars는 모든 판매자에게 적용하는 동일한 150개 항목 체크리스트로 이 차량을 점검했습니다. 구매 상대는 마켓플레이스가 아니라 쇼룸입니다.",
       "aboutRate": "달러 금액 안내",
       "allBrands": "전체 브랜드",
       "allBrandsChip": "전체",
@@ -9952,7 +9967,7 @@ export const TRANSLATIONS = {
       "replyWithinHours": "몇 시간 이내",
       "replyWithinDay": "하루 이내",
       "aboutShowroom": "소개",
-      "visitShowroom": "쇼룸 방문",
+      "visitShowroomTitle": "쇼룸 방문",
       "openInMaps": "지도에서 열기",
       "openNow": "영업 중",
       "closedNow": "영업 종료",
@@ -11957,6 +11972,9 @@ export const TRANSLATIONS = {
       "rateNoteAgreedInRwf": "。最终价格以卢旺达法郎为准并达成协议。"
     },
     "browse": {
+      "sawaAffiliated": "由 Sawa Cars 的运营公司所有",
+      "sawaAffiliatedBody": "{{name}} 是由 Sawa Cars 运营公司所有的独立公司。其车辆与其他卖家一样，经过 Sawa 的 150 项检测并遵守相同的上架规则，不享有任何特别展示。您是向 {{name}} 购买，而不是向 Sawa Cars 平台购买。",
+      "sawaAffiliatedCar": "Sawa Cars 使用对所有卖家相同的 150 项检测清单检测了这辆车。您是向展厅购买，而不是向平台购买。",
       "aboutRate": "关于美元金额",
       "allBrands": "全部品牌",
       "allBrandsChip": "全部",
@@ -12011,7 +12029,7 @@ export const TRANSLATIONS = {
       "replyWithinHours": "几小时内",
       "replyWithinDay": "一天内",
       "aboutShowroom": "简介",
-      "visitShowroom": "到店参观",
+      "visitShowroomTitle": "到店参观",
       "openInMaps": "在地图中打开",
       "openNow": "营业中",
       "closedNow": "已打烊",

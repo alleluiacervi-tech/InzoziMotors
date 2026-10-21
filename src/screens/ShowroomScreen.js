@@ -221,6 +221,18 @@ export default function ShowroomScreen({ navigation, route }) {
         </View>
       </View>
 
+      {/* Sawa Cars is not a party to any deal; its own stock is sold by this
+          separate company, and the storefront says so before anything else. */}
+      {profile.sawa_affiliated ? (
+        <View style={[styles.infoCard, styles.affiliateCard]}>
+          <Ionicons name="information-circle-outline" size={18} color={colors.textSecondary} />
+          <View style={styles.addressBody}>
+            <Text style={styles.affiliateTitle}>{t('browse.sawaAffiliated')}</Text>
+            <Text style={styles.aboutText}>{t('browse.sawaAffiliatedBody', { name })}</Text>
+          </View>
+        </View>
+      ) : null}
+
       {profile.about ? (
         <View style={styles.infoCard}>
           <Text style={styles.infoTitle}>{t('browse.aboutShowroom')}</Text>
@@ -230,7 +242,7 @@ export default function ShowroomScreen({ navigation, route }) {
 
       {profile.address || hours ? (
         <View style={styles.infoCard}>
-          <Text style={styles.infoTitle}>{t('browse.visitShowroom')}</Text>
+          <Text style={styles.infoTitle}>{t('browse.visitShowroomTitle')}</Text>
           {profile.address ? (
             <Pressable
               style={styles.addressRow}
@@ -406,6 +418,8 @@ const styles = StyleSheet.create({
     borderColor: colors.borderSoft,
   },
   infoTitle: { fontSize: 15, fontFamily: fonts.extraBold, color: colors.textPrimary, marginBottom: 8 },
+  affiliateCard: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  affiliateTitle: { fontSize: 13.5, fontFamily: fonts.bold, color: colors.textPrimary, marginBottom: 3 },
   aboutText: { fontSize: 13.5, lineHeight: 20, fontFamily: fonts.regular, color: colors.textSecondary },
   addressRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, minHeight: 44 },
   addressBody: { flex: 1 },

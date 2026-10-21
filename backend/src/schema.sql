@@ -414,6 +414,7 @@ ALTER TABLE users       ADD COLUMN IF NOT EXISTS business_about     TEXT;
 ALTER TABLE users       ADD COLUMN IF NOT EXISTS business_address   TEXT;
 ALTER TABLE users       ADD COLUMN IF NOT EXISTS business_hours     JSONB;
 ALTER TABLE users       ADD COLUMN IF NOT EXISTS business_cover_url TEXT;
+ALTER TABLE users       ADD COLUMN IF NOT EXISTS sawa_affiliated    BOOLEAN NOT NULL DEFAULT FALSE;
 
 -- Account lifecycle (Apple 5.1.1(v) / Google Play deletion requirements).
 -- Soft delete: the row survives so completed handovers, reviews and platform

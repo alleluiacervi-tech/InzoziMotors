@@ -183,17 +183,23 @@ viewer, Home rails and showrooms. Tick each item in the PR that ships it.
 
 ### Human steps (no code)
 - [ ] Admin → Users → the account holding the Sawa Cars stock → Edit: Showroom
-      account, business name, Verified business, logo, and the new Storefront
-      details (about, address, hours, cover photo). Save.
-- [ ] Decide who legally sells those cars (D1 below) before naming the showroom.
-- [ ] Mark the pre-launch test accounts (e.g. "Allelua") as test accounts, check
-      nothing real is attached, then erase them.
+      account, the selling company's **registered** business name, Verified
+      business, logo, Storefront details (about, address, hours, cover photo) and
+      **Owned by the company behind Sawa Cars**. Save.
+- [ ] Every current car belongs to that showroom (user, 21 Oct): move the Kia
+      Sorento listed under "Allelua" to it with Listings → Reassign seller
+      **before** marking or erasing "Allelua" (erasing archives its cars).
+- [ ] Then mark the pre-launch test accounts as test accounts and erase them.
+- [ ] Legal check in Rwanda for the selling company (trading licence, tax on car
+      sales, consumer-law duties of a dealer).
 - [ ] Native-speaker review of the new Kinyarwanda and Swahili strings.
 
 ### Open decisions
-- **D1.** If Sawa Cars itself sells the showroom's cars, "Sawa Cars is not a
-  party to any deal" is not true for them. List them under the selling
-  business's registered name with its link to Sawa Cars disclosed (legal view).
+- **D1, decided 21 Oct 2026: option A.** Sawa's own stock is sold by a separate
+  selling company, listed as an ordinary showroom with `sawa_affiliated` set:
+  its storefront and every listing say "Owned by the company behind Sawa Cars"
+  and that Sawa inspected the car (web, app, AutoDealer `parentOrganization`).
+  No rule, ranking or eligibility changes. Shipped on the same branch.
 - **D2.** A "Contact the showroom" button for general questions (opens a
   conversation; phone and WhatsApp stay behind the three gates).
 - **D3.** Team logins: several staff under one showroom with roles.

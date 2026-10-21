@@ -744,7 +744,7 @@ router.get('/users', requireAdmin, async (req, res) => {
       `SELECT id, name, email, phone, whatsapp_phone, phone_visible,
               whatsapp_visible, contact_consent_at, role, id_verified, seller_type,
               business_name, business_verified, avatar_url, admin_created, must_change_password, account_status,
-              business_about, business_address, business_hours, business_cover_url,
+              business_about, business_address, business_hours, business_cover_url, sawa_affiliated,
               is_test, test_marked_at, deleted_at,
               suspended_at, suspension_reason, trust_score,
               id_verification_method, id_verification_note, id_verification_ref,
@@ -782,11 +782,13 @@ router.patch('/users/:id', requireAdmin, requireUuid('id'), async (req, res) => 
     'business_name', 'business_verified', 'seller_type', 'role',
     // A showroom's storefront details (lib/showroom-profile.js).
     'business_about', 'business_address', 'business_hours',
+    // Owned by the company that runs Sawa Cars (disclosed on its listings).
+    'sawa_affiliated',
   ];
   const fields = allowed.filter((field) => req.body[field] !== undefined);
   if (!fields.length) return res.status(400).json({ error: 'No editable account fields provided' });
 
-  const booleanFields = new Set(['phone_visible', 'whatsapp_visible', 'business_verified']);
+  const booleanFields = new Set(['phone_visible', 'whatsapp_visible', 'business_verified', 'sawa_affiliated']);
   const profileNormalizers = { business_about: normalizeAbout, business_address: normalizeAddress, business_hours: normalizeHours };
   const values = {};
   for (const field of fields) {
@@ -874,7 +876,7 @@ router.patch('/users/:id', requireAdmin, requireUuid('id'), async (req, res) => 
       `SELECT id,name,email,phone,whatsapp_phone,phone_visible,whatsapp_visible,
               contact_consent_at,role,id_verified,seller_type,business_name,
               business_verified,account_status,created_at,
-              business_about,business_address,business_hours,business_cover_url,
+              business_about,business_address,business_hours,business_cover_url,sawa_affiliated,
               is_test,test_marked_at FROM users WHERE id=$1`,
       [req.params.id]
     );

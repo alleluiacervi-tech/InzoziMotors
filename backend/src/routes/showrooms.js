@@ -40,6 +40,7 @@ router.get('/', async (_req, res) => {
               ${sellerDisplayName('u')} AS name,
               u.avatar_url,
               u.created_at AS member_since,
+              u.sawa_affiliated,
               (SELECT COUNT(*)::int FROM live l WHERE l.seller_id = u.id) AS live_count,
               -- The showroom's own photo when the team set one, else its newest car.
               COALESCE(u.business_cover_url,

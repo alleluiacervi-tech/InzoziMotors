@@ -1,7 +1,7 @@
 -- ─────────────────────────────────────────────────────────────────────────────
 -- 0066_test_accounts_and_showroom_profile.sql
 --
--- Two things the team needs before launch (docs/SHOWROOMS-AND-POLISH.md,
+-- Three things the team needs before launch (docs/SHOWROOMS-AND-POLISH.md,
 -- "World-class showrooms").
 --
 -- 1. TEST ACCOUNTS
@@ -43,6 +43,15 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS business_about     TEXT;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS business_address   TEXT;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS business_hours     JSONB;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS business_cover_url TEXT;
+
+-- 3. A SHOWROOM OWNED BY THE COMPANY THAT RUNS SAWA CARS
+--
+-- Sawa Cars is not a party to any deal (CLAUDE.md). Its own stock is therefore
+-- sold by a separate selling company, listed like any other showroom, and that
+-- relationship is disclosed wherever its cars appear: on its storefront and on
+-- every one of its listings, including that Sawa Cars inspected them. Set only
+-- by the team; it changes no rule, ranking or eligibility.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS sawa_affiliated BOOLEAN NOT NULL DEFAULT FALSE;
 
 ALTER TABLE users DROP CONSTRAINT IF EXISTS users_business_about_length_check;
 ALTER TABLE users ADD CONSTRAINT users_business_about_length_check
