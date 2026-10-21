@@ -129,6 +129,7 @@ export default async function SellerProfilePage({ params, searchParams }: Props)
       name,
       url: absoluteUrl(`/sellers/${profile.id}`),
       ...(profile.is_showroom && profile.about ? { description: profile.about } : {}),
+      ...(profile.sawa_affiliated ? { parentOrganization: { '@type': 'Organization', name: 'Sawa Cars', url: absoluteUrl('/') } } : {}),
       ...(profile.is_showroom && (profile.cover_url || profile.avatar_url)
         ? { image: profile.cover_url || profile.avatar_url } : {}),
       ...(profile.is_showroom && profile.address
@@ -200,6 +201,18 @@ export default async function SellerProfilePage({ params, searchParams }: Props)
           </div>
         </div>
       </header>
+
+      {/* Sawa Cars is not a party to any deal; its own stock is sold by this
+          separate company, and the page says so before anything else. */}
+      {profile.sawa_affiliated ? (
+        <Card className="mt-6 flex items-start gap-3 p-4">
+          <span className="mt-0.5 text-content-muted"><Icon name="info" size={18} /></span>
+          <div>
+            <p className="text-label font-bold text-content">{t('market.profile.sawaAffiliatedTitle')}</p>
+            <p className="mt-1 max-w-prose text-caption leading-relaxed text-content-secondary">{t('market.profile.sawaAffiliatedBody', { name })}</p>
+          </div>
+        </Card>
+      ) : null}
 
       <dl className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {facts.map((fact) => (

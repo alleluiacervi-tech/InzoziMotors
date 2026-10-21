@@ -56,6 +56,8 @@ type UserRow = {
   business_address?: string | null
   business_hours?: BusinessHours | null
   business_cover_url?: string | null
+  /** A showroom owned by the company behind Sawa Cars (disclosed publicly). */
+  sawa_affiliated?: boolean
 }
 
 const DAYS: { key: BusinessDay; label: string }[] = [
@@ -159,7 +161,7 @@ export default function UsersPage() {
     id: string; name: string; role: 'buyer' | 'seller'; phone: string; whatsapp_phone: string;
     business_name: string; business_verified: boolean; phone_visible: boolean; whatsapp_visible: boolean
     showroom: boolean; avatar_url: string | null
-    about: string; address: string; hours: BusinessHours; cover_url: string | null
+    about: string; address: string; hours: BusinessHours; cover_url: string | null; sawa_affiliated: boolean
   }>(null)
   const avatarInput = useRef<HTMLInputElement | null>(null)
   const coverInput = useRef<HTMLInputElement | null>(null)
@@ -353,6 +355,7 @@ export default function UsersPage() {
       showroom: user.seller_type === 'showroom', avatar_url: user.avatar_url || null,
       about: user.business_about || '', address: user.business_address || '',
       hours: { ...CLOSED_WEEK, ...(user.business_hours || {}) }, cover_url: user.business_cover_url || null,
+      sawa_affiliated: !!user.sawa_affiliated,
     })
   }
 
@@ -508,6 +511,7 @@ export default function UsersPage() {
           business_about: editing.about.trim() || null,
           business_address: editing.address.trim() || null,
           business_hours: openDays.length ? editing.hours : null,
+          sawa_affiliated: editing.sawa_affiliated,
         } : {}),
       })
       toast('Account details updated', 'success')
@@ -774,6 +778,17 @@ export default function UsersPage() {
                   What buyers read on this showroom&apos;s page in the app and on sawacars.com. Write only what you have checked.
                   Never a phone number here: contact stays behind each car&apos;s own Contact button.
                 </p>
+                <label className="flex items-start gap-3 rounded-xl border border-line-soft p-3">
+                  <input type="checkbox" checked={editing.sawa_affiliated} onChange={(e) => setEditing({ ...editing, sawa_affiliated: e.target.checked })} className="mt-1 h-4 w-4 accent-brand" />
+                  <span>
+                    <span className="block text-label font-bold text-content">Owned by the company behind Sawa Cars</span>
+                    <span className="text-caption text-content-muted">
+                      Tick for the separate company that sells Sawa&apos;s own stock. Its showroom page and every one of its
+                      listings then say so, including that Sawa Cars inspected the car. It changes no rule or ranking:
+                      Sawa Cars stays the marketplace, never the seller.
+                    </span>
+                  </span>
+                </label>
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                   <span className="relative block h-24 w-full shrink-0 overflow-hidden rounded-xl bg-surface-alt ring-1 ring-inset ring-line sm:w-56">
                     {editing.cover_url
@@ -865,7 +880,7 @@ export default function UsersPage() {
                   <td className="px-5 py-4"><div className="flex items-center gap-3">{u.avatar_url
                     // eslint-disable-next-line @next/next/no-img-element
                     ? <img src={u.avatar_url} alt="" className="h-9 w-9 shrink-0 rounded-full object-cover ring-1 ring-line" /> : null}<div className="min-w-0"><p className="font-bold text-content">{u.business_name || u.name}</p><p className="text-caption text-content-muted">{u.business_name ? `${u.name} · ` : ''}{u.email}{u.phone ? ` · ${u.phone}` : ''}</p>{u.whatsapp_phone ? <p className="text-caption text-content-muted">WhatsApp: {u.whatsapp_phone}</p> : null}{u.must_change_password ? <p className="mt-1 text-micro font-bold text-warning-text">Invitation awaiting activation</p> : null}</div></div></td>
-                  <td className="px-4 py-4"><div className="space-y-1"><Pill status={u.role} label={u.seller_type === 'showroom' ? 'Showroom' : undefined} />{u.business_verified ? <Pill status="approved" label="Business verified" /> : null}{u.is_test ? <Pill status="draft" label="Test account" /> : null}</div></td>
+                  <td className="px-4 py-4"><div className="space-y-1"><Pill status={u.role} label={u.seller_type === 'showroom' ? 'Showroom' : undefined} />{u.business_verified ? <Pill status="approved" label="Business verified" /> : null}{u.is_test ? <Pill status="draft" label="Test account" /> : null}{u.sawa_affiliated && u.seller_type === 'showroom' ? <Pill status="confirmed" label="Owned by Sawa Cars' company" /> : null}</div></td>
                   <td className="px-4 py-4">
                     <Pill status={u.id_verified || 'none'} label={u.id_verified === 'none' || !u.id_verified ? 'Not submitted' : undefined} />
                     {u.id_verified === 'approved' && u.id_verification_method ? (

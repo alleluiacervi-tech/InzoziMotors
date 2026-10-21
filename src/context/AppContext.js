@@ -470,6 +470,8 @@ export function AppProvider({ children }) {
       // A showroom sells under its business name (the server already puts it
       // in seller_name) and links to its storefront instead of a person.
       sellerIsShowroom: c.seller_is_showroom === true,
+      // A showroom owned by the company behind Sawa Cars: the car page says so.
+      sellerSawaAffiliated: c.seller_sawa_affiliated === true,
       sellerAvatar: c.seller_avatar_url || null,
       // The seller's trust score as the server computed it, 0-100, or null.
       //

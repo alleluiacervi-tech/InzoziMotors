@@ -273,14 +273,26 @@ test('a showroom\'s details are set by the team and shown only on a showroom\'s 
   const row = (await api().get('/showrooms').expect(200)).body.find((s) => s.id === showroom.id);
   assert.equal(row.cover_image, cover.body.business_cover_url);
 
-  // An individual seller's profile carries none of it.
+  // Owned by the company behind Sawa Cars: the storefront and every listing say so.
+  assert.equal(profile.sawa_affiliated, false);
+  await api().patch(`/admin/users/${showroom.id}`).set('Authorization', `Bearer ${admin}`)
+    .send({ sawa_affiliated: 'yes' }).expect(400);
+  await api().patch(`/admin/users/${showroom.id}`).set('Authorization', `Bearer ${admin}`)
+    .send({ sawa_affiliated: true }).expect(200);
+  assert.equal((await api().get(`/sellers/${showroom.id}`).expect(200)).body.sawa_affiliated, true);
+  const ownCars = (await api().get(`/cars?seller_id=${showroom.id}`).expect(200)).body;
+  assert.ok(ownCars.length && ownCars.every((c) => c.seller_sawa_affiliated === true));
+  assert.equal((await api().get(`/cars/${ownCars[0].id}`).expect(200)).body.seller_sawa_affiliated, true);
+
+  // An individual seller's profile carries none of it, whatever is stored.
   const person = await verifiedSeller({ name: 'Solo Seller' });
-  await pool.query("UPDATE users SET business_about = 'leftover', business_address = 'somewhere' WHERE id = $1", [person.id]);
+  await pool.query("UPDATE users SET business_about = 'leftover', business_address = 'somewhere', sawa_affiliated = TRUE WHERE id = $1", [person.id]);
   const solo = (await api().get(`/sellers/${person.id}`).expect(200)).body;
   assert.equal(solo.name, 'Solo Seller');
   assert.equal(solo.about, null);
   assert.equal(solo.address, null);
   assert.equal(solo.hours, null);
+  assert.equal(solo.sawa_affiliated, false);
 
   await api().delete(`/admin/users/${showroom.id}/cover`).set('Authorization', `Bearer ${admin}`).expect(200);
   assert.equal((await api().get(`/sellers/${showroom.id}`).expect(200)).body.cover_url, null);

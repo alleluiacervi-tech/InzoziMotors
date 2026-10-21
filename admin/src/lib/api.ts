@@ -848,7 +848,7 @@ export const api = {
     request<any>('/admin/accounts', { method: 'POST', body: JSON.stringify(data) }),
   createShowroom: (data: { name: string; business_name: string; email: string; phone?: string }) =>
     request<any>('/admin/showrooms', { method: 'POST', body: JSON.stringify(data) }),
-  updateUser: (userId: string, data: { name?: string; phone?: string | null; whatsapp_phone?: string | null; phone_visible?: boolean; whatsapp_visible?: boolean; business_name?: string | null; business_verified?: boolean; seller_type?: string | null; role?: 'buyer' | 'seller'; business_about?: string | null; business_address?: string | null; business_hours?: BusinessHours | null }) =>
+  updateUser: (userId: string, data: { name?: string; phone?: string | null; whatsapp_phone?: string | null; phone_visible?: boolean; whatsapp_visible?: boolean; business_name?: string | null; business_verified?: boolean; seller_type?: string | null; role?: 'buyer' | 'seller'; business_about?: string | null; business_address?: string | null; business_hours?: BusinessHours | null; sawa_affiliated?: boolean }) =>
     request<any>(`/admin/users/${userId}`, { method: 'PATCH', body: JSON.stringify(data) }),
   /** A seller's or showroom's profile photo. FormData, field `avatar`. */
   uploadUserAvatar: (userId: string, data: FormData) =>

@@ -503,6 +503,18 @@ export default function VehicleDetailScreen({ navigation, route }) {
             <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
           </Pressable>
 
+          {/* Sawa Cars is not a party to any deal, so its own stock is sold by a
+              separate company, and that relationship is said wherever its cars appear. */}
+          {car.sellerSawaAffiliated ? (
+            <View style={styles.affiliateNote}>
+              <Ionicons name="information-circle-outline" size={16} color={colors.textSecondary} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.affiliateTitle}>{t('browse.sawaAffiliated')}</Text>
+                <Text style={styles.affiliateText}>{t('browse.sawaAffiliatedCar')}</Text>
+              </View>
+            </View>
+          ) : null}
+
           {/* The direct-deal notice, in the page rather than the sticky bar,
               where it took a fifth of the screen. It is repeated in full on
               the contact step, before any contact detail is released. */}
@@ -825,6 +837,14 @@ const styles = StyleSheet.create({
   sellerName: { fontSize: 15, fontFamily: fonts.bold, color: colors.textPrimary },
   ratingRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 },
   ratingText: { fontSize: 12, color: colors.textSecondary },
+  affiliateNote: {
+    flexDirection: 'row', alignItems: 'flex-start', gap: 8,
+    marginTop: 10, padding: 12,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg, borderWidth: 1, borderColor: colors.borderSoft,
+  },
+  affiliateTitle: { fontSize: 12.5, fontFamily: fonts.bold, color: colors.textPrimary },
+  affiliateText: { marginTop: 2, fontSize: 12, lineHeight: 17, color: colors.textSecondary },
   inspectionRow: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
     backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderSoft,

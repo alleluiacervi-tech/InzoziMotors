@@ -35,7 +35,8 @@ router.get('/:id', requireUuid('id'), async (req, res) => {
       `SELECT u.id, ${sellerDisplayName('u')} AS display_name, u.avatar_url, u.created_at,
               COALESCE(u.seller_type, 'individual') AS seller_type,
               u.business_name, u.business_verified,
-              u.business_about, u.business_address, u.business_hours, u.business_cover_url
+              u.business_about, u.business_address, u.business_hours, u.business_cover_url,
+              u.sawa_affiliated
          FROM users u
         WHERE u.id = $1
           AND u.role = 'seller'
@@ -63,6 +64,8 @@ router.get('/:id', requireUuid('id'), async (req, res) => {
       // it is sent so clients render the badge from data, not assumption.
       id_verified: true,
       business_verified: seller.business_verified === true,
+      // Owned by the company that runs Sawa Cars: disclosed on its storefront.
+      sawa_affiliated: isShowroom && seller.sawa_affiliated === true,
       reply_time: replyTime,
       // A showroom's storefront details, written by the team. Never contact
       // details. Null for an individual seller.

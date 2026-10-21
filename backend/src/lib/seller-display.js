@@ -18,11 +18,14 @@ function sellerDisplayName(alias = 'u') {
                THEN BTRIM(${alias}.business_name) ELSE ${alias}.name END`;
 }
 
-/** SQL: `seller_name`, `seller_is_showroom` and `seller_avatar_url` columns. */
+/** SQL: `seller_name`, `seller_is_showroom`, `seller_avatar_url` and
+ *  `seller_sawa_affiliated` (a showroom owned by the company that runs Sawa
+ *  Cars, which every listing of it must disclose; migration 0066). */
 function sellerDisplayColumns(alias = 'u') {
   return `${sellerDisplayName(alias)} AS seller_name,
               (COALESCE(${alias}.seller_type, 'individual') = 'showroom') AS seller_is_showroom,
-              ${alias}.avatar_url AS seller_avatar_url`;
+              ${alias}.avatar_url AS seller_avatar_url,
+              (COALESCE(${alias}.seller_type, 'individual') = 'showroom' AND ${alias}.sawa_affiliated) AS seller_sawa_affiliated`;
 }
 
 module.exports = { sellerDisplayName, sellerDisplayColumns };

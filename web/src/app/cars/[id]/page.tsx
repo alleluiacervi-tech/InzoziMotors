@@ -634,6 +634,15 @@ async function SellerCard({ car }: { car: Car }) {
         ) : null}
       </div>
 
+      {/* Sawa Cars is not a party to any deal, so its own stock is sold by a
+          separate company, and that relationship is said wherever its cars appear. */}
+      {car.seller_sawa_affiliated ? (
+        <div className="mt-4 rounded-xl border border-line-soft bg-surface-alt p-3 text-caption leading-relaxed text-content-secondary">
+          <p className="font-bold text-content">{t('cars.detail.sawaAffiliatedTitle')}</p>
+          <p className="mt-0.5">{t('cars.detail.sawaAffiliatedCar')}</p>
+        </div>
+      ) : null}
+
       <p className="mt-4 max-w-prose text-caption leading-relaxed text-content-muted">
         {t('cars.detail.sellerNote')}
       </p>

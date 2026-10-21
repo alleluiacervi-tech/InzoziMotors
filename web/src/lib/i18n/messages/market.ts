@@ -60,6 +60,8 @@ const en = {
     daySat: 'Saturday',
     daySun: 'Sunday',
     viewProfile: 'View seller profile',
+    sawaAffiliatedTitle: 'Owned by the company behind Sawa Cars',
+    sawaAffiliatedBody: '{{name}} is a separate company owned by the company behind Sawa Cars. Its cars go through the same 150-point Sawa inspection and the same listing rules as every other seller’s, with no special placement. You buy from {{name}}, not from the Sawa Cars marketplace.',
   },
   trust: {
     title: 'Trust score',
@@ -201,6 +203,8 @@ const rw: typeof en = {
     daySat: 'Kuwa gatandatu',
     daySun: 'Ku cyumweru',
     viewProfile: 'Reba umwirondoro w’umucuruzi',
+    sawaAffiliatedTitle: 'Ni iy’ikigo kiri inyuma ya Sawa Cars',
+    sawaAffiliatedBody: '{{name}} ni ikigo cyigenga gifitwe n’ikigo kiri inyuma ya Sawa Cars. Imodoka zacyo zisuzumwa ku ngingo 150 za Sawa kandi zigakurikiza amategeko amwe n’iz’abandi bacuruzi, nta mwanya wihariye zihabwa. Ugura kuri {{name}}, si ku isoko rya Sawa Cars.',
   },
   trust: {
     title: 'Amanota y’icyizere',
@@ -342,6 +346,8 @@ const fr: typeof en = {
     daySat: 'Samedi',
     daySun: 'Dimanche',
     viewProfile: 'Voir le profil du vendeur',
+    sawaAffiliatedTitle: 'Appartient à la société qui exploite Sawa Cars',
+    sawaAffiliatedBody: '{{name}} est une société distincte appartenant à la société qui exploite Sawa Cars. Ses voitures passent la même inspection Sawa en 150 points et suivent les mêmes règles de publication que celles des autres vendeurs, sans mise en avant particulière. Vous achetez auprès de {{name}}, pas auprès de la place de marché Sawa Cars.',
   },
   trust: {
     title: 'Score de confiance',
@@ -483,6 +489,8 @@ const sw: typeof en = {
     daySat: 'Jumamosi',
     daySun: 'Jumapili',
     viewProfile: 'Angalia wasifu wa muuzaji',
+    sawaAffiliatedTitle: 'Inamilikiwa na kampuni inayoendesha Sawa Cars',
+    sawaAffiliatedBody: '{{name}} ni kampuni tofauti inayomilikiwa na kampuni inayoendesha Sawa Cars. Magari yake hupitia ukaguzi uleule wa Sawa wa vipengele 150 na sheria zilezile za kuorodhesha kama ya wauzaji wengine, bila nafasi maalum. Unanunua kutoka kwa {{name}}, si kutoka soko la Sawa Cars.',
   },
   trust: {
     title: 'Alama ya uaminifu',
@@ -623,6 +631,8 @@ const ko: typeof en = {
     daySat: '토요일',
     daySun: '일요일',
     viewProfile: '판매자 프로필 보기',
+    sawaAffiliatedTitle: 'Sawa Cars 운영사 소유',
+    sawaAffiliatedBody: '{{name}}은(는) Sawa Cars 운영사가 소유한 별도 회사입니다. 이 쇼룸의 차량도 다른 판매자와 똑같이 Sawa의 150개 항목 점검과 등록 규칙을 거치며, 별도의 우대 노출은 없습니다. 구매 상대는 Sawa Cars 마켓플레이스가 아니라 {{name}}입니다.',
   },
   trust: {
     title: '신뢰 점수',
@@ -763,6 +773,8 @@ const zh: typeof en = {
     daySat: '星期六',
     daySun: '星期日',
     viewProfile: '查看卖家主页',
+    sawaAffiliatedTitle: '由 Sawa Cars 的运营公司所有',
+    sawaAffiliatedBody: '{{name}} 是由 Sawa Cars 运营公司所有的独立公司。其车辆与其他卖家一样，经过 Sawa 的 150 项检测并遵守相同的上架规则，不享有任何特别展示。您是向 {{name}} 购买，而不是向 Sawa Cars 平台购买。',
   },
   trust: {
     title: '信任评分',

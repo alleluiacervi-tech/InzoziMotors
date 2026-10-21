@@ -130,6 +130,8 @@ export interface Car {
   /** The showroom's business name for a showroom, the person's name otherwise. */
   seller_name?: string
   seller_is_showroom?: boolean
+  /** A showroom owned by the company behind Sawa Cars: every listing discloses it. */
+  seller_sawa_affiliated?: boolean
   seller_avatar_url?: string | null
   seller_phone?: string | null
   seller_whatsapp?: string | null
@@ -582,6 +584,8 @@ export interface SellerProfile {
   business_name: string | null
   id_verified: true
   business_verified: boolean
+  /** Owned by the company behind Sawa Cars; disclosed on the storefront. */
+  sawa_affiliated: boolean
   /** Measured from real conversations (lib/showroom-profile.js on the API);
    *  null until there is enough to say anything. */
   reply_time: 'within_hour' | 'within_hours' | 'within_day' | null
