@@ -65,6 +65,8 @@ async function matchSavedSearches(car, { now = new Date() } = {}) {
                 OR ($9 = 'RWF' AND (ss.filters->>'maxPrice')::int >= $4))
            AND (ss.filters->>'maxMileage' IS NULL OR (ss.filters->>'maxMileage')::int >= $5)
            AND ss.user_id <> $6
+           -- A test account's car is never public, so nobody is told about it.
+           AND NOT EXISTS (SELECT 1 FROM users seller WHERE seller.id = $6 AND seller.is_test)
        ),
        fresh AS (
          INSERT INTO search_alert_log (saved_search_id, car_id)
@@ -108,6 +110,12 @@ async function notifyPriceDrop(carId, oldPrice, newPrice, title = null, currency
   if (!(newPrice < oldPrice)) return 0;
   if ((oldPrice - newPrice) / oldPrice < MIN_DROP_FRACTION) return 0;
   try {
+    // A test account's car is never public (people may have saved it before
+    // the account was marked), so its price changes are nobody's news.
+    const seller = await pool.query(
+      'SELECT u.is_test FROM cars c JOIN users u ON u.id = c.seller_id WHERE c.id = $1', [carId]
+    );
+    if (seller.rows[0]?.is_test) return 0;
     // At most one alert per car per day. The upsert only succeeds when there was
     // no alert, or the last one is older than the cooldown; a second drop inside
     // the day is not alerted (the car page still shows the new price).

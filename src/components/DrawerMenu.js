@@ -48,10 +48,9 @@ const MENU_SECTIONS = [
       { icon: 'car-outline', labelKey: 'drawer.submitCar', screen: 'CarSubmission', gated: true },
       { icon: 'time-outline', labelKey: 'drawer.submissions', screen: 'SellerDashboard' },
       { icon: 'bar-chart-outline', labelKey: 'drawer.analytics', screen: 'SellerAnalytics' },
-      // Filed under selling because that is whose score it is. It used to sit
-      // under Finance & Services, where a buyer tapping it got their own empty
-      // score and no way to tell whose it was meant to be.
-      { icon: 'ribbon-outline', labelKey: 'drawer.trustScore', screen: 'TrustScore' },
+      // No Trust score entry: its sales and review points came from the retired
+      // deal flow and could never be earned, so every seller read 50/100, grade D
+      // (docs/SHOWROOMS-AND-POLISH.md). The screen stays registered for old links.
     ],
   },
   {

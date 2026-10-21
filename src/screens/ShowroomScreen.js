@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, Pressable, Image, Platform } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Pressable, Image, Platform, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -12,6 +12,14 @@ import { colors, radius, fonts, shadows } from '../theme';
 import { PHOTO } from '../utils/photo';
 import carsApi from '../api/cars';
 import { useApp } from '../context/AppContext';
+import { WEEK, DAY_KEYS, kigaliClock, openState } from '../utils/showroomHours';
+
+// How quickly the showroom replies, measured by the server (null until it can say).
+const REPLY_KEYS = {
+  within_hour: 'browse.replyWithinHour',
+  within_hours: 'browse.replyWithinHours',
+  within_day: 'browse.replyWithinDay',
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // A showroom's storefront.
@@ -38,6 +46,12 @@ export default function ShowroomScreen({ navigation, route }) {
   const [state, setState] = useState(sellerId ? 'loading' : 'gone'); // loading | ready | gone | error
   const [brand, setBrand] = useState(null);
   const [attempt, setAttempt] = useState(0);
+  // Re-read the clock every minute so "Open now" turns into "Closed now" on time.
+  const [clock, setClock] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => setClock(Date.now()), 60000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     if (!sellerId) return undefined;
@@ -77,7 +91,12 @@ export default function ShowroomScreen({ navigation, route }) {
     [cars, brand]
   );
 
-  const cover = cars?.find((c) => c.image)?.image || null;
+  // The showroom itself when the team set a cover photo, otherwise its newest car.
+  const cover = profile?.cover_url || cars?.find((c) => c.image)?.image || null;
+  const avgScore = useMemo(() => {
+    const scores = (cars || []).map((c) => Number(c.inspectionScore)).filter((s) => Number.isFinite(s) && s > 0);
+    return scores.length ? Math.round(scores.reduce((sum, s) => sum + s, 0) / scores.length) : null;
+  }, [cars]);
   const memberSince = profile?.member_since
     ? new Date(profile.member_since).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })
     : null;
@@ -119,6 +138,24 @@ export default function ShowroomScreen({ navigation, route }) {
     );
   }
 
+  // Opening hours, read in Kigali time whatever zone the phone is in.
+  const hours = profile.hours || null;
+  const hoursState = hours ? openState(hours, new Date(clock)) : null;
+  const today = kigaliClock(new Date(clock)).day;
+  let hoursDetail = null;
+  if (hoursState?.open) hoursDetail = t('browse.closesAt', { time: hoursState.closesAt });
+  else if (hoursState?.opensAt && hoursState.laterToday) hoursDetail = t('browse.opensTodayAt', { time: hoursState.opensAt });
+  else if (hoursState?.opensAt && hoursState.opensDay) {
+    hoursDetail = t('browse.opensAt', { day: t(DAY_KEYS[hoursState.opensDay]), time: hoursState.opensAt });
+  }
+  const openMaps = () => {
+    const query = encodeURIComponent(`${profile.address}, Rwanda`);
+    const url = Platform.OS === 'ios'
+      ? `https://maps.apple.com/?q=${query}`
+      : `https://www.google.com/maps/search/?api=1&query=${query}`;
+    Linking.openURL(url).catch(() => {});
+  };
+
   const header = (
     <View>
       <View style={styles.cover}>
@@ -154,6 +191,12 @@ export default function ShowroomScreen({ navigation, route }) {
               <Text style={styles.metaText}>{t('browse.memberSince', { date: memberSince })}</Text>
             </View>
           ) : null}
+          {REPLY_KEYS[profile.reply_time] ? (
+            <View style={styles.metaItem}>
+              <Ionicons name="chatbubble-ellipses-outline" size={13} color={colors.textMuted} />
+              <Text style={styles.metaText}>{t('browse.statReplies')}: {t(REPLY_KEYS[profile.reply_time])}</Text>
+            </View>
+          ) : null}
         </View>
 
         <View style={styles.stats}>
@@ -166,13 +209,73 @@ export default function ShowroomScreen({ navigation, route }) {
             <Text style={styles.statValue}>{brands.length}</Text>
             <Text style={styles.statLabel}>{t('browse.statBrands')}</Text>
           </View>
-          <View style={styles.statDivider} />
-          <View style={styles.stat}>
-            <Text style={styles.statValue}>{cars.filter((c) => c.inspected).length}</Text>
-            <Text style={styles.statLabel}>{t('browse.statInspected')}</Text>
-          </View>
+          {avgScore ? (
+            <>
+              <View style={styles.statDivider} />
+              <View style={styles.stat}>
+                <Text style={styles.statValue}>{avgScore}<Text style={styles.statOf}>/150</Text></Text>
+                <Text style={styles.statLabel}>{t('browse.statAvgInspection')}</Text>
+              </View>
+            </>
+          ) : null}
         </View>
       </View>
+
+      {profile.about ? (
+        <View style={styles.infoCard}>
+          <Text style={styles.infoTitle}>{t('browse.aboutShowroom')}</Text>
+          <Text style={styles.aboutText}>{profile.about}</Text>
+        </View>
+      ) : null}
+
+      {profile.address || hours ? (
+        <View style={styles.infoCard}>
+          <Text style={styles.infoTitle}>{t('browse.visitShowroom')}</Text>
+          {profile.address ? (
+            <Pressable
+              style={styles.addressRow}
+              onPress={openMaps}
+              accessibilityRole="link"
+              accessibilityLabel={`${profile.address}. ${t('browse.openInMaps')}`}
+            >
+              <Ionicons name="location-outline" size={17} color={colors.textMuted} />
+              <View style={styles.addressBody}>
+                <Text style={styles.addressText}>{profile.address}</Text>
+                <Text style={styles.mapsLink}>{t('browse.openInMaps')}</Text>
+              </View>
+              <Ionicons name="open-outline" size={16} color={colors.textMuted} />
+            </Pressable>
+          ) : null}
+          {hours ? (
+            <View style={profile.address ? styles.hoursBlock : null}>
+              <View style={styles.openRow}>
+                <View style={[styles.openPill, hoursState.open && styles.openPillOn]}>
+                  <View style={[styles.openDot, hoursState.open && styles.openDotOn]} />
+                  <Text style={[styles.openPillText, hoursState.open && styles.openPillTextOn]}>
+                    {hoursState.open ? t('browse.openNow') : t('browse.closedNow')}
+                  </Text>
+                </View>
+                {hoursDetail ? <Text style={styles.openDetail}>{hoursDetail}</Text> : null}
+              </View>
+              {WEEK.map((day) => {
+                const slot = hours[day];
+                const isToday = today === day;
+                return (
+                  <View key={day} style={styles.hoursRow}>
+                    <Text style={[styles.hoursDay, isToday && styles.hoursToday]}>
+                      {t(DAY_KEYS[day])}{isToday ? ` · ${t('browse.todayLabel')}` : ''}
+                    </Text>
+                    <Text style={[styles.hoursTime, isToday && styles.hoursToday]}>
+                      {slot ? `${slot.open} – ${slot.close}` : t('browse.closedDay')}
+                    </Text>
+                  </View>
+                );
+              })}
+              <Text style={styles.hoursNote}>{t('browse.kigaliTime')}</Text>
+            </View>
+          ) : null}
+        </View>
+      ) : null}
 
       {brands.length > 0 ? (
         <>
@@ -292,6 +395,40 @@ const styles = StyleSheet.create({
   stat: { flex: 1, alignItems: 'center' },
   statValue: { fontSize: 18, fontFamily: fonts.extraBold, color: colors.textPrimary, fontVariant: ['tabular-nums'] },
   statLabel: { fontSize: 11, fontFamily: fonts.medium, color: colors.textMuted, marginTop: 1 },
+  statOf: { fontSize: 12, fontFamily: fonts.bold, color: colors.textMuted },
+  infoCard: {
+    marginTop: 12,
+    marginHorizontal: 16,
+    padding: 16,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: colors.borderSoft,
+  },
+  infoTitle: { fontSize: 15, fontFamily: fonts.extraBold, color: colors.textPrimary, marginBottom: 8 },
+  aboutText: { fontSize: 13.5, lineHeight: 20, fontFamily: fonts.regular, color: colors.textSecondary },
+  addressRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, minHeight: 44 },
+  addressBody: { flex: 1 },
+  addressText: { fontSize: 13.5, lineHeight: 19, fontFamily: fonts.semiBold, color: colors.textPrimary },
+  mapsLink: { marginTop: 2, fontSize: 12.5, fontFamily: fonts.bold, color: colors.primary },
+  hoursBlock: { marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.borderSoft },
+  openRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginBottom: 8 },
+  openPill: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingHorizontal: 10, paddingVertical: 4, borderRadius: radius.pill,
+    backgroundColor: colors.bg,
+  },
+  openPillOn: { backgroundColor: colors.greenTint },
+  openDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.textMuted },
+  openDotOn: { backgroundColor: colors.green },
+  openPillText: { fontSize: 12, fontFamily: fonts.bold, color: colors.textSecondary },
+  openPillTextOn: { color: colors.greenText },
+  openDetail: { fontSize: 12, fontFamily: fonts.medium, color: colors.textSecondary },
+  hoursRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5 },
+  hoursDay: { fontSize: 13, fontFamily: fonts.medium, color: colors.textSecondary },
+  hoursTime: { fontSize: 13, fontFamily: fonts.medium, color: colors.textSecondary, fontVariant: ['tabular-nums'] },
+  hoursToday: { fontFamily: fonts.bold, color: colors.textPrimary },
+  hoursNote: { marginTop: 6, fontSize: 11, color: colors.textMuted },
   statDivider: { width: 1, height: 28, backgroundColor: colors.borderSoft },
   sectionTitle: { fontSize: 16, fontFamily: fonts.extraBold, color: colors.textPrimary, marginTop: 20, marginBottom: 10, paddingHorizontal: 16 },
   brandRow: { gap: 8, paddingHorizontal: 16 },

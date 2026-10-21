@@ -142,7 +142,7 @@ router.get('/report/rental/:rentalCarId', requireUuid('rentalCarId'), async (req
           AND i.status = 'complete' AND i.passed = TRUE AND i.checklist_version = $2
           AND provider.role = 'seller' AND provider.id_verified = 'approved'
           AND provider.business_verified = TRUE AND provider.account_status = 'active'
-          AND provider.deleted_at IS NULL`,
+          AND provider.deleted_at IS NULL AND provider.is_test = FALSE`,
       [req.params.rentalCarId, CHECKLIST_VERSION]
     );
     if (!rows.length) return res.status(404).json({ error: 'No rental inspection report found' });
@@ -178,7 +178,7 @@ router.get('/report/:carId', requireUuid('carId'), async (req, res) => {
          AND s.seller_id = c.seller_id
          AND lower(s.make) = lower(c.make) AND lower(s.model) = lower(c.model) AND s.year = c.year
          AND seller.role = 'seller' AND seller.id_verified = 'approved'
-         AND seller.account_status = 'active' AND seller.deleted_at IS NULL
+         AND seller.account_status = 'active' AND seller.deleted_at IS NULL AND seller.is_test = FALSE
          AND (COALESCE(seller.seller_type, 'individual') <> 'showroom' OR seller.business_verified = TRUE)
        ORDER BY i.completed_at DESC LIMIT 1`,
       [req.params.carId, CHECKLIST_VERSION]

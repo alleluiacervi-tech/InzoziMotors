@@ -2,7 +2,7 @@
 
 import { ExportLink } from '@/components/ExportLink'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { api } from '@/lib/api'
+import { api, type BusinessDay, type BusinessHours } from '@/lib/api'
 import { Card, EmptyState, ErrorState, Icon, LoadingState, PageHeader, Pill } from '@/components/ui'
 import ListingCap from '@/components/ListingCap'
 import { useConfirm, useReason, useToast } from '@/components/feedback'
@@ -39,7 +39,7 @@ type UserRow = {
   business_verified?: boolean
   avatar_url?: string | null
   must_change_password?: boolean
-  account_status?: 'active' | 'suspended'
+  account_status?: 'active' | 'suspended' | 'closed'
   suspended_at?: string | null
   suspension_reason?: string | null
   id_verification_method?: string | null
@@ -47,6 +47,56 @@ type UserRow = {
   id_verification_ref?: string | null
   id_verified_at?: string | null
   id_verified_by_name?: string | null
+  /** The team marked it as ours (migration 0066): signs in, never public. */
+  is_test?: boolean
+  test_marked_at?: string | null
+  /** Set once the account has been erased (purged or a test account erased). */
+  deleted_at?: string | null
+  business_about?: string | null
+  business_address?: string | null
+  business_hours?: BusinessHours | null
+  business_cover_url?: string | null
+}
+
+const DAYS: { key: BusinessDay; label: string }[] = [
+  { key: 'mon', label: 'Monday' }, { key: 'tue', label: 'Tuesday' }, { key: 'wed', label: 'Wednesday' },
+  { key: 'thu', label: 'Thursday' }, { key: 'fri', label: 'Friday' }, { key: 'sat', label: 'Saturday' },
+  { key: 'sun', label: 'Sunday' },
+]
+const CLOSED_WEEK = Object.fromEntries(DAYS.map((d) => [d.key, null])) as BusinessHours
+const ABOUT_MAX = 1200
+
+// A showroom's week, one row a day: closed, or open from one time to another.
+// The server checks it again (lib/showroom-profile.js) and stores all seven days.
+function HoursEditor({ value, onChange }: { value: BusinessHours; onChange: (next: BusinessHours) => void }) {
+  const set = (day: BusinessDay, next: { open: string; close: string } | null) => onChange({ ...value, [day]: next })
+  return (
+    <div className="divide-y divide-line-soft rounded-xl border border-line-soft">
+      {DAYS.map(({ key, label }) => {
+        const day = value[key]
+        return (
+          <div key={key} className="flex flex-wrap items-center gap-3 px-3 py-2">
+            <label className="flex w-36 items-center gap-2 text-label font-semibold text-content">
+              <input type="checkbox" checked={!!day} className="h-4 w-4 accent-brand"
+                onChange={(e) => set(key, e.target.checked ? { open: '08:00', close: '18:00' } : null)} />
+              {label}
+            </label>
+            {day ? (
+              <span className="flex items-center gap-2 text-caption text-content-muted">
+                <input type="time" value={day.open} aria-label={`${label} opens`}
+                  onChange={(e) => set(key, { ...day, open: e.target.value })}
+                  className="h-9 rounded-lg border border-line bg-surface px-2 text-label text-content focus:outline-none" />
+                to
+                <input type="time" value={day.close} aria-label={`${label} closes`}
+                  onChange={(e) => set(key, { ...day, close: e.target.value })}
+                  className="h-9 rounded-lg border border-line bg-surface px-2 text-label text-content focus:outline-none" />
+              </span>
+            ) : <span className="text-caption text-content-muted">Closed</span>}
+          </div>
+        )
+      })}
+    </div>
+  )
 }
 
 // How an identity can be established away from the dashboard. 'documents' is
@@ -98,6 +148,8 @@ export default function UsersPage() {
   const [query, setQuery] = useState(requestedQuery)
   const [search, setSearch] = useState(requestedQuery)
   const [role, setRole] = useState('all')
+  // Only accounts the team marked as test accounts (GET /admin/users?test=1).
+  const [onlyTest, setOnlyTest] = useState(false)
   const [actionId, setActionId] = useState<string | null>(null)
   const [showroomOpen, setShowroomOpen] = useState(false)
   const [manualInvite, setManualInvite] = useState<{ email: string; url: string | null } | null>(null)
@@ -107,8 +159,10 @@ export default function UsersPage() {
     id: string; name: string; role: 'buyer' | 'seller'; phone: string; whatsapp_phone: string;
     business_name: string; business_verified: boolean; phone_visible: boolean; whatsapp_visible: boolean
     showroom: boolean; avatar_url: string | null
+    about: string; address: string; hours: BusinessHours; cover_url: string | null
   }>(null)
   const avatarInput = useRef<HTMLInputElement | null>(null)
+  const coverInput = useRef<HTMLInputElement | null>(null)
   const [verifying, setVerifying] = useState<null | {
     user: UserRow; method: string; note: string; reference: string
   }>(null)
@@ -130,14 +184,14 @@ export default function UsersPage() {
     try {
       const data = tab === 'verification'
         ? await api.idVerificationQueue()
-        : await api.searchUsers(search, 100)
+        : await api.searchUsers(search, 100, { test: onlyTest })
       setItems(data)
     } catch (e) {
       setError(e)
     } finally {
       setLoading(false)
     }
-  }, [tab, search])
+  }, [tab, search, onlyTest])
 
   useEffect(() => { load() }, [load])
   useEffect(() => {
@@ -150,7 +204,7 @@ export default function UsersPage() {
     const ok = await ask({
       title: approving ? 'Approve this ID verification?' : 'Reject this ID verification?',
       message: approving
-        ? 'The seller is verified, gains 30 trust-score points, and eligible inspected listings can proceed toward publication.'
+        ? 'The seller is verified, and eligible inspected listings can proceed toward publication.'
         : 'The seller is notified and must re-submit documents before any listing or direct contact can become public.',
       confirmLabel: approving ? 'Approve seller' : 'Reject documents',
       tone: approving ? 'primary' : 'danger',
@@ -231,7 +285,7 @@ export default function UsersPage() {
     }
     const ok = await ask({
       title: `Verify ${verifying.user.name}'s identity?`,
-      message: 'This grants seller eligibility and public contact eligibility, and adds 30 trust-score points. Your name and your note are recorded permanently against this decision.',
+      message: 'This grants seller eligibility and public contact eligibility. Your name and your note are recorded permanently against this decision.',
       confirmLabel: 'Record verification',
     })
     if (!ok) return
@@ -297,6 +351,8 @@ export default function UsersPage() {
       phone: user.phone || '', whatsapp_phone: user.whatsapp_phone || '', business_name: user.business_name || '',
       business_verified: !!user.business_verified, phone_visible: !!user.phone_visible, whatsapp_visible: !!user.whatsapp_visible,
       showroom: user.seller_type === 'showroom', avatar_url: user.avatar_url || null,
+      about: user.business_about || '', address: user.business_address || '',
+      hours: { ...CLOSED_WEEK, ...(user.business_hours || {}) }, cover_url: user.business_cover_url || null,
     })
   }
 
@@ -328,6 +384,82 @@ export default function UsersPage() {
     finally { setActionId(null) }
   }
 
+  // A showroom's cover photo, saved the moment it is chosen, like the logo.
+  async function uploadCover(file: File) {
+    if (!editing) return
+    setActionId(`cover-${editing.id}`)
+    try {
+      const form = new FormData()
+      form.append('cover', file)
+      const saved = await api.uploadUserCover(editing.id, form)
+      setEditing((current) => (current && current.id === saved.id ? { ...current, cover_url: saved.business_cover_url } : current))
+      toast('Cover photo saved', 'success')
+      await load()
+    } catch (e: any) { toast(e.message, 'error') }
+    finally { setActionId(null) }
+  }
+
+  async function removeCover() {
+    if (!editing) return
+    setActionId(`cover-${editing.id}`)
+    try {
+      await api.removeUserCover(editing.id)
+      setEditing((current) => (current ? { ...current, cover_url: null } : current))
+      toast('Cover photo removed — the storefront shows the newest car instead', 'success')
+      await load()
+    } catch (e: any) { toast(e.message, 'error') }
+    finally { setActionId(null) }
+  }
+
+  // Marking is a flag, not a cascade: the account still signs in (App Review's
+  // demo account must keep working) and nothing it owns is public until it is
+  // unmarked, when everything comes back exactly as it was.
+  async function toggleTest(user: UserRow) {
+    const marking = !user.is_test
+    const ok = await ask({
+      title: marking ? `Mark ${user.business_name || user.name} as a test account?` : `Unmark ${user.business_name || user.name}?`,
+      message: marking
+        ? 'It can still sign in, but its cars, rentals, profile and inspection reports disappear from the website and the apps straight away, and nobody is alerted about them. You can undo this.'
+        : 'Everything it owns becomes public again under the usual rules (verified identity, inspection evidence).',
+      confirmLabel: marking ? 'Mark as test account' : 'Unmark',
+      tone: marking ? 'danger' : 'primary',
+    })
+    if (!ok) return
+    setActionId(`test-${user.id}`)
+    try {
+      await api.setTestAccount(user.id, marking)
+      toast(marking ? 'Marked as a test account — hidden from the marketplace' : 'No longer a test account', 'success')
+      await load()
+    } catch (e: any) { toast(e.message, 'error') }
+    finally { setActionId(null) }
+  }
+
+  // Only a marked account can be erased, and only with its email typed: two
+  // deliberate steps, so a real person's account can never go by a slip.
+  async function eraseTest(user: UserRow) {
+    const typed = await askReason({
+      title: `Erase ${user.business_name || user.name} for good?`,
+      message: 'Its name, email, phone, photos and ID documents are erased, its cars are archived, its rental cars are taken down and it is signed out everywhere. Conversations with real people stay, shown as "Deleted user". This cannot be undone.',
+      audience: `Type the account's email to confirm: ${user.email}`,
+      placeholder: user.email,
+      minLength: 3,
+      confirmLabel: 'Erase test account',
+      tone: 'danger',
+    })
+    if (!typed) return
+    if (typed.trim().toLowerCase() !== user.email.toLowerCase()) {
+      toast('That is not this account\'s email. Nothing was erased.', 'error')
+      return
+    }
+    setActionId(`erase-${user.id}`)
+    try {
+      const done = await api.eraseTestAccount(user.id, typed.trim())
+      toast(`Test account erased — ${done.listings_archived} listing${done.listings_archived === 1 ? '' : 's'} archived`, 'success')
+      await load()
+    } catch (e: any) { toast(e.message, 'error') }
+    finally { setActionId(null) }
+  }
+
   async function saveUser(event: React.FormEvent) {
     event.preventDefault()
     if (!editing || !editing.name.trim()) return
@@ -351,6 +483,18 @@ export default function UsersPage() {
       })
       if (!ok) return
     }
+    if (asShowroom && editing.about.trim().length > ABOUT_MAX) {
+      toast(`The description is ${editing.about.trim().length} characters; keep it to ${ABOUT_MAX}.`, 'error')
+      return
+    }
+    const badDay = asShowroom
+      ? DAYS.find(({ key }) => { const d = editing.hours[key]; return d && (!d.open || !d.close || d.open >= d.close) })
+      : undefined
+    if (badDay) {
+      toast(`On ${badDay.label} the showroom must open before it closes.`, 'error')
+      return
+    }
+    const openDays = DAYS.filter(({ key }) => editing.hours[key])
     setActionId(`edit-${editing.id}`)
     try {
       await api.updateUser(editing.id, {
@@ -359,6 +503,12 @@ export default function UsersPage() {
         business_verified: editing.business_verified, phone_visible: editing.phone_visible,
         whatsapp_visible: editing.whatsapp_visible,
         ...(editing.role === 'seller' ? { seller_type: editing.showroom ? 'showroom' : 'individual' } : {}),
+        // The storefront's own details, only for a showroom.
+        ...(asShowroom ? {
+          business_about: editing.about.trim() || null,
+          business_address: editing.address.trim() || null,
+          business_hours: openDays.length ? editing.hours : null,
+        } : {}),
       })
       toast('Account details updated', 'success')
       setEditing(null)
@@ -377,7 +527,7 @@ export default function UsersPage() {
     <div>
       <PageHeader
         title="Users & ID checks"
-        description="Find accounts, understand trust at a glance, and review seller identity documents."
+        description="Find accounts, set up showrooms, manage test accounts, and review seller identity documents."
         action={
           <div className="flex flex-wrap items-center gap-2">
             <ExportLink dataset="users" />
@@ -499,11 +649,15 @@ export default function UsersPage() {
                 <option value="admin">Admins ({counts.admin || 0})</option>
               </select>
             </label>
+            <label className="flex h-11 shrink-0 cursor-pointer items-center gap-2 rounded-xl border border-line px-3 text-label font-semibold text-content">
+              <input type="checkbox" checked={onlyTest} onChange={(e) => setOnlyTest(e.target.checked)} className="h-4 w-4 accent-brand" />
+              Test accounts only
+            </label>
           </div>
         </Card>
       ) : (
         <div className="mb-5 rounded-xl border border-warning-border bg-warning-tint px-4 py-3 text-label text-warning-text">
-          Approval unlocks publication and public contact eligibility and adds 30 trust-score points. Document links expire after 15 minutes.
+          Approval unlocks publication and public contact eligibility. Document links expire after 15 minutes.
         </div>
       )}
 
@@ -613,6 +767,59 @@ export default function UsersPage() {
                 <span><span className="block text-label font-bold text-content">Showroom account</span><span className="text-caption text-content-muted">Listings show the business name and link to its showroom page. Needs a business name and Verified business.</span></span>
               </label>
             ) : null}
+            {editing.role === 'seller' && editing.showroom ? (
+              <fieldset className="grid gap-4 rounded-xl border border-line-soft p-4 sm:col-span-2">
+                <legend className="px-1 text-label font-bold text-content">Storefront details</legend>
+                <p className="-mt-2 text-caption text-content-muted">
+                  What buyers read on this showroom&apos;s page in the app and on sawacars.com. Write only what you have checked.
+                  Never a phone number here: contact stays behind each car&apos;s own Contact button.
+                </p>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                  <span className="relative block h-24 w-full shrink-0 overflow-hidden rounded-xl bg-surface-alt ring-1 ring-inset ring-line sm:w-56">
+                    {editing.cover_url
+                      // eslint-disable-next-line @next/next/no-img-element
+                      ? <img src={editing.cover_url} alt="" className="h-full w-full object-cover" />
+                      : <span className="flex h-full items-center justify-center px-3 text-center text-caption text-content-muted">No cover yet — the newest car is shown</span>}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-label font-bold text-content">Cover photo</p>
+                    <p className="text-caption text-content-muted">A wide photo of the showroom itself (the forecourt, the building). JPEG, PNG or WebP, up to 6 MB. Saved as soon as you choose it.</p>
+                  </div>
+                  <input ref={coverInput} type="file" accept="image/jpeg,image/png,image/webp" className="hidden"
+                    onChange={(e) => { const file = e.target.files?.[0]; e.target.value = ''; if (file) uploadCover(file) }} />
+                  <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
+                    <button type="button" onClick={() => coverInput.current?.click()} disabled={actionId === `cover-${editing.id}`}
+                      className="rounded-lg border border-line px-3 py-1.5 text-caption font-bold text-content hover:bg-surface-alt disabled:opacity-50">
+                      {actionId === `cover-${editing.id}` ? 'Saving…' : editing.cover_url ? 'Replace' : 'Upload'}
+                    </button>
+                    {editing.cover_url ? (
+                      <button type="button" onClick={removeCover} disabled={actionId === `cover-${editing.id}`}
+                        className="rounded-lg px-3 py-1.5 text-caption font-bold text-content-muted hover:bg-surface-alt disabled:opacity-50">Remove</button>
+                    ) : null}
+                  </div>
+                </div>
+                <label className="text-label font-semibold text-content">About the showroom
+                  <textarea value={editing.about} onChange={(e) => setEditing({ ...editing, about: e.target.value })}
+                    rows={4} maxLength={ABOUT_MAX + 200}
+                    placeholder="e.g. Family-run showroom in Kacyiru since 2012. Japanese and Korean SUVs, every car inspected by Sawa Cars before it is listed."
+                    className="mt-1.5 w-full rounded-xl border border-line bg-surface p-3 font-normal focus:border-content-muted focus:outline-none" />
+                  <span className={`mt-1 block text-caption ${editing.about.trim().length > ABOUT_MAX ? 'text-danger-strong' : 'text-content-muted'}`}>
+                    {editing.about.trim().length} / {ABOUT_MAX}
+                  </span>
+                </label>
+                <label className="text-label font-semibold text-content">Address buyers can visit
+                  <input value={editing.address} onChange={(e) => setEditing({ ...editing, address: e.target.value })} maxLength={240}
+                    placeholder="e.g. KG 7 Ave, Kacyiru, Kigali"
+                    className="mt-1.5 h-11 w-full rounded-xl border border-line bg-surface px-3 font-normal focus:border-content-muted focus:outline-none" />
+                  <span className="mt-1 block text-caption text-content-muted">Shown with an &ldquo;Open in Maps&rdquo; link.</span>
+                </label>
+                <div>
+                  <p className="text-label font-semibold text-content">Opening hours</p>
+                  <p className="mb-2 text-caption text-content-muted">Tick the days it is open. Buyers see &ldquo;Open now&rdquo; or &ldquo;Closed now&rdquo; in Kigali time.</p>
+                  <HoursEditor value={editing.hours} onChange={(hours) => setEditing({ ...editing, hours })} />
+                </div>
+              </fieldset>
+            ) : null}
             {([
               ['business_verified', 'Verified business', 'Business registration checked. Required for a showroom to be public, and for rental inventory.'],
               ['phone_visible', 'Share phone on request', 'Allow acknowledged buyers to request this phone number.'],
@@ -651,14 +858,14 @@ export default function UsersPage() {
           <div className="overflow-x-auto">
             <table className="w-full min-w-[760px] text-left">
               <thead className="border-b border-line-soft bg-surface-alt text-caption uppercase tracking-wide text-content-muted">
-                <tr><th className="px-5 py-3">User</th><th className="px-4 py-3">Role</th><th className="px-4 py-3">Identity</th><th className="px-4 py-3">Trust</th><th className="px-4 py-3">Sales</th><th className="px-4 py-3">Access</th><th className="px-5 py-3">Joined</th></tr>
+                <tr><th className="px-5 py-3">User</th><th className="px-4 py-3">Role</th><th className="px-4 py-3">Identity</th><th className="px-4 py-3">Listings</th><th className="px-4 py-3">Access</th><th className="px-5 py-3">Joined</th></tr>
               </thead>
               <tbody className="divide-y divide-line-soft">
                 {visible.map((u) => <tr key={u.id} id={`row-${u.id}`} className={`hover:bg-surface-alt ${focusProps(u.id).className}`}>
                   <td className="px-5 py-4"><div className="flex items-center gap-3">{u.avatar_url
                     // eslint-disable-next-line @next/next/no-img-element
                     ? <img src={u.avatar_url} alt="" className="h-9 w-9 shrink-0 rounded-full object-cover ring-1 ring-line" /> : null}<div className="min-w-0"><p className="font-bold text-content">{u.business_name || u.name}</p><p className="text-caption text-content-muted">{u.business_name ? `${u.name} · ` : ''}{u.email}{u.phone ? ` · ${u.phone}` : ''}</p>{u.whatsapp_phone ? <p className="text-caption text-content-muted">WhatsApp: {u.whatsapp_phone}</p> : null}{u.must_change_password ? <p className="mt-1 text-micro font-bold text-warning-text">Invitation awaiting activation</p> : null}</div></div></td>
-                  <td className="px-4 py-4"><div className="space-y-1"><Pill status={u.role} label={u.seller_type === 'showroom' ? 'Showroom' : undefined} />{u.business_verified ? <Pill status="approved" label="Business verified" /> : null}</div></td>
+                  <td className="px-4 py-4"><div className="space-y-1"><Pill status={u.role} label={u.seller_type === 'showroom' ? 'Showroom' : undefined} />{u.business_verified ? <Pill status="approved" label="Business verified" /> : null}{u.is_test ? <Pill status="draft" label="Test account" /> : null}</div></td>
                   <td className="px-4 py-4">
                     <Pill status={u.id_verified || 'none'} label={u.id_verified === 'none' || !u.id_verified ? 'Not submitted' : undefined} />
                     {u.id_verified === 'approved' && u.id_verification_method ? (
@@ -668,12 +875,14 @@ export default function UsersPage() {
                       </span>
                     ) : null}
                   </td>
-                  {/* Trust means something only for a seller who has earned some; a
-                      bold 0 on every buyer was noise that hid the rows that matter. */}
-                  <td className="tnum px-4 py-4 text-content">{u.role === 'seller' && Number(u.trust_score) > 0 ? Number(u.trust_score) : <span className="text-content-muted">—</span>}</td>
-                  <td className="px-4 py-4 text-content-secondary">{Number(u.completed_sales || 0)}</td>
+                  {/* Live or paused cars. The old Trust and Sales columns are gone:
+                      sales and reviews came from the retired deal flow and could
+                      never move, so they said nothing about anyone. */}
+                  <td className="tnum px-4 py-4 text-content">{u.role === 'seller' ? Number(u.active_listings || 0) : <span className="text-content-muted">—</span>}</td>
                   <td className="px-4 py-4"><div className="flex min-w-44 flex-col items-start gap-2">{u.account_status === 'suspended' ? <Pill status="rejected" label="Suspended" /> : null}
-                    {u.role !== 'admin' ? (
+                    {u.deleted_at ? (
+                      <span className="text-caption text-content-muted">Erased {fmtDate(u.deleted_at)}</span>
+                    ) : u.role !== 'admin' ? (
                       <div className="flex items-center gap-2">
                         {/* One primary action on the row; the rest, and the
                             destructive one last, behind the menu. */}
@@ -695,6 +904,14 @@ export default function UsersPage() {
                             : []),
                           ...(u.id_verified === 'approved'
                             ? [{ label: actionId === `revoke-${u.id}` ? 'Revoking…' : 'Revoke ID verification', hint: 'Unpublishes their listings', destructive: true, onSelect: () => revokeIdentity(u), disabled: actionId === `revoke-${u.id}` }]
+                            : []),
+                          u.is_test
+                            ? { label: actionId === `test-${u.id}` ? 'Updating…' : 'Unmark test account', hint: 'Makes it public again', onSelect: () => toggleTest(u), disabled: actionId === `test-${u.id}` }
+                            : { label: actionId === `test-${u.id}` ? 'Updating…' : 'Mark as test account', hint: 'Hidden from the marketplace; can still sign in', onSelect: () => toggleTest(u), disabled: actionId === `test-${u.id}` },
+                          // Erasing is offered only once the account is marked, so a real
+                          // person's account is never one click away from it.
+                          ...(u.is_test
+                            ? [{ label: actionId === `erase-${u.id}` ? 'Erasing…' : 'Erase test account…', hint: 'For good; you type its email', destructive: true, onSelect: () => eraseTest(u), disabled: actionId === `erase-${u.id}` }]
                             : []),
                           u.account_status === 'suspended'
                             ? { label: actionId === `access-${u.id}` ? 'Updating…' : 'Restore access', onSelect: () => changeAccess(u), disabled: actionId === `access-${u.id}` }

@@ -4,14 +4,15 @@ import { JsonLd } from '@/components/JsonLd'
 import Link from 'next/link'
 import { CarCard } from '@/components/marketplace/CarCard'
 import { BrandMark } from '@/components/marketplace/BrandMark'
+import { ShowroomHours } from '@/components/market/ShowroomHours'
 import { getLogoLookup } from '@/lib/brands'
-import { ReportReviewButton } from '@/components/market/ReportReviewButton'
 import { Badge, Card, Container, Icon } from '@/components/ui'
 import { ApiError, sellers } from '@/lib/api'
 import { formatDate } from '@/lib/business'
 import { absoluteUrl, breadcrumbNode, graph } from '@/lib/seo'
 import { getServerT } from '@/lib/i18n/server'
-import type { SellerProfile } from '@/lib/types'
+import { WEEK } from '@/lib/showroom-hours'
+import type { BusinessDay, SellerProfile } from '@/lib/types'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Public seller and showroom profile (G9 in docs/WEB-PARITY-PLAN.md).
@@ -23,6 +24,12 @@ import type { SellerProfile } from '@/lib/types'
 // profile endpoint never returns one. Contact stays behind a listing's own
 // "Contact seller" and its direct-deal acknowledgement.
 //
+// Only true facts are shown: how many cars, which brands, their inspection
+// scores, how quickly the seller replies (measured, and only once there is
+// enough to measure), and for a showroom the details the team wrote. The old
+// sales count, rating, reviews and trust score came from the retired deal flow
+// and could never move, so every seller looked like "0 sales, 50/100".
+//
 // Structured data carries no aggregateRating: web/src/lib/seo.ts forbids it
 // until reviews are a real, ongoing signal.
 // ─────────────────────────────────────────────────────────────────────────────
@@ -31,6 +38,16 @@ type Props = {
   params: Promise<{ id: string }>
   searchParams?: Promise<{ brand?: string | string[] }>
 }
+
+const SCHEMA_DAY: Record<BusinessDay, string> = {
+  mon: 'Monday', tue: 'Tuesday', wed: 'Wednesday', thu: 'Thursday', fri: 'Friday', sat: 'Saturday', sun: 'Sunday',
+}
+
+const REPLY_KEY = {
+  within_hour: 'market.profile.replyWithinHour',
+  within_hours: 'market.profile.replyWithinHours',
+  within_day: 'market.profile.replyWithinDay',
+} as const
 
 async function loadProfile(id: string): Promise<SellerProfile | null> {
   try {
@@ -51,7 +68,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const name = displayName(profile)
   return {
     title: t('market.profile.metaTitle', { name }),
-    description: t('market.profile.metaDescription', { name }),
+    description: profile.is_showroom && profile.about
+      ? profile.about.replace(/\s+/g, ' ').slice(0, 155)
+      : t('market.profile.metaDescription', { name }),
     alternates: { canonical: `/sellers/${profile.id}` },
   }
 }
@@ -64,9 +83,7 @@ export default async function SellerProfilePage({ params, searchParams }: Props)
   const profile = await loadProfile(id)
   if (!profile) notFound()
 
-  const [trust, reviewData, listings, logoFor] = await Promise.all([
-    sellers.trustScore(id).catch(() => null),
-    sellers.reviews(id).catch(() => null),
+  const [listings, logoFor] = await Promise.all([
     sellers.listings(id).catch(() => []),
     getLogoLookup(),
   ])
@@ -87,11 +104,19 @@ export default async function SellerProfilePage({ params, searchParams }: Props)
   const shown = activeBrand
     ? listings.filter((car) => String(car.make || '').trim().toLowerCase() === activeBrand.make.toLowerCase())
     : listings
-  const cover = listings.find((car) => car.images?.length)?.images?.[0] ?? null
+  const newestPhoto = listings.find((car) => car.images?.length)?.images?.[0] ?? null
+  const cover = profile.is_showroom ? (profile.cover_url || newestPhoto) : null
+
+  const scores = listings
+    .map((car) => Number(car.inspection_score))
+    .filter((score) => Number.isFinite(score) && score > 0)
+  const averageScore = scores.length ? Math.round(scores.reduce((sum, s) => sum + s, 0) / scores.length) : null
 
   const name = displayName(profile)
-  const reviewCount = reviewData?.total ?? 0
-  const average = reviewData?.average_rating ?? null
+  const hours = profile.is_showroom ? profile.hours : null
+  const mapsUrl = profile.address
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${profile.address}, Rwanda`)}`
+    : null
 
   const structured = graph(
     breadcrumbNode([
@@ -103,75 +128,48 @@ export default async function SellerProfilePage({ params, searchParams }: Props)
       '@type': profile.is_showroom ? 'AutoDealer' : 'Person',
       name,
       url: absoluteUrl(`/sellers/${profile.id}`),
+      ...(profile.is_showroom && profile.about ? { description: profile.about } : {}),
+      ...(profile.is_showroom && (profile.cover_url || profile.avatar_url)
+        ? { image: profile.cover_url || profile.avatar_url } : {}),
+      ...(profile.is_showroom && profile.address
+        ? { address: { '@type': 'PostalAddress', streetAddress: profile.address, addressCountry: 'RW' } } : {}),
+      ...(hours
+        ? {
+            openingHoursSpecification: WEEK.filter((day) => hours[day]).map((day) => ({
+              '@type': 'OpeningHoursSpecification',
+              dayOfWeek: `https://schema.org/${SCHEMA_DAY[day]}`,
+              opens: hours[day]!.open,
+              closes: hours[day]!.close,
+            })),
+          }
+        : {}),
     }
   )
 
-  const trustRows = trust
-    ? [
-        {
-          label: t('market.trust.id'),
-          detail: trust.breakdown.id_verified.points > 0 ? t('market.trust.idYes') : t('market.trust.idNo'),
-          ...trust.breakdown.id_verified,
-        },
-        {
-          label: t('market.trust.sales'),
-          detail: t('market.trust.salesDetail', { count: trust.breakdown.completed_sales.count }),
-          ...trust.breakdown.completed_sales,
-        },
-        {
-          label: t('market.trust.response'),
-          detail: t('market.trust.responseDetail', { rate: trust.breakdown.response_rate.rate }),
-          ...trust.breakdown.response_rate,
-        },
-        {
-          label: t('market.trust.reviews'),
-          detail: Number(trust.breakdown.reviews.count) > 0
-            ? t('market.trust.reviewsDetail', { avg: trust.breakdown.reviews.avg ?? '—', count: trust.breakdown.reviews.count })
-            : t('market.trust.reviewsNone'),
-          ...trust.breakdown.reviews,
-        },
-      ]
-    : []
+  // Facts only. A figure appears when there is something true to say.
+  const facts: { label: string; value: string }[] = [
+    { label: t('market.profile.statCars'), value: String(listings.length) },
+    ...(profile.is_showroom && brands.length ? [{ label: t('market.profile.statBrands'), value: String(brands.length) }] : []),
+    ...(averageScore ? [{ label: t('market.profile.statInspection'), value: `${averageScore}/150` }] : []),
+    ...(profile.reply_time ? [{ label: t('market.profile.statReplies'), value: t(REPLY_KEY[profile.reply_time]) }] : []),
+  ]
 
-  const trustSection = trust ? (
-    <section aria-labelledby="trust" className="mt-10">
-      <h2 id="trust" className="text-title-sm font-extrabold text-content">{t('market.trust.title')}</h2>
-      <p className="mt-1 text-caption text-content-secondary">
-        {t('market.trust.subtitle', { total: trust.total_score })}
-      </p>
-      <Card className="mt-4 divide-y divide-line-soft">
-        {trustRows.map((row) => (
-          <div key={row.label} className="p-4">
-            <div className="flex items-baseline justify-between gap-3">
-              <p className="text-caption font-bold text-content">{row.label}</p>
-              <p className="tnum text-caption font-extrabold text-content">{row.points}/{row.max}</p>
-            </div>
-            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-surface-alt">
-              <div
-                className="h-full rounded-full bg-success"
-                style={{ width: `${Math.min(100, Math.round((row.points / row.max) * 100))}%` }}
-              />
-            </div>
-            <p className="mt-2 text-micro text-content-muted">{row.detail}</p>
-          </div>
-        ))}
-      </Card>
-    </section>
-  ) : null
+  const hasAbout = profile.is_showroom && Boolean(profile.about)
+  const hasVisit = profile.is_showroom && Boolean(profile.address || hours)
 
   return (
     <Container className="py-8 sm:py-12">
       <JsonLd data={structured} />
 
-      {profile.is_showroom && cover ? (
-        <div className="relative -mt-2 mb-6 h-40 overflow-hidden rounded-3xl bg-surface-alt sm:h-56">
-          {/* eslint-disable-next-line @next/next/no-img-element -- decorative: the showroom's newest car */}
+      {cover ? (
+        <div className="relative -mt-2 mb-6 h-40 overflow-hidden rounded-3xl bg-surface-alt sm:h-64">
+          {/* eslint-disable-next-line @next/next/no-img-element -- decorative: the showroom itself, or its newest car */}
           <img src={cover} alt="" className="h-full w-full object-cover" />
           <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/5 to-transparent" />
         </div>
       ) : null}
 
-      <header className={`relative z-10 flex flex-col gap-5 sm:flex-row sm:items-start ${profile.is_showroom && cover ? '-mt-14 px-4 sm:px-6' : ''}`}>
+      <header className={`relative z-10 flex flex-col gap-5 sm:flex-row sm:items-start ${cover ? '-mt-14 px-4 sm:px-6' : ''}`}>
         {profile.avatar_url ? (
           // eslint-disable-next-line @next/next/no-img-element -- the photo the team set for this account
           <img
@@ -187,7 +185,7 @@ export default async function SellerProfilePage({ params, searchParams }: Props)
             {name.trim().charAt(0).toUpperCase() || '?'}
           </span>
         )}
-        <div className={`min-w-0 ${profile.is_showroom && cover ? 'sm:pt-16' : ''}`}>
+        <div className={`min-w-0 ${cover ? 'sm:pt-16' : ''}`}>
           <h1 className="text-title font-extrabold text-content">{name}</h1>
           <p className="mt-1 text-caption text-content-muted">
             {profile.is_showroom ? t('market.profile.showroom') : t('market.profile.individual')}
@@ -204,22 +202,55 @@ export default async function SellerProfilePage({ params, searchParams }: Props)
       </header>
 
       <dl className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {[
-          { label: t('market.profile.statSales'), value: String(profile.completed_sales) },
-          { label: t('market.profile.statResponse'), value: `${profile.response_rate}%` },
-          { label: t('market.profile.statRating'), value: average ? `${average}★` : '—' },
-          { label: t('market.profile.statReviews'), value: String(reviewCount) },
-        ].map((stat) => (
-          <Card key={stat.label} className="p-4">
-            <dt className="text-micro font-bold text-content-muted">{stat.label}</dt>
-            <dd className="mt-1 text-title-sm font-extrabold text-content">{stat.value}</dd>
+        {facts.map((fact) => (
+          <Card key={fact.label} className="p-4">
+            <dt className="text-micro font-bold text-content-muted">{fact.label}</dt>
+            <dd className="mt-1 text-title-sm font-extrabold text-content">{fact.value}</dd>
           </Card>
         ))}
       </dl>
 
-      {/* A showroom's page is a storefront: its brands and cars come first.
-          A person's profile leads with the trust breakdown. */}
-      {profile.is_showroom ? null : trustSection}
+      {hasAbout || hasVisit ? (
+        <div className={`mt-10 grid gap-5 ${hasAbout && hasVisit ? 'lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)]' : ''}`}>
+          {hasAbout ? (
+            <section aria-labelledby="about">
+              <h2 id="about" className="text-title-sm font-extrabold text-content">{t('market.profile.aboutTitle', { name })}</h2>
+              <p className="mt-3 max-w-prose whitespace-pre-line text-body leading-relaxed text-content-secondary">{profile.about}</p>
+            </section>
+          ) : null}
+          {hasVisit ? (
+            <section aria-labelledby="visit">
+              <Card className="p-5">
+                <h2 id="visit" className="text-label font-extrabold text-content">{t('market.profile.visitTitle')}</h2>
+                {profile.address ? (
+                  <p className="mt-3 flex items-start gap-2 text-caption text-content-secondary">
+                    <span className="mt-0.5 text-content-muted"><Icon name="location" size={15} /></span>
+                    <span className="min-w-0">
+                      {profile.address}
+                      {mapsUrl ? (
+                        <>
+                          {' · '}
+                          <a href={mapsUrl} target="_blank" rel="noopener noreferrer"
+                            className="font-bold text-content underline decoration-line underline-offset-4 hover:decoration-content">
+                            {t('market.profile.openInMaps')}
+                          </a>
+                        </>
+                      ) : null}
+                    </span>
+                  </p>
+                ) : null}
+                {hours ? (
+                  <div className="mt-4">
+                    <h3 className="sr-only">{t('market.profile.hoursTitle')}</h3>
+                    <ShowroomHours hours={hours} />
+                  </div>
+                ) : null}
+              </Card>
+            </section>
+          ) : null}
+        </div>
+      ) : null}
+
       {profile.is_showroom && brands.length ? (
         <section aria-labelledby="brands" className="mt-10">
           <h2 id="brands" className="text-title-sm font-extrabold text-content">{t('market.profile.brandsTitle')}</h2>
@@ -276,44 +307,6 @@ export default async function SellerProfilePage({ params, searchParams }: Props)
           <p className="mt-3 text-caption text-content-secondary">{t('market.profile.listingsEmpty')}</p>
         )}
         <p className="mt-4 max-w-prose text-micro leading-relaxed text-content-muted">{t('market.profile.contactNote')}</p>
-      </section>
-
-      {profile.is_showroom ? trustSection : null}
-      <section aria-labelledby="reviews" className="mt-10">
-        <h2 id="reviews" className="text-title-sm font-extrabold text-content">
-          {t('market.profile.reviewsTitle', { count: reviewCount })}
-        </h2>
-        {reviewData && reviewData.reviews.length ? (
-          <ul className="mt-4 space-y-3">
-            {reviewData.reviews.map((review) => {
-              const author = review.reviewer_name || t('market.profile.anonymousBuyer')
-              return (
-                <li key={review.id}>
-                  <Card className="p-4">
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="text-caption font-bold text-content">{author}</p>
-                        <p className="text-micro text-content-muted">
-                          <span aria-label={t('market.profile.starsLabel', { count: review.rating })}>
-                            {'★'.repeat(review.rating)}{'☆'.repeat(Math.max(0, 5 - review.rating))}
-                          </span>
-                          {' · '}
-                          {formatDate(review.created_at)}
-                        </p>
-                      </div>
-                      <ReportReviewButton reviewId={review.id} author={author} />
-                    </div>
-                    <p className="mt-2 text-caption leading-relaxed text-content-secondary">
-                      {review.comment || (review.car_title ? t('market.profile.reviewAbout', { car: review.car_title }) : '')}
-                    </p>
-                  </Card>
-                </li>
-              )
-            })}
-          </ul>
-        ) : (
-          <p className="mt-3 text-caption text-content-secondary">{t('market.profile.reviewsEmpty')}</p>
-        )}
       </section>
     </Container>
   )

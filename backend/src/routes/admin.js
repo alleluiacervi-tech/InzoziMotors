@@ -30,13 +30,17 @@ const { validateFlags: validateEncarFlags, validateRules: validateEncarRules } =
 const {
   slugify, loadMakes, invalidateMakes,
 } = require('../lib/vehicle-makes');
-const { uploadBrandLogo, uploadAvatar, verifyImageContent, resolveUploadUrl } = require('../middleware/upload');
+const {
+  uploadBrandLogo, uploadAvatar, uploadCover, verifyImageContent, resolveUploadUrl,
+} = require('../middleware/upload');
 const { stripUploadMetadata } = require('../middleware/strip-metadata');
 const {
   CLOSURE_REASONS, REASON_LABELS, RECOVERY_DAYS,
   purgeAccount, removeIdDocuments, CLOSED_ACCOUNTS, DUE_FOR_PURGE,
 } = require('../lib/account-closure');
 const { sendAccountDeleted } = require('../lib/mailer');
+const { normalizeAbout, normalizeAddress, normalizeHours } = require('../lib/showroom-profile');
+const { withTransaction } = require('../lib/tx');
 
 const router = express.Router();
 
@@ -729,15 +733,19 @@ router.get('/listings', requireAdmin, paginate({ defaultLimit: 50, maxLimit: 200
   }
 });
 
-// GET /admin/users?q= — search users by name/email/phone
+// GET /admin/users?q=&test=1 — search users by name/email/phone; test=1 lists
+// only the accounts marked as test accounts.
 router.get('/users', requireAdmin, async (req, res) => {
   const { q = '', limit = 25 } = req.query;
   const safeLimit = Math.min(Math.max(parseInt(limit) || 25, 1), 100);
+  const onlyTest = req.query.test === '1' || req.query.test === 'true';
   try {
     const { rows } = await pool.query(
       `SELECT id, name, email, phone, whatsapp_phone, phone_visible,
               whatsapp_visible, contact_consent_at, role, id_verified, seller_type,
               business_name, business_verified, avatar_url, admin_created, must_change_password, account_status,
+              business_about, business_address, business_hours, business_cover_url,
+              is_test, test_marked_at, deleted_at,
               suspended_at, suspension_reason, trust_score,
               id_verification_method, id_verification_note, id_verification_ref,
               id_verified_at,
@@ -750,11 +758,12 @@ router.get('/users', requireAdmin, async (req, res) => {
                 WHERE c.seller_id = users.id AND c.status IN ('live','paused')) AS active_listings,
               completed_sales, created_at
        FROM users
-       WHERE name ILIKE $1 OR email ILIKE $1 OR COALESCE(phone, '') ILIKE $1
-          OR COALESCE(whatsapp_phone, '') ILIKE $1 OR COALESCE(business_name, '') ILIKE $1
+       WHERE (name ILIKE $1 OR email ILIKE $1 OR COALESCE(phone, '') ILIKE $1
+          OR COALESCE(whatsapp_phone, '') ILIKE $1 OR COALESCE(business_name, '') ILIKE $1)
+         AND ($3::boolean = FALSE OR is_test)
        ORDER BY created_at DESC
        LIMIT $2`,
-      [`%${q}%`, safeLimit]
+      [`%${q}%`, safeLimit, onlyTest]
     );
     res.json(rows);
   } catch (err) {
@@ -771,14 +780,22 @@ router.patch('/users/:id', requireAdmin, requireUuid('id'), async (req, res) => 
   const allowed = [
     'name', 'phone', 'whatsapp_phone', 'phone_visible', 'whatsapp_visible',
     'business_name', 'business_verified', 'seller_type', 'role',
+    // A showroom's storefront details (lib/showroom-profile.js).
+    'business_about', 'business_address', 'business_hours',
   ];
   const fields = allowed.filter((field) => req.body[field] !== undefined);
   if (!fields.length) return res.status(400).json({ error: 'No editable account fields provided' });
 
   const booleanFields = new Set(['phone_visible', 'whatsapp_visible', 'business_verified']);
+  const profileNormalizers = { business_about: normalizeAbout, business_address: normalizeAddress, business_hours: normalizeHours };
   const values = {};
   for (const field of fields) {
-    if (booleanFields.has(field)) {
+    if (profileNormalizers[field]) {
+      const normalized = profileNormalizers[field](req.body[field]);
+      if (!normalized.ok) return res.status(400).json({ error: normalized.error });
+      // jsonb travels as text and is cast in the UPDATE below.
+      values[field] = field === 'business_hours' && normalized.value ? JSON.stringify(normalized.value) : normalized.value;
+    } else if (booleanFields.has(field)) {
       if (typeof req.body[field] !== 'boolean') return res.status(400).json({ error: `${field} must be true or false` });
       values[field] = req.body[field];
     } else {
@@ -820,7 +837,9 @@ router.patch('/users/:id', requireAdmin, requireUuid('id'), async (req, res) => 
       if (finalWhatsappVisible && !finalWhatsapp) { await client.query('ROLLBACK'); return res.status(400).json({ error: 'Add a WhatsApp number before making it visible' }); }
     }
     const params = fields.map((field) => values[field]);
-    const assignments = fields.map((field, index) => `${field} = $${index + 1}`);
+    const assignments = fields.map((field, index) => (
+      field === 'business_hours' ? `${field} = $${index + 1}::jsonb` : `${field} = $${index + 1}`
+    ));
     if (values.phone_visible === true || values.whatsapp_visible === true) assignments.push('contact_consent_at = NOW()');
     params.push(req.params.id);
     const { rows } = await client.query(
@@ -854,7 +873,9 @@ router.patch('/users/:id', requireAdmin, requireUuid('id'), async (req, res) => 
     const response = await pool.query(
       `SELECT id,name,email,phone,whatsapp_phone,phone_visible,whatsapp_visible,
               contact_consent_at,role,id_verified,seller_type,business_name,
-              business_verified,account_status,created_at FROM users WHERE id=$1`,
+              business_verified,account_status,created_at,
+              business_about,business_address,business_hours,business_cover_url,
+              is_test,test_marked_at FROM users WHERE id=$1`,
       [req.params.id]
     );
     res.json(response.rows[0]);
@@ -915,6 +936,188 @@ router.delete('/users/:userId/avatar', requireAdmin, requireUuid('userId'), asyn
   } catch (err) {
     log.error('admin avatar remove error', { error: err.message });
     res.status(500).json({ error: 'Could not remove the photo' });
+  }
+});
+
+// POST /admin/users/:userId/cover — the wide photo across the top of a
+// showroom's storefront: the showroom itself, not one of its cars. Same checks
+// as the profile photo (bytes, metadata, storage) and the same public folder.
+// Without one, the storefront falls back to the showroom's newest car.
+router.post('/users/:userId/cover', requireAdmin, requireUuid('userId'),
+  uploadCover.single('cover'), verifyImageContent, stripUploadMetadata, async (req, res) => {
+    if (!req.file) return res.status(400).json({ error: 'No photo was uploaded.' });
+    try {
+      const target = await pool.query(
+        'SELECT id, email, role FROM users WHERE id=$1 AND deleted_at IS NULL', [req.params.userId]
+      );
+      if (!target.rows.length) return res.status(404).json({ error: 'Active user not found' });
+      if (target.rows[0].role === 'admin') return res.status(403).json({ error: 'Administrator accounts cannot be changed here' });
+      const url = await resolveUploadUrl(req, req.file);
+      const { rows } = await pool.query(
+        'UPDATE users SET business_cover_url=$2 WHERE id=$1 RETURNING id, business_cover_url', [req.params.userId, url]
+      );
+      await recordAdminAction(pool, {
+        actorId: req.user.id, action: 'user.cover_set', targetType: 'user', targetId: req.params.userId,
+        summary: `Set the showroom cover photo for ${target.rows[0].email}`, metadata: { business_cover_url: url },
+      });
+      res.json(rows[0]);
+    } catch (err) {
+      if (err.status) return res.status(err.status).json({ error: err.message, code: err.code });
+      log.error('admin cover upload error', { error: err.message });
+      res.status(500).json({ error: 'Could not save the photo' });
+    }
+  });
+
+// DELETE /admin/users/:userId/cover — back to the newest car.
+router.delete('/users/:userId/cover', requireAdmin, requireUuid('userId'), async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `UPDATE users SET business_cover_url=NULL WHERE id=$1 AND deleted_at IS NULL AND role <> 'admin'
+       RETURNING id, email`, [req.params.userId]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Active user not found' });
+    await recordAdminAction(pool, {
+      actorId: req.user.id, action: 'user.cover_removed', targetType: 'user', targetId: req.params.userId,
+      summary: `Removed the showroom cover photo for ${rows[0].email}`,
+    });
+    res.json({ id: rows[0].id, business_cover_url: null });
+  } catch (err) {
+    log.error('admin cover remove error', { error: err.message });
+    res.status(500).json({ error: 'Could not remove the photo' });
+  }
+});
+
+// ── Test accounts ────────────────────────────────────────────────────────────
+//
+// Accounts the team made to try the product (before launch, and the demo
+// account App Review signs in with). Marking one is a flag, not a cascade: it
+// can still sign in, but every public read requires is_test = FALSE, so its
+// cars, rentals, profile and reports disappear from the marketplace at once,
+// and unmarking brings back exactly what was there (migration 0066).
+//
+// Erasing is only offered for a marked account, so a real person's account can
+// never be erased by a slip of the mouse: the team must first say "this one is
+// ours", then type its email. It is the same anonymisation the thirty-day purge
+// performs (lib/account-closure.js), done now because there is no one to give
+// thirty days to. Rows are anonymised, not deleted: a test account may have
+// inspections, conversations with real people and audit entries, and deleting
+// its row would either fail on those references or take other people's history
+// with it. Payment records are never erased here (see below).
+
+// PATCH /admin/users/:id/test-account { is_test }
+router.patch('/users/:id/test-account', requireAdmin, requireUuid('id'), async (req, res) => {
+  if (typeof req.body.is_test !== 'boolean') return res.status(400).json({ error: 'is_test must be true or false' });
+  if (req.params.id === req.user.id) return res.status(400).json({ error: 'You cannot mark your own account as a test account' });
+  try {
+    const row = await withTransaction(async (client) => {
+      const target = await client.query(
+        'SELECT id, email, role FROM users WHERE id=$1 AND deleted_at IS NULL FOR UPDATE', [req.params.id]
+      );
+      if (!target.rows.length) throw Object.assign(new Error('Active user not found'), { status: 404 });
+      if (target.rows[0].role === 'admin') {
+        throw Object.assign(new Error('Administrator accounts cannot be marked as test accounts'), { status: 403 });
+      }
+      const { rows } = await client.query(
+        `UPDATE users SET is_test = $2,
+                test_marked_at = CASE WHEN $2 THEN NOW() ELSE NULL END,
+                test_marked_by = CASE WHEN $2 THEN $3::uuid ELSE NULL END
+          WHERE id = $1
+          RETURNING id, email, is_test, test_marked_at`,
+        [req.params.id, req.body.is_test, req.user.id]
+      );
+      await recordAdminAction(client, {
+        actorId: req.user.id,
+        action: req.body.is_test ? 'user.marked_test' : 'user.unmarked_test',
+        targetType: 'user',
+        targetId: req.params.id,
+        summary: req.body.is_test
+          ? `Marked ${target.rows[0].email} as a test account (hidden from the marketplace)`
+          : `Unmarked ${target.rows[0].email} as a test account`,
+      });
+      return rows[0];
+    });
+    res.json({ id: row.id, is_test: row.is_test, test_marked_at: row.test_marked_at });
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message });
+    log.error('admin test-account mark error', { error: err.message });
+    res.status(500).json({ error: 'Could not update the account' });
+  }
+});
+
+// Money that really moved is accounting, not test data: a paid fee, a rental
+// subscription that was not voided, an import payment with proof. Erasing the
+// account would orphan those records from the person who paid, so the erase
+// refuses and says what to settle first (waive, void or reject it if it was a
+// test).
+const PAYMENT_RECORDS_SQL = `
+  SELECT (SELECT COUNT(*)::int FROM platform_fees
+           WHERE (seller_id = $1 OR payer_user_id = $1) AND status = 'paid' AND amount > 0) AS paid_fees,
+         (SELECT COUNT(*)::int FROM rental_subscriptions s
+            JOIN rental_cars rc ON rc.id = s.rental_car_id
+           WHERE rc.provider_id = $1 AND s.voided_at IS NULL AND s.amount_rwf > 0) AS rental_payments,
+         (SELECT COUNT(*)::int FROM import_payments p
+            JOIN import_orders o ON o.id = p.import_order_id
+           WHERE o.buyer_id = $1 AND p.status IN ('submitted', 'reviewed', 'verified', 'refunded')) AS import_payments`;
+
+// POST /admin/users/:id/erase { confirm_email }
+router.post('/users/:id/erase', requireAdmin, requireUuid('id'), async (req, res) => {
+  if (req.params.id === req.user.id) return res.status(400).json({ error: 'You cannot erase your own account' });
+  const confirmEmail = String(req.body.confirm_email || '').trim().toLowerCase();
+  try {
+    const result = await withTransaction(async (client) => {
+      const target = await client.query(
+        'SELECT id, email, role, is_test FROM users WHERE id=$1 AND deleted_at IS NULL FOR UPDATE', [req.params.id]
+      );
+      if (!target.rows.length) throw Object.assign(new Error('Active user not found'), { status: 404 });
+      const user = target.rows[0];
+      if (user.role === 'admin') throw Object.assign(new Error('Administrator accounts cannot be erased here'), { status: 403 });
+      if (!user.is_test) {
+        throw Object.assign(new Error('Only an account marked as a test account can be erased by the team. Mark it first.'), {
+          status: 409, code: 'NOT_A_TEST_ACCOUNT',
+        });
+      }
+      if (!confirmEmail || confirmEmail !== String(user.email).toLowerCase()) {
+        throw Object.assign(new Error('Type the account\'s email address exactly to confirm.'), { status: 400, code: 'CONFIRMATION_MISMATCH' });
+      }
+      const money = (await client.query(PAYMENT_RECORDS_SQL, [user.id])).rows[0];
+      if (money.paid_fees || money.rental_payments || money.import_payments) {
+        throw Object.assign(new Error(
+          'This account has payment records (a paid fee, a rental subscription or an import payment). '
+          + 'Those stay with the accounts: waive, void or reject them first if they were tests, then erase.'
+        ), { status: 409, code: 'HAS_PAYMENT_RECORDS', details: money });
+      }
+
+      const listings = await client.query(
+        "SELECT COUNT(*)::int AS n FROM cars WHERE seller_id = $1 AND status <> 'archived'", [user.id]
+      );
+      // purgeAccount archives cars but leaves rental cars to the closure that
+      // normally precedes it; there is no closure here, so take them down too.
+      const rentals = await client.query(
+        "UPDATE rental_cars SET status = 'maintenance' WHERE provider_id = $1 AND status = 'active'", [user.id]
+      );
+      const done = await purgeAccount(client, user.id);
+      if (!done) throw Object.assign(new Error('Active user not found'), { status: 404 });
+      // A test showroom's name and storefront are test data too.
+      await client.query('UPDATE users SET business_name = NULL WHERE id = $1', [user.id]);
+      await recordAdminAction(client, {
+        actorId: req.user.id,
+        action: 'account.erased_test',
+        targetType: 'user',
+        targetId: user.id,
+        summary: 'Erased a test account',
+        // No name and no email: this log is permanent, and writing the
+        // identity into it would undo the erasure it records.
+        metadata: { listings_archived: listings.rows[0].n, rentals_taken_down: rentals.rowCount },
+      });
+      return { files: done.files, listings_archived: listings.rows[0].n, rentals_taken_down: rentals.rowCount };
+    });
+    // After the commit, never inside it: there is no undelete for a file.
+    removeIdDocuments(result.files);
+    res.json({ erased: true, listings_archived: result.listings_archived, rentals_taken_down: result.rentals_taken_down });
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message, code: err.code, details: err.details });
+    log.error('admin test-account erase error', { error: err.message });
+    res.status(500).json({ error: 'Could not erase the account' });
   }
 });
 

@@ -139,7 +139,7 @@ router.post('/conversations', requireAuth, async (req, res) => {
        JOIN users seller ON seller.id = c.seller_id
        WHERE c.id = $1 AND c.status = 'live'
          AND seller.role = 'seller' AND seller.id_verified = 'approved'
-         AND seller.account_status = 'active' AND seller.deleted_at IS NULL
+         AND seller.account_status = 'active' AND seller.deleted_at IS NULL AND seller.is_test = FALSE
          AND (COALESCE(seller.seller_type, 'individual') <> 'showroom' OR seller.business_verified = TRUE)
          AND EXISTS (
            SELECT 1 FROM inspections i

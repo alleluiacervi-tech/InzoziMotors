@@ -582,9 +582,19 @@ export interface SellerProfile {
   business_name: string | null
   id_verified: true
   business_verified: boolean
-  completed_sales: number
-  response_rate: number
+  /** Measured from real conversations (lib/showroom-profile.js on the API);
+   *  null until there is enough to say anything. */
+  reply_time: 'within_hour' | 'within_hours' | 'within_day' | null
+  /** A showroom's own details, written by the team; null for a person. */
+  about: string | null
+  address: string | null
+  hours: BusinessHours | null
+  cover_url: string | null
 }
+
+/** A showroom's week: null on a day it is closed. */
+export type BusinessDay = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun'
+export type BusinessHours = Record<BusinessDay, { open: string; close: string } | null>
 
 export interface Valuation {
   comparables: number

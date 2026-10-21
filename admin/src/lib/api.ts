@@ -36,6 +36,10 @@ export type EncarStatus = {
 
 export type ApiStatus = 'unknown' | 'ok' | 'unreachable'
 
+/** A showroom's opening hours: null on a day it is closed (migration 0066). */
+export type BusinessDay = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun'
+export type BusinessHours = Record<BusinessDay, { open: string; close: string } | null>
+
 export type ActionCenterItem = {
   id: string
   kind: string
@@ -784,8 +788,8 @@ export const api = {
       `/cars/${id}/permanently`, { method: 'DELETE', body: JSON.stringify({ reason }) }),
 
   // Users / ID verification
-  searchUsers: (q: string, limit = 8) =>
-    request<any[]>(`/admin/users?q=${encodeURIComponent(q)}&limit=${limit}`),
+  searchUsers: (q: string, limit = 8, opts: { test?: boolean } = {}) =>
+    request<any[]>(`/admin/users?q=${encodeURIComponent(q)}&limit=${limit}${opts.test ? '&test=1' : ''}`),
   idVerificationQueue: () => request<any[]>('/id-verification/queue'),
   // ─── Report entitlements ───────────────────────────────────────────────────
   // Who may read an inspection report. Access is a row, not a column on the
@@ -844,13 +848,24 @@ export const api = {
     request<any>('/admin/accounts', { method: 'POST', body: JSON.stringify(data) }),
   createShowroom: (data: { name: string; business_name: string; email: string; phone?: string }) =>
     request<any>('/admin/showrooms', { method: 'POST', body: JSON.stringify(data) }),
-  updateUser: (userId: string, data: { name?: string; phone?: string | null; whatsapp_phone?: string | null; phone_visible?: boolean; whatsapp_visible?: boolean; business_name?: string | null; business_verified?: boolean; seller_type?: string | null; role?: 'buyer' | 'seller' }) =>
+  updateUser: (userId: string, data: { name?: string; phone?: string | null; whatsapp_phone?: string | null; phone_visible?: boolean; whatsapp_visible?: boolean; business_name?: string | null; business_verified?: boolean; seller_type?: string | null; role?: 'buyer' | 'seller'; business_about?: string | null; business_address?: string | null; business_hours?: BusinessHours | null }) =>
     request<any>(`/admin/users/${userId}`, { method: 'PATCH', body: JSON.stringify(data) }),
   /** A seller's or showroom's profile photo. FormData, field `avatar`. */
   uploadUserAvatar: (userId: string, data: FormData) =>
     request<{ id: string; avatar_url: string }>(`/admin/users/${userId}/avatar`, { method: 'POST', body: data }),
   removeUserAvatar: (userId: string) =>
     request<{ id: string; avatar_url: null }>(`/admin/users/${userId}/avatar`, { method: 'DELETE' }),
+  /** A showroom's wide cover photo (the showroom itself). FormData, field `cover`. */
+  uploadUserCover: (userId: string, data: FormData) =>
+    request<{ id: string; business_cover_url: string }>(`/admin/users/${userId}/cover`, { method: 'POST', body: data }),
+  removeUserCover: (userId: string) =>
+    request<{ id: string; business_cover_url: null }>(`/admin/users/${userId}/cover`, { method: 'DELETE' }),
+  /** Mark or unmark a test account: it can still sign in, but nothing it owns is public. */
+  setTestAccount: (userId: string, is_test: boolean) =>
+    request<{ id: string; is_test: boolean; test_marked_at: string | null }>(`/admin/users/${userId}/test-account`, { method: 'PATCH', body: JSON.stringify({ is_test }) }),
+  /** Erase a MARKED test account for good (anonymised, cars archived). The email must be typed. */
+  eraseTestAccount: (userId: string, confirm_email: string) =>
+    request<{ erased: true; listings_archived: number; rentals_taken_down: number }>(`/admin/users/${userId}/erase`, { method: 'POST', body: JSON.stringify({ confirm_email }) }),
   initiateUserPasswordReset: (userId: string) =>
     request<{ success: boolean; delivery: 'email_sent' | 'email_not_configured' }>(`/admin/users/${userId}/password-reset`, { method: 'POST' }),
   setUserAccess: (userId: string, action: 'suspend' | 'restore', reason?: string) =>

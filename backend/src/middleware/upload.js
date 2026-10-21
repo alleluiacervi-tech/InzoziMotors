@@ -15,6 +15,7 @@ if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 //   /rentals/:id/mine/photos             -> rental-cars/<id> (public listing photos)
 //   /rentals/:id/photos (admin)          -> rental-cars/<id>
 //   /admin/users/:userId/avatar          -> avatars
+//   /admin/users/:userId/cover           -> avatars (a showroom's cover photo)
 //   /imports/admin/catalog/:catalogId/photo -> catalog
 //   /id-verification (no id param)       -> id-docs (publicly 403'd, admin-gated route only)
 //
@@ -223,6 +224,13 @@ exports.uploadAvatar = multer({
   storage,
   fileFilter: imageFilter,
   limits: { fileSize: 3 * 1024 * 1024, files: 1, fields: 5 },
+});
+// A showroom's cover photo: one wide image across the storefront. Same public
+// `avatars` folder (the route carries :userId), a larger cap for a wide shot.
+exports.uploadCover = multer({
+  storage,
+  fileFilter: imageFilter,
+  limits: { fileSize: 6 * 1024 * 1024, files: 1, fields: 5 },
 });
 exports.uploadIdDocs = multer({
   storage,

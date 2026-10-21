@@ -157,6 +157,9 @@ async function purgeAccount(client, userId) {
        contact_consent_at = NULL,
        password_hash = NULL,
        avatar_url = NULL,
+       -- A showroom's storefront goes with it (migration 0066).
+       business_about = NULL, business_address = NULL,
+       business_hours = NULL, business_cover_url = NULL,
        id_front_url = NULL, id_back_url = NULL, selfie_url = NULL,
        id_verified = 'none', id_submitted_at = NULL,
        closure_note = NULL,

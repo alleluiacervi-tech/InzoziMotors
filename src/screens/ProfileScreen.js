@@ -92,12 +92,6 @@ export default function ProfileScreen({ navigation }) {
 
   const liveCount = submissions.filter((s) => s.status === 'live').length;
 
-  // The server's own score (users.trust_score, from /auth/me). This used to be
-  // computed here with 35 invented points for response and reviews — a number
-  // nobody had earned, shown beside a name.
-  const serverTrust = Number(currentUser?.trust_score);
-  const trustScore = Number.isFinite(serverTrust) ? serverTrust : null;
-
   const menuSeller = [
     { icon: 'shield-checkmark-outline', label: t('profile.identityVerification'), screen: 'IDVerification' },
     { icon: 'call-outline', label: t('profile.contactVisibility'), screen: 'ContactSettings' },
@@ -154,7 +148,6 @@ export default function ProfileScreen({ navigation }) {
   const STATS = [
     { label: t('drawer.submissions'), value: String(submissions.length) },
     { label: t('sellerDashboard.live'), value: String(liveCount) },
-    { label: t('profile.trustScoreTitle'), value: trustScore == null ? '—' : `${trustScore}/100` },
   ];
 
   return (
