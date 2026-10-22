@@ -569,3 +569,10 @@ Rules:
 - Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
 - After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
 - A committed graphify-out/graph.json is rewritten whole on every build, so a large diff to it in a pull request is expected. Do not flag it as churn or suggest skipping the graph rebuild or its hooks.
+
+## Required skills and defaults
+
+- **Graphify is the default for every codebase question.** Run `graphify query` first, before any grep, glob or file read, in the main session and in every subagent prompt. If `graphify-out/` is missing, run `graphify update .` (the SessionStart hook normally does this). Raw reads only for lines the graph already located.
+- Before reporting any fix, feature or CI repair as done, invoke `verify-before-done`.
+- For any change under `backend/migrations/`, `backend/src/schema.sql` or SQL that decides what is public, invoke `postgres-migration-review`.
+- If installed, use `react-native-best-practices` for app (`src/`) changes and the accessibility plugins for UI changes.
