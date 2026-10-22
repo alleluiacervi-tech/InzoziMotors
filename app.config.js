@@ -106,7 +106,7 @@ export default ({ config }) => ({
     'assets/welcome-hero.jpg',
     'assets/icon.png',
     'assets/adaptive-icon.png',
-    'assets/splash.png',
+    'assets/splash-icon.png',
     'assets/favicon.png',
   ],
   ios: {
@@ -202,11 +202,27 @@ export default ({ config }) => ({
     [
       // The native launch screen — what shows before the JS bundle (and the
       // AnimatedSplash it renders) has loaded.
+      //
+      // The image is drawn in an imageWidth × imageWidth box (default 100 dp),
+      // never full screen. It used to be assets/splash.png, a 1284 × 2778 phone-
+      // sized canvas with the logo in its middle third, which that box shrank to
+      // a mark about 22 dp wide. splash-icon.png is the squircle with "Sawa
+      // Cars" under it, laid out as AnimatedSplash lays out its own (Satoshi
+      // Black 24, #14110F, 26 below a 148 mark) and cropped square to the ink.
+      // At 199 dp on iOS the mark lands at AnimatedSplash's size. Android 12+
+      // masks the launch icon to a 192 dp circle, and 166 dp is the widest at
+      // which the squircle's corners and the text all stay inside it, so the
+      // lockup is a little smaller there. A new artwork needs both widths
+      // re-measured against that circle.
       'expo-splash-screen',
       {
-        image: './assets/splash.png',
+        image: './assets/splash-icon.png',
+        imageWidth: 199,
         resizeMode: 'contain',
         backgroundColor: '#FFFFFF',
+        android: {
+          imageWidth: 166,
+        },
       },
     ],
     [
