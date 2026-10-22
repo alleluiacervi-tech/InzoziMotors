@@ -106,7 +106,7 @@ export default ({ config }) => ({
     'assets/welcome-hero.jpg',
     'assets/icon.png',
     'assets/adaptive-icon.png',
-    'assets/splash.png',
+    'assets/splash-icon.png',
     'assets/favicon.png',
   ],
   ios: {
@@ -202,9 +202,19 @@ export default ({ config }) => ({
     [
       // The native launch screen — what shows before the JS bundle (and the
       // AnimatedSplash it renders) has loaded.
+      //
+      // The image is drawn in an imageWidth × imageWidth box (default 100 dp),
+      // never full screen. It used to be assets/splash.png, a 1284 × 2778 phone-
+      // sized canvas with the logo in its middle third, which that box shrank to
+      // a mark about 22 dp wide. splash-icon.png is the squircle alone, cropped
+      // tight, at 148 dp: the size AnimatedSplash's LogoMark lands at. The
+      // wordmark stays off it because Android 12+ masks the launch icon to a
+      // 192 dp circle, and the squircle's rounded corners sit just inside it at
+      // this width (148 dp is about the largest that stays unclipped).
       'expo-splash-screen',
       {
-        image: './assets/splash.png',
+        image: './assets/splash-icon.png',
+        imageWidth: 148,
         resizeMode: 'contain',
         backgroundColor: '#FFFFFF',
       },
