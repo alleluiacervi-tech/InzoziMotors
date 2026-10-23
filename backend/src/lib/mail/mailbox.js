@@ -42,25 +42,59 @@ const SPECIAL_FOLDERS = {
 // client. A client-supplied path would let any admin session open arbitrary
 // mailboxes by name — harmless on this single-account server, but the habit
 // of validating identifiers at the edge is what keeps it harmless.
-let specialPathsCache;
+//
+// Matching is by special-use first (imapflow fills `specialUse` from the
+// server's SPECIAL-USE flags, or from known localised names), then by name,
+// case-insensitively, on the full path or its last segment, so "INBOX.Sent",
+// "INBOX/Sent" and "sent" all count. A standard folder the account does not
+// have yet is CREATED, as every mail client does: before this, a missing Trash
+// meant no Trash tab, and a missing Sent meant replies kept no copy anywhere.
+const PATHS_TTL_MS = 10 * 60_000;
+let specialPathsCache = null; // { at, paths }
+
+function findFolder(list, spec) {
+  const hasFlag = (b) => b.specialUse === spec.flag
+    || (b.flags && (b.flags.has ? b.flags.has(spec.flag) : [].concat(b.flags).includes(spec.flag)));
+  const flagged = list.find(hasFlag);
+  if (flagged) return flagged.path;
+  const wanted = spec.names.map((n) => n.toLowerCase());
+  const byName = list.find((b) => {
+    const path = String(b.path || '');
+    const last = b.delimiter ? path.split(b.delimiter).pop() : path;
+    return wanted.includes(path.toLowerCase()) || wanted.includes(String(last).toLowerCase());
+  });
+  return byName ? byName.path : null;
+}
+
 async function resolveSpecialPaths() {
-  if (specialPathsCache !== undefined) return specialPathsCache;
+  if (specialPathsCache && Date.now() - specialPathsCache.at < PATHS_TTL_MS) {
+    return specialPathsCache.paths;
+  }
   const paths = { inbox: INBOX, sent: null, drafts: null, junk: null, trash: null };
+  let complete = true;
   try {
     const client = await getClient();
     const list = await client.list();
-    const hasFlag = (b, f) => b.flags && (b.flags.has ? b.flags.has(f) : b.flags.includes(f));
     for (const [key, spec] of Object.entries(SPECIAL_FOLDERS)) {
-      const flagged = list.find((b) => hasFlag(b, spec.flag));
-      const byName = flagged || list.find((b) => spec.names.includes(b.path));
-      paths[key] = byName ? byName.path : null;
+      paths[key] = findFolder(list, spec);
+      if (paths[key]) continue;
+      try {
+        // imapflow adds the namespace prefix (Hostinger: "INBOX.") itself.
+        const created = await client.mailboxCreate(spec.names[0]);
+        paths[key] = created && created.path ? created.path : null;
+        log.info('created missing mail folder', { folder: key, path: paths[key] });
+      } catch (err) {
+        complete = false;
+        log.error('could not create mail folder', { folder: key, error: err.message });
+      }
     }
   } catch (err) {
     log.error('could not list mailboxes', { error: err.message });
-    specialPathsCache = undefined; // retry on the next call rather than caching a failure
-    return paths;
+    return paths; // not cached: retry on the next call rather than remember a failure
   }
-  specialPathsCache = paths;
+  // A partial answer is cached briefly too, so a server that refuses CREATE is
+  // not asked on every request, but it is asked again within minutes.
+  specialPathsCache = { at: complete ? Date.now() : Date.now() - PATHS_TTL_MS + 60_000, paths };
   return paths;
 }
 
@@ -84,7 +118,10 @@ async function listFolders() {
       const status = await client.status(path, { messages: true, unseen: true });
       folders.push({ key, total: status.messages || 0, unread: status.unseen || 0 });
     } catch (err) {
+      // The folder exists; only its count is unknown. Hiding the tab for that
+      // would make a readable folder unreachable.
       log.error('folder status failed', { folder: key, error: err.message });
+      folders.push({ key, total: null, unread: null });
     }
   }
   return { folders };
@@ -152,7 +189,10 @@ async function listMessages({ mailbox = INBOX, limit = 25, offset = 0, search = 
       const criteria = {};
       if (flagged) criteria.flagged = true;
       if (search) criteria.or = [{ from: search }, { subject: search }, { body: search }];
-      uids = await client.search(criteria);
+      // { uid: true }: without it SEARCH answers SEQUENCE numbers, which the
+      // UID fetch below then read as UIDs: Starred and search showed the wrong
+      // messages, or none.
+      uids = await client.search(criteria, { uid: true });
       if (!uids || !uids.length) {
         return { messages: [], total: 0, unread, limit, offset, mailbox, search };
       }
@@ -192,6 +232,53 @@ async function listMessages({ mailbox = INBOX, limit = 25, offset = 0, search = 
     return { messages, total, unread, limit, offset, mailbox };
   });
 
+  listCache.set(key, { at: Date.now(), value });
+  return value;
+}
+
+/**
+ * Starred, across folders: every \Flagged message in Inbox, Sent and Drafts,
+ * newest first. Junk and Trash are left out, as every mail client does. Each
+ * envelope carries its folder KEY, because UIDs are per-folder and opening,
+ * flagging or moving one has to address the folder it lives in.
+ */
+async function listStarred({ limit = 25, offset = 0, search = '' } = {}) {
+  const key = cacheKey('*starred', limit, offset, search);
+  const hit = listCache.get(key);
+  if (hit && Date.now() - hit.at < LIST_TTL_MS) return hit.value;
+
+  const paths = await resolveSpecialPaths();
+  const all = [];
+  for (const folder of ['inbox', 'sent', 'drafts']) {
+    const mailbox = paths[folder];
+    if (!mailbox) continue;
+    const envelopes = await withMailbox(mailbox, async (client) => {
+      const criteria = { flagged: true };
+      if (search) criteria.or = [{ from: search }, { subject: search }, { body: search }];
+      const uids = await client.search(criteria, { uid: true });
+      if (!uids || !uids.length) return [];
+      const out = [];
+      for await (const msg of client.fetch(
+        uids.join(','),
+        { uid: true, envelope: true, flags: true, size: true, bodyStructure: true },
+        { uid: true }
+      )) {
+        out.push({ ...toEnvelope(msg), folder });
+      }
+      return out;
+    });
+    all.push(...envelopes);
+  }
+  const time = (e) => (e.date ? new Date(e.date).getTime() : 0) || 0;
+  all.sort((a, b) => time(b) - time(a));
+  const value = {
+    messages: all.slice(offset, offset + limit),
+    total: all.length,
+    unread: all.filter((e) => e.unread).length,
+    limit,
+    offset,
+    search,
+  };
   listCache.set(key, { at: Date.now(), value });
   return value;
 }
@@ -355,6 +442,19 @@ async function moveMessage(uid, destination, { mailbox = INBOX } = {}) {
   await withMailbox(mailbox, async (client) => {
     const moved = await client.messageMove(String(uid), destination, { uid: true });
     if (moved === false) {
+      throw new MailError('MAIL_NOT_FOUND', 'That message is no longer in the mailbox.', 404);
+    }
+  });
+  invalidateListCache();
+}
+
+/** Delete one message for good (STORE \Deleted + EXPUNGE of that UID only).
+ *  The route allows this from Trash and Junk alone: anywhere else, "delete"
+ *  means move to Trash, which stays recoverable. */
+async function deleteMessage(uid, { mailbox }) {
+  await withMailbox(mailbox, async (client) => {
+    const ok = await client.messageDelete(String(uid), { uid: true });
+    if (ok === false) {
       throw new MailError('MAIL_NOT_FOUND', 'That message is no longer in the mailbox.', 404);
     }
   });
@@ -542,6 +642,8 @@ module.exports = {
   listFolders,
   resolveFolder,
   listMessages,
+  listStarred,
+  deleteMessage,
   getMessage,
   getAttachment,
   setFlag,
@@ -551,4 +653,6 @@ module.exports = {
   unreadCount,
   invalidateListCache,
   humanSize,
+  findFolder,
+  SPECIAL_FOLDERS,
 };

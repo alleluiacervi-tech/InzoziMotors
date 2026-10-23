@@ -25,16 +25,20 @@ import { fmtDate, fmtDateTime, fmtDayMonth, fmtTime } from '@/lib/format'
 
 const PAGE = 25
 
-// The rail. Starred is a VIEW over the inbox (IMAP \Flagged), not a folder —
-// which is exactly how every mail client models it.
+// The rail. Starred is a VIEW (IMAP \Flagged) across Inbox, Sent and Drafts,
+// not a folder — which is exactly how every mail client models it.
 const FOLDER_TABS: { key: MailFolderKey | 'starred'; label: string; icon: Parameters<typeof Icon>[0]['name'] }[] = [
   { key: 'inbox', label: 'Inbox', icon: 'mail' },
   { key: 'starred', label: 'Starred', icon: 'star' },
-  { key: 'sent', label: 'Sent', icon: 'arrow-right' },
+  { key: 'sent', label: 'Sent', icon: 'send' },
   { key: 'drafts', label: 'Drafts', icon: 'document' },
   { key: 'junk', label: 'Junk', icon: 'alert' },
-  { key: 'trash', label: 'Trash', icon: 'close' },
+  { key: 'trash', label: 'Trash', icon: 'trash' },
 ]
+
+const FOLDER_LABEL: Record<MailFolderKey, string> = {
+  inbox: 'Inbox', sent: 'Sent', drafts: 'Drafts', junk: 'Junk', trash: 'Trash',
+}
 
 /** A mail failure is never rendered as an empty inbox. MAIL_NOT_CONFIGURED in
  *  particular means "nobody set the mailbox up", which is a completely different
@@ -86,6 +90,9 @@ export default function InboxPage() {
   const [error, setError] = useState<ApiError | null>(null)
 
   const [openUid, setOpenUid] = useState<number | null>(null)
+  // UIDs are per folder. In Starred the open message can live in Inbox, Sent or
+  // Drafts, so every action on it addresses ITS folder, never the view's.
+  const [openFolder, setOpenFolder] = useState<MailFolderKey>('inbox')
   const [message, setMessage] = useState<MailMessage | null>(null)
   const [msgLoading, setMsgLoading] = useState(false)
   const [msgError, setMsgError] = useState<ApiError | null>(null)
@@ -102,9 +109,18 @@ export default function InboxPage() {
   const [composeSubject, setComposeSubject] = useState('')
   const [composeBody, setComposeBody] = useState('')
 
-  // Starred is the inbox filtered to \Flagged; everything else is a folder.
+  // Starred spans folders (each envelope says where it lives); everything
+  // else is one folder.
   const folder: MailFolderKey = view === 'starred' ? 'inbox' : view
   const starred = view === 'starred'
+  // One message is a UID *in a folder*: the same number can exist in two.
+  const sameMsg = useCallback(
+    (e: MailEnvelope, uid: number, where: MailFolderKey) => e.uid === uid && (e.folder ?? folder) === where,
+    [folder]
+  )
+  const refreshFolders = useCallback(() => {
+    api.mailFolders().then((r) => setFolders(r.folders)).catch(() => {})
+  }, [])
 
   const loadList = useCallback(async (nextOffset: number, q: string) => {
     setLoading(true)
@@ -127,9 +143,7 @@ export default function InboxPage() {
 
   // Folder counts for the rail — refreshed alongside the list, silent on
   // failure (the list's own error state is the loud one).
-  useEffect(() => {
-    api.mailFolders().then((r) => setFolders(r.folders)).catch(() => {})
-  }, [loading])
+  useEffect(() => { if (!loading) refreshFolders() }, [loading, refreshFolders])
 
   function switchView(next: MailFolderKey | 'starred') {
     if (next === view) return
@@ -150,8 +164,11 @@ export default function InboxPage() {
     return () => clearTimeout(t)
   }, [query])
 
-  const openMessage = useCallback(async (uid: number, images = false) => {
+  const openMessage = useCallback(async (uid: number, images = false, inFolder?: MailFolderKey) => {
+    const where = inFolder ?? list.find((e) => e.uid === uid)?.folder ?? folder
+    setComposing(false)
     setOpenUid(uid)
+    setOpenFolder(where)
     setMsgLoading(true)
     setMsgError(null)
     setMessage(null)
@@ -159,13 +176,13 @@ export default function InboxPage() {
     setReplyError(null)
     if (!images) setShowImages(false)
     try {
-      const m = await api.mailMessage(uid, { images, folder })
+      const m = await api.mailMessage(uid, { images, folder: where })
       setMessage(m)
       // Opening marks it read server-side; reflect that here without refetching
       // the whole list.
-      setList((prev) => prev.map((e) => (e.uid === uid ? { ...e, unread: false } : e)))
+      setList((prev) => prev.map((e) => (sameMsg(e, uid, where) ? { ...e, unread: false } : e)))
       setUnread((n) => {
-        const wasUnread = list.find((e) => e.uid === uid)?.unread
+        const wasUnread = list.find((e) => sameMsg(e, uid, where))?.unread
         return wasUnread ? Math.max(0, n - 1) : n
       })
     } catch (e) {
@@ -173,18 +190,19 @@ export default function InboxPage() {
     } finally {
       setMsgLoading(false)
     }
-  }, [list, folder])
+  }, [list, folder, sameMsg])
 
   async function sendReply() {
     if (!message || !reply.trim()) return
     setSending(true)
     setReplyError(null)
     try {
-      const res = await api.mailReply(message.uid, reply, files)
+      const res = await api.mailReply(message.uid, reply, files, openFolder)
       setSent(res.to)
       setReply('')
       setFiles([])
-      setList((prev) => prev.map((e) => (e.uid === message.uid ? { ...e, answered: true } : e)))
+      setList((prev) => prev.map((e) => (sameMsg(e, message.uid, openFolder) ? { ...e, answered: true } : e)))
+      refreshFolders()
     } catch (e) {
       const err = e as ApiError
       setReplyError(
@@ -236,22 +254,33 @@ export default function InboxPage() {
 
   async function toggleFlag() {
     if (!message) return
-    const env = list.find((e) => e.uid === message.uid)
+    const uid = message.uid
+    const where = openFolder
+    const env = list.find((e) => sameMsg(e, uid, where))
     const next = !(env?.flagged)
     // Optimistic: a star that waits for a round trip feels broken.
-    setList((prev) => prev.map((e) => (e.uid === message.uid ? { ...e, flagged: next } : e)))
+    setList((prev) => prev.map((e) => (sameMsg(e, uid, where) ? { ...e, flagged: next } : e)))
     try {
-      await api.mailFlag(message.uid, 'flagged', next, folder)
-    } catch {
-      setList((prev) => prev.map((e) => (e.uid === message.uid ? { ...e, flagged: !next } : e)))
+      await api.mailFlag(uid, 'flagged', next, where)
+      // Unstarred in the Starred view: it no longer belongs in this list.
+      if (starred && !next) {
+        setList((prev) => prev.filter((e) => !sameMsg(e, uid, where)))
+        setTotal((n) => Math.max(0, n - 1))
+        setOpenUid(null)
+        setMessage(null)
+      }
+    } catch (e) {
+      setList((prev) => prev.map((x) => (sameMsg(x, uid, where) ? { ...x, flagged: !next } : x)))
+      toast((e as ApiError).message, 'error')
     }
   }
 
   async function markUnread() {
     if (!message) return
     try {
-      await api.mailFlag(message.uid, 'seen', false, folder)
-      setList((prev) => prev.map((e) => (e.uid === message.uid ? { ...e, unread: true } : e)))
+      await api.mailFlag(message.uid, 'seen', false, openFolder)
+      setList((prev) => prev.map((e) => (sameMsg(e, message.uid, openFolder) ? { ...e, unread: true } : e)))
+      refreshFolders()
       setOpenUid(null)
       setMessage(null)
       toast('Message marked unread', 'success')
@@ -260,23 +289,53 @@ export default function InboxPage() {
     }
   }
 
+  function dropOpenMessage() {
+    if (!message) return
+    const uid = message.uid
+    const where = openFolder
+    setList((prev) => prev.filter((e) => !sameMsg(e, uid, where)))
+    setTotal((n) => Math.max(0, n - 1))
+    setOpenUid(null)
+    setMessage(null)
+    refreshFolders()
+  }
+
   async function moveOpenMessage(destination: MailFolderKey) {
     if (!message) return
-    const label = destination === 'trash' ? 'Trash' : 'Junk'
+    const label = FOLDER_LABEL[destination]
+    // Moving to Trash or Junk asks first; restoring to the inbox does not —
+    // undoing a mistake should never be the slow path.
+    if (destination === 'trash' || destination === 'junk') {
+      const ok = await ask({
+        title: `Move this message to ${label}?`,
+        message: `It stays recoverable from ${label}.`,
+        confirmLabel: `Move to ${label}`,
+        tone: destination === 'trash' ? 'danger' : 'primary',
+      })
+      if (!ok) return
+    }
+    try {
+      await api.mailMove(message.uid, destination, openFolder)
+      dropOpenMessage()
+      toast(`Message moved to ${label}`, 'success')
+    } catch (e) {
+      toast((e as ApiError).message, 'error')
+    }
+  }
+
+  async function deleteOpenMessage() {
+    if (!message || (openFolder !== 'trash' && openFolder !== 'junk')) return
     const ok = await ask({
-      title: `Move this message to ${label}?`,
-      message: `The message will leave ${view} and remain recoverable from ${label}.`,
-      confirmLabel: `Move to ${label}`,
-      tone: destination === 'trash' ? 'danger' : 'primary',
+      title: 'Delete this message for good?',
+      message: 'It is removed from the mailbox and cannot be recovered.',
+      confirmLabel: 'Delete for good',
+      tone: 'danger',
     })
     if (!ok) return
     try {
-      await api.mailMove(message.uid, destination, folder)
-      setList((prev) => prev.filter((e) => e.uid !== message.uid))
-      setTotal((n) => Math.max(0, n - 1))
-      setOpenUid(null)
-      setMessage(null)
-      toast(`Message moved to ${label}`, 'success')
+      await api.mailDelete(message.uid, openFolder)
+      dropOpenMessage()
+      toast('Message deleted', 'success')
     } catch (e) {
       toast((e as ApiError).message, 'error')
     }
@@ -284,7 +343,12 @@ export default function InboxPage() {
 
   const page = Math.floor(offset / PAGE) + 1
   const pages = Math.max(1, Math.ceil(total / PAGE))
-  const openEnvelope = list.find((e) => e.uid === openUid)
+  const openEnvelope = openUid === null ? undefined : list.find((e) => sameMsg(e, openUid, openFolder))
+  // Replies only make sense to mail someone sent US (see the route).
+  const canReply = openFolder === 'inbox' || openFolder === 'junk'
+  // In Sent and Drafts the sender is contact@ itself; the useful name is who it went to.
+  const outgoing = (e: MailEnvelope) => (e.folder ?? folder) === 'sent' || (e.folder ?? folder) === 'drafts'
+  const iconBtn = 'inline-flex h-10 w-10 items-center justify-center rounded-lg text-content-muted transition-colors hover:bg-surface-alt hover:text-content'
 
   return (
     <>
@@ -316,11 +380,10 @@ export default function InboxPage() {
 
       <div className="mb-4 flex flex-wrap gap-2">
         {FOLDER_TABS.map((t) => {
+          // Every tab always shows. The server finds or creates the standard
+          // folders, and hiding a tab because its count failed to load is what
+          // made Sent and Trash unreachable before.
           const info = t.key === 'starred' ? null : folders.find((f) => f.key === t.key)
-          // Sent/Drafts/Junk/Trash tabs only render if the account has the
-          // folder — Hostinger has all of them, but the rail must not offer
-          // a folder the server would 404.
-          if (t.key !== 'inbox' && t.key !== 'starred' && !info) return null
           const active = view === t.key
           return (
             <button
@@ -335,7 +398,7 @@ export default function InboxPage() {
             >
               <Icon name={t.icon} size={15} />
               {t.label}
-              {t.key === 'inbox' && info && info.unread > 0 ? (
+              {(t.key === 'inbox' || t.key === 'junk') && info && info.unread ? (
                 <span className={`min-w-5 rounded-full px-1.5 py-0.5 text-center text-micro font-bold ${
                   active ? 'bg-surface/20 text-white' : 'bg-ink-900 text-white'
                 }`}>
@@ -372,26 +435,34 @@ export default function InboxPage() {
           ) : list.length === 0 ? (
             <EmptyState
               icon="mail"
-              title={search ? 'Nothing matches that' : view === 'inbox' ? 'No mail yet' : `Nothing in ${view}`}
+              title={search ? 'Nothing matches that' : view === 'inbox' ? 'No mail yet' : `Nothing in ${view === 'starred' ? 'Starred' : FOLDER_LABEL[view]}`}
               description={
                 search
                   ? 'Try a different sender, subject or phrase.'
                   : view === 'inbox'
                     ? 'Messages sent to contact@sawacars.com appear here.'
                     : view === 'starred'
-                      ? 'Star a message and it collects here.'
-                      : undefined
+                      ? 'Star a message in any folder and it collects here.'
+                      : view === 'trash'
+                        ? 'Deleted messages wait here until you delete them for good.'
+                        : view === 'sent'
+                          ? 'Replies and new messages sent from the dashboard appear here.'
+                          : undefined
               }
             />
           ) : (
             <ul className="min-h-0 flex-1 divide-y divide-line-soft overflow-y-auto">
               {list.map((m) => {
-                const active = m.uid === openUid
+                const where = m.folder ?? folder
+                const active = m.uid === openUid && where === openFolder
+                const who = outgoing(m)
+                  ? `To: ${m.to.map((t) => t.name || t.address).join(', ') || '(no recipient)'}`
+                  : m.from.name || m.from.address || 'Unknown sender'
                 return (
-                  <li key={m.uid}>
+                  <li key={`${where}:${m.uid}`}>
                     <button
                       type="button"
-                      onClick={() => openMessage(m.uid)}
+                      onClick={() => openMessage(m.uid, false, where)}
                       className={`flex w-full flex-col gap-1 px-4 py-3 text-left transition-colors ${
                         active ? 'bg-brand-tint' : 'hover:bg-surface-alt'
                       }`}
@@ -410,7 +481,7 @@ export default function InboxPage() {
                             m.unread ? 'font-bold text-content' : 'font-semibold text-content-secondary'
                           }`}
                         >
-                          {m.from.name || m.from.address || 'Unknown sender'}
+                          {who}
                         </span>
                         <span className="shrink-0 text-caption text-content-muted">{when(m.date)}</span>
                       </span>
@@ -419,6 +490,9 @@ export default function InboxPage() {
                       </span>
                       <span className="flex items-center gap-2 pl-4">
                         {m.answered ? <Pill status="complete" label="Replied" /> : null}
+                        {starred && m.folder && m.folder !== 'inbox' ? (
+                          <span className="text-caption font-semibold text-content-muted">{FOLDER_LABEL[m.folder]}</span>
+                        ) : null}
                         {m.flagged ? (
                           <span className="text-warning-text"><Icon name="star" size={13} /></span>
                         ) : null}
@@ -524,30 +598,47 @@ export default function InboxPage() {
           ) : msgLoading ? (
             <div className="p-5"><LoadingState rows={6} /></div>
           ) : msgError ? (
-            <MailFailure error={msgError} onRetry={() => openMessage(openUid)} />
+            <MailFailure error={msgError} onRetry={() => openMessage(openUid, false, openFolder)} />
           ) : message ? (
             <div className="flex h-full flex-col">
               <div className="border-b border-line-soft p-5">
                 <div className="flex items-start justify-between gap-3">
                   <h2 className="text-section font-extrabold text-content">{message.subject}</h2>
                   <div className="flex shrink-0 items-center gap-1">
-                    {folder === 'inbox' ? <button type="button" onClick={markUnread} title="Mark unread" aria-label="Mark unread"
-                      className="rounded-lg p-2 text-content-muted transition-colors hover:bg-surface-alt hover:text-content">
+                    <button type="button" onClick={markUnread} title="Mark unread" aria-label="Mark unread" className={iconBtn}>
                       <Icon name="mail" size={17} />
-                    </button> : null}
-                    {folder === 'inbox' ? <button type="button" onClick={() => moveOpenMessage('junk')} title="Move to junk" aria-label="Move to junk"
-                      className="rounded-lg p-2 text-content-muted transition-colors hover:bg-surface-alt hover:text-content">
-                      <Icon name="alert" size={17} />
-                    </button> : null}
-                    {folder !== 'trash' ? <button type="button" onClick={() => moveOpenMessage('trash')} title="Move to trash" aria-label="Move to trash"
-                      className="rounded-lg p-2 text-content-muted transition-colors hover:bg-danger-tint hover:text-danger-strong">
-                      <Icon name="close" size={17} />
-                    </button> : null}
+                    </button>
+                    {openFolder === 'trash' || openFolder === 'junk' ? (
+                      <button type="button" onClick={() => moveOpenMessage('inbox')}
+                        title={openFolder === 'junk' ? 'Not junk: move to Inbox' : 'Restore to Inbox'}
+                        aria-label={openFolder === 'junk' ? 'Not junk: move to Inbox' : 'Restore to Inbox'} className={iconBtn}>
+                        <Icon name="undo" size={17} />
+                      </button>
+                    ) : null}
+                    {openFolder === 'inbox' ? (
+                      <button type="button" onClick={() => moveOpenMessage('junk')} title="Move to Junk" aria-label="Move to Junk" className={iconBtn}>
+                        <Icon name="alert" size={17} />
+                      </button>
+                    ) : null}
+                    {openFolder !== 'trash' ? (
+                      <button type="button" onClick={() => moveOpenMessage('trash')} title="Move to Trash" aria-label="Move to Trash"
+                        className={`${iconBtn} hover:!bg-danger-tint hover:!text-danger-strong`}>
+                        <Icon name="trash" size={17} />
+                      </button>
+                    ) : null}
+                    {openFolder === 'trash' || openFolder === 'junk' ? (
+                      <button type="button" onClick={deleteOpenMessage} title="Delete for good" aria-label="Delete for good"
+                        className={`${iconBtn} hover:!bg-danger-tint hover:!text-danger-strong`}>
+                        <Icon name="close-circle" size={17} />
+                      </button>
+                    ) : null}
                     <button
                       type="button"
                       onClick={toggleFlag}
-                      aria-label={openEnvelope?.flagged ? 'Remove flag' : 'Flag this message'}
-                      className={`rounded-lg p-2 transition-colors hover:bg-surface-alt ${
+                      title={openEnvelope?.flagged ? 'Unstar' : 'Star'}
+                      aria-label={openEnvelope?.flagged ? 'Unstar this message' : 'Star this message'}
+                      aria-pressed={Boolean(openEnvelope?.flagged)}
+                      className={`inline-flex h-10 w-10 items-center justify-center rounded-lg transition-colors hover:bg-surface-alt ${
                         openEnvelope?.flagged ? 'text-warning-text' : 'text-content-muted'
                       }`}
                     >
@@ -576,7 +667,7 @@ export default function InboxPage() {
                     </span>
                     <button
                       type="button"
-                      onClick={() => { setShowImages(true); openMessage(message.uid, true) }}
+                      onClick={() => { setShowImages(true); openMessage(message.uid, true, openFolder) }}
                       className="ml-auto text-caption font-bold text-content underline decoration-line underline-offset-4 hover:decoration-content"
                     >
                       Load images
@@ -602,7 +693,7 @@ export default function InboxPage() {
                               server forces Content-Disposition: attachment, so an
                               HTML attachment can never execute in this origin. */}
                           <a
-                            href={`/api/backend/mail/messages/${message.uid}/attachments/${a.index}${folder !== 'inbox' ? `?folder=${folder}` : ''}`}
+                            href={`/api/backend/mail/messages/${message.uid}/attachments/${a.index}${openFolder !== 'inbox' ? `?folder=${openFolder}` : ''}`}
                             className="flex items-center gap-3 rounded-xl border border-line-soft bg-surface p-3 transition-colors hover:bg-surface-alt"
                           >
                             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-alt text-content-secondary">
@@ -633,7 +724,7 @@ export default function InboxPage() {
                   To: field on purpose: a free recipient would turn this into a
                   send-anything-from-contact@ console, and abuse of the company's
                   real address gets the domain blacklisted. */}
-              {view !== 'inbox' && view !== 'starred' ? null : (
+              {!canReply ? null : (
               <div className="border-t border-line-soft bg-surface-alt p-4">
                 {sent ? (
                   <div className="flex items-center gap-2 rounded-xl border border-success/30 bg-success-tint px-3 py-2 text-label font-semibold text-success-text">

@@ -15,7 +15,7 @@ import type { ReactElement, SVGProps } from 'react'
 // content of a control, give the control an aria-label.
 
 export type IconName =
-  | 'shield' | 'shield-check' | 'check' | 'check-circle' | 'close' | 'close-circle'
+  | 'shield' | 'shield-check' | 'check' | 'check-circle' | 'close' | 'close-circle' | 'trash' | 'undo' | 'send'
   | 'chevron-right' | 'chevron-left' | 'chevron-down' | 'chevron-up' | 'arrow-right'
   | 'search' | 'filter' | 'heart' | 'heart-filled' | 'star' | 'car' | 'key'
   | 'camera' | 'document' | 'refresh' | 'cash' | 'eye-off' | 'eye' | 'clock'
@@ -57,6 +57,9 @@ const PATHS: Record<IconName, ReactElement> = {
     </>
   ),
   close: <path d="M6 6l12 12M18 6L6 18" />,
+  trash: <path d="M4 7h16M10 11v6M14 11v6M5 7l1 12a2 2 0 002 2h8a2 2 0 002-2l1-12M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3" />,
+  undo: <path d="M9 14L4 9l5-5M4 9h10.5a5.5 5.5 0 010 11H11" />,
+  send: <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />,
   'close-circle': (
     <>
       <circle cx="12" cy="12" r="9" />
