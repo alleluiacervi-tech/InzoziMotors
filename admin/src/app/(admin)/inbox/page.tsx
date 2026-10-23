@@ -659,6 +659,22 @@ export default function InboxPage() {
                   {message.to.length ? ` · to ${message.to.map((t) => t.address).join(', ')}` : ''}
                 </p>
 
+                {openFolder === 'trash' || openFolder === 'junk' ? (
+                  <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-line bg-surface-alt px-3 py-2">
+                    <span className="mr-auto text-caption text-content-secondary">
+                      {openFolder === 'trash' ? 'This message is in Trash.' : 'This message is in Junk.'}
+                    </span>
+                    <button type="button" onClick={() => moveOpenMessage('inbox')}
+                      className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-line bg-surface px-3 text-caption font-bold text-content hover:bg-surface-alt">
+                      <Icon name="undo" size={14} /> {openFolder === 'junk' ? 'Not junk' : 'Restore to Inbox'}
+                    </button>
+                    <button type="button" onClick={deleteOpenMessage}
+                      className="inline-flex h-10 items-center gap-1.5 rounded-lg px-3 text-caption font-bold text-danger-strong hover:bg-danger-tint">
+                      <Icon name="trash" size={14} /> Delete for good
+                    </button>
+                  </div>
+                ) : null}
+
                 {message.blockedImages > 0 && !showImages ? (
                   <div className="mt-3 flex flex-wrap items-center gap-3 rounded-xl border border-line bg-surface-alt px-3 py-2">
                     <span className="text-caption text-content-secondary">
