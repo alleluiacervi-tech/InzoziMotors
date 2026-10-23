@@ -27,4 +27,6 @@ export function middleware(req: NextRequest) {
 
 // Route handlers under /api/backend still pass through so an expired session
 // gets a clean 401 the client can act on, rather than an HTML redirect body.
-export const config = { matcher: ['/((?!_next|favicon.ico|login|api/).*)'] }
+// The generated favicons (app/icon.tsx, app/apple-icon.tsx) are public so the
+// sign-in tab shows the mark too.
+export const config = { matcher: ['/((?!_next|favicon.ico|icon|apple-icon|login|api/).*)'] }
