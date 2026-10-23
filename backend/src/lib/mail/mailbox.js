@@ -289,6 +289,10 @@ async function getMessage(uid, { mailbox = INBOX, markSeen = true, loadRemoteIma
       from: addressList(parsed.from && parsed.from.value)[0] || { name: '', address: '' },
       to: addressList(parsed.to && parsed.to.value),
       cc: addressList(parsed.cc && parsed.cc.value),
+      // Where the sender asked replies to go. Contact forms, marketplaces and
+      // mailing tools send From: no-reply@… with the real person here, so
+      // answering From instead bounces. See sendReply.
+      replyTo: addressList(parsed.replyTo && parsed.replyTo.value).find((a) => a.address) || null,
       date: parsed.date || null,
       messageId: parsed.messageId || null,
       // Carried so a reply can thread correctly — see sendReply.
@@ -472,7 +476,10 @@ async function sendReply(uid, text, { mailbox = INBOX, attachments = [] } = {}) 
   // Read the original WITHOUT marking it seen: replying already implies read,
   // and getMessage's own flag write happens below via the answered flag.
   const original = await getMessage(uid, { mailbox, markSeen: false });
-  const recipient = original.from && original.from.address;
+  // Reply-To wins over From (RFC 5322 §3.6.2). Still taken from the message,
+  // never the request, so this stays reply-only.
+  const recipient = (original.replyTo && original.replyTo.address)
+    || (original.from && original.from.address);
   if (!recipient) {
     throw new MailError('MAIL_NO_RECIPIENT', 'That message has no reply address.', 422);
   }
