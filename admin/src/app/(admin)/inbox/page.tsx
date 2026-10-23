@@ -644,7 +644,7 @@ export default function InboxPage() {
                   <>
                     <label className="block">
                       <span className="mb-1.5 block text-caption font-semibold text-content-secondary">
-                        Reply to {message.from.address}
+                        Reply to {message.replyTo?.address || message.from.address}
                       </span>
                       <textarea
                         value={reply}

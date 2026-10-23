@@ -434,6 +434,8 @@ export type MailMessage = {
   from: MailAddress
   to: MailAddress[]
   cc: MailAddress[]
+  /** Set when the sender asked for replies elsewhere; replies go here, not to `from`. */
+  replyTo: MailAddress | null
   date: string | null
   messageId: string | null
   /** Already sanitised server-side. Still rendered in a sandboxed iframe — see
