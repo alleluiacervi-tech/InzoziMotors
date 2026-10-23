@@ -33,3 +33,6 @@ backend/uploads/*
 # Python bytecode from bundled skill scripts
 __pycache__/
 *.pyc
+
+# graphify output (rebuilt each session by .claude/hooks/graphify-session-start.sh)
+graphify-out/
