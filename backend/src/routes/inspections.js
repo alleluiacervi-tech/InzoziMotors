@@ -12,6 +12,7 @@ const { uploadPhotos, verifyImageContent, resolveUploadUrl } = require('../middl
 const { compressUploads } = require('../middleware/image-compress');
 const { publicApiOrigin } = require('../lib/public-origin');
 const { badgeSvg, readQuad, maskPlate } = require('../lib/plate-badge');
+const { localPathForUrl } = require('../lib/upload-paths');
 
 // Where uploads live on disk. Same resolution middleware/upload.js uses, so a
 // stored URL can be mapped back to the file it came from.
@@ -412,19 +413,6 @@ router.patch('/cars/:carId/photos/:photoId/cover', requireAdmin, requireUuid('ca
 // gone. It is also what makes the mask re-renderable when the badge changes.
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** Turn a stored public URL into the file on disk it came from, refusing
- *  anything that tries to leave the uploads directory. */
-function localPathForUrl(url) {
-  const marker = '/uploads/';
-  const at = String(url || '').indexOf(marker);
-  if (at === -1) return null;                       // Cloudinary or external
-  const relative = String(url).slice(at + marker.length).split('?')[0];
-  const resolved = path.resolve(UPLOAD_ROOT, relative);
-  // Path traversal: a crafted stored URL must not be able to read /etc/passwd.
-  if (!resolved.startsWith(path.resolve(UPLOAD_ROOT) + path.sep)) return null;
-  return resolved;
-}
-
 // GET /inspections/cars/:carId/photos/:photoId/original
 //
 // The unmasked photograph, for the one screen that has to see it: the editor
@@ -639,6 +627,12 @@ router.patch('/cars/:carId/photos/:photoId/plate', requireAdmin,
       });
       return { ...gallery, photos: ordered };
     });
+
+    // After the commit: the file the listing pointed at until now is either the
+    // unmasked original (already copied to the denied path) or an earlier masked
+    // copy. Left in place, the original stayed public at its old address, plate
+    // and all, for anyone who had it, any cache, and the resized ?w= copies.
+    removeStoredPhoto(photo.url);
 
     res.json(state);
   } catch (err) {

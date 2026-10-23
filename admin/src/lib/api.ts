@@ -407,6 +407,11 @@ export type MailEnvelope = {
   folder?: MailFolderKey
 }
 
+export type RentalPlateState = {
+  images: string[]
+  plates: { url: string; plate_mask: { points: { x: number; y: number }[] } | null }[]
+}
+
 export type MailFolderKey = 'inbox' | 'sent' | 'drafts' | 'junk' | 'trash'
 /** Counts are null when the server could not report them; the folder still exists. */
 export type MailFolder = { key: MailFolderKey; total: number | null; unread: number | null }
@@ -935,6 +940,19 @@ export const api = {
   clearPlate: (carId: string, photoId: string) =>
     request<any>(`/inspections/cars/${carId}/photos/${photoId}/plate`, {
       method: 'PATCH', body: JSON.stringify({ plate_state: 'none' }),
+    }),
+
+  // Rental photos: plate covers (routes/rental-plates.js). A rental photo is
+  // addressed by its current URL; every call returns the gallery as it now is.
+  rentalPhotoPlates: (carId: string) =>
+    request<RentalPlateState>(`/rentals/${carId}/photo-plates`),
+  maskRentalPlate: (carId: string, url: string, quad: { x: number; y: number }[]) =>
+    request<RentalPlateState>(`/rentals/${carId}/photo-plates`, {
+      method: 'PATCH', body: JSON.stringify({ url, quad }),
+    }),
+  clearRentalPlate: (carId: string, url: string) =>
+    request<RentalPlateState>(`/rentals/${carId}/photo-plates`, {
+      method: 'PATCH', body: JSON.stringify({ url, plate_state: 'none' }),
     }),
 
   setCarPhotoCover: (carId: string, photoId: string) =>
