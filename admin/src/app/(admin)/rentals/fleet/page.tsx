@@ -1,13 +1,14 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { api } from '@/lib/api'
+import { api, type RentalPlateState } from '@/lib/api'
 import { EmptyState, ErrorState, LoadingState, fmtMoney, formatRwfInput, parseRwfInput } from '@/components/ui'
 import { QueueSearch } from '@/components/QueueSearch'
 import { useConfirm, useToast } from '@/components/feedback'
 import { fmtDate } from '@/lib/format'
 import { MoneyInput } from '@/components/MoneyInput'
 import { RentalCheckForm } from '@/components/RentalCheckForm'
+import { PlateMasker } from '@/components/PlateMasker'
 
 const EMPTY = {
   provider_id: '', title: '', make: '', model: '', year: '', daily_rate: '',
@@ -87,6 +88,10 @@ export default function RentalFleetPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [bulkRenewing, setBulkRenewing] = useState(false)
   const [checking, setChecking] = useState<any | null>(null)
+  // Plate covers on the open car's saved photos: url → badge position. A photo
+  // is covered when the team burns the Sawa Cars badge over its plate.
+  const [plates, setPlates] = useState<Record<string, RentalPlateState['plates'][number]['plate_mask']>>({})
+  const [maskingUrl, setMaskingUrl] = useState<string | null>(null)
   const toast = useToast()
   const ask = useConfirm()
 
@@ -226,6 +231,13 @@ export default function RentalFleetPage() {
   function begin(car?: any) {
     setEditing(car || {})
     setPhotoFiles([])
+    setPlates({})
+    setMaskingUrl(null)
+    if (car?.id) {
+      api.rentalPhotoPlates(car.id)
+        .then((state) => setPlates(Object.fromEntries(state.plates.map((p) => [p.url, p.plate_mask]))))
+        .catch(() => {})
+    }
     setProviders([])
     setProviderQuery(car ? (car.provider_business_name || car.provider_name || '') : '')
     setForm(car ? {
@@ -294,6 +306,24 @@ export default function RentalFleetPage() {
     if (picked.length < list.length) toast('Only JPEG, PNG or WebP photos can be added.', 'error')
     if (picked.length > room) toast(`A rental listing holds at most ${MAX_PHOTOS} photos.`, 'error')
     setPhotoFiles((old) => [...old, ...picked.slice(0, Math.max(room, 0))])
+  }
+
+  /** The server republished a photo under a new URL (cover added, moved or
+   *  removed). Swap it into the form and the fleet card without touching any
+   *  other unsaved edit in the form. */
+  function applyPlateResult(oldUrl: string, result: unknown) {
+    const state = result as RentalPlateState | undefined
+    if (!state?.images || !editing?.id) return
+    const current = form.images.split('\n').map((item) => item.trim()).filter(Boolean)
+    const fresh = state.images.find((url) => !current.includes(url))
+    if (fresh) {
+      setForm((old) => ({
+        ...old,
+        images: old.images.split('\n').map((item) => (item.trim() === oldUrl ? fresh : item)).join('\n'),
+      }))
+    }
+    setPlates(Object.fromEntries(state.plates.map((p) => [p.url, p.plate_mask])))
+    setCars((old) => old.map((car) => (car.id === editing.id ? { ...car, images: state.images } : car)))
   }
 
   function removeStoredPhoto(url: string) {
@@ -551,6 +581,26 @@ export default function RentalFleetPage() {
         ))}</div>
       )}
 
+      {/* Above the edit sheet (also z-50), which it opens from. */}
+      {maskingUrl && editing?.id ? (
+        <div className="relative z-[60]"><PlateMasker
+          photo={{
+            id: maskingUrl,
+            url: maskingUrl,
+            plate_state: maskingUrl in plates ? 'masked' : undefined,
+            plate_mask: plates[maskingUrl] ?? undefined,
+          }}
+          target={{
+            sourceUrl: `/api/backend/rentals/${editing.id}/photo-plates/original?url=${encodeURIComponent(maskingUrl)}`,
+            mask: (quad) => api.maskRentalPlate(editing.id, maskingUrl, quad),
+            clear: () => api.clearRentalPlate(editing.id, maskingUrl),
+            recordsNoPlate: false,
+          }}
+          onDone={(result) => { applyPlateResult(maskingUrl, result); setMaskingUrl(null) }}
+          onCancel={() => setMaskingUrl(null)}
+        /></div>
+      ) : null}
+
       {checking ? (
         <RentalCheckForm car={checking} onClose={() => setChecking(null)} onSaved={() => { setChecking(null); load() }} />
       ) : null}
@@ -602,6 +652,16 @@ export default function RentalFleetPage() {
                     <img src={url} alt="" className="h-full w-full object-cover" />
                     <button type="button" onClick={() => removeStoredPhoto(url)} aria-label="Remove photo"
                       className="absolute right-1 top-1 grid h-8 w-8 place-items-center rounded-full bg-black/60 text-sm font-bold text-white hover:bg-black/80">×</button>
+                    {/* Saved photos only: the cover is burned into the stored file. */}
+                    {editing.id ? (
+                      <button type="button" onClick={() => setMaskingUrl(url)}
+                        aria-label={url in plates ? 'Plate hidden: move or remove the cover' : 'Hide the number plate'}
+                        className={`absolute bottom-1 left-1 right-1 h-8 rounded-md px-2 text-[11px] font-bold text-white ${
+                          url in plates ? 'bg-success-text/90 hover:bg-success-text' : 'bg-black/65 hover:bg-black/80'
+                        }`}>
+                        {url in plates ? '✓ Plate hidden' : 'Hide plate'}
+                      </button>
+                    ) : null}
                   </div>
                 ))}
                 {photoPreviews.map((src, index) => (
@@ -621,6 +681,11 @@ export default function RentalFleetPage() {
               <input ref={photoInput} type="file" accept={PHOTO_TYPES} multiple className="sr-only"
                 onChange={(e) => { addPhotos(e.target.files); e.target.value = '' }} />
               <p className="mt-1 text-xs text-gray-500">At least one photo before the car can go live; up to {MAX_PHOTOS}. JPEG, PNG or WebP.</p>
+              <p className="mt-1 text-xs text-gray-500">
+                {editing.id
+                  ? 'Tap Hide plate on a photo to cover the number plate with the Sawa Cars badge. The original is kept privately and the cover can be moved or removed later.'
+                  : 'Save the car first; then open it again to hide number plates on its photos.'}
+              </p>
               <details className="mt-2">
                 <summary className="cursor-pointer text-xs font-semibold text-gray-500">Paste image links instead</summary>
                 <textarea rows={3} value={form.images} onChange={(e) => setForm({ ...form, images: e.target.value })} className={`${input} mt-2`} placeholder="https://…, one per line" />

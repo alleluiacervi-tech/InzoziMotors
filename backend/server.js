@@ -298,6 +298,7 @@ app.use('/reviews', (req, res, next) => {
   if (req.method === 'POST' && req.path === '/') return transactionFeatureRetired(req, res, next);
   next();
 }, require('./src/routes/reviews'));
+app.use('/rentals',         require('./src/routes/rental-plates')); // team only: plate covers
 app.use('/rentals',         require('./src/routes/rentals'));
 app.use('/referrals',       require('./src/routes/referrals'));
 app.use('/disputes', (req, res, next) => req.method === 'POST'

@@ -8,7 +8,7 @@ const {
   MailError, mailboxConfigured, MAIL_NOT_CONFIGURED,
 } = require('../lib/mail/connection');
 const {
-  listFolders, resolveFolder, listMessages, getMessage, getAttachment,
+  listFolders, resolveFolder, listMessages, listStarred, deleteMessage, getMessage, getAttachment,
   setFlag, moveMessage, sendMessage, sendReply, unreadCount,
 } = require('../lib/mail/mailbox');
 const { recordAdminAction } = require('../lib/admin-audit');
@@ -128,17 +128,20 @@ router.get('/folders', requireAdmin, requireMailbox, async (req, res) => {
 });
 
 // GET /mail/messages — envelope list, newest first.
-// ?folder=inbox|sent|drafts|junk|trash, ?starred=1 for the flagged view.
+// ?folder=inbox|sent|drafts|junk|trash, or ?starred=1 for the flagged view,
+// which spans Inbox, Sent and Drafts and tags each envelope with its folder.
 router.get('/messages', requireAdmin, requireMailbox, async (req, res) => {
   const limit = clampInt(req.query.limit, 25, 1, 100);
   const offset = clampInt(req.query.offset, 0, 0, 100_000);
   const search = String(req.query.q || '').trim().slice(0, 200);
   const folder = parseFolder(req.query.folder);
   if (folder === null) return res.status(400).json({ error: 'Unknown folder' });
-  const flagged = req.query.starred === '1';
   try {
+    if (req.query.starred === '1') {
+      return res.json({ ...(await listStarred({ limit, offset, search })), folder: 'starred' });
+    }
     const mailbox = await resolveFolder(folder);
-    res.json({ ...(await listMessages({ mailbox, limit, offset, search, flagged })), folder });
+    res.json({ ...(await listMessages({ mailbox, limit, offset, search })), folder });
   } catch (err) {
     fail(res, err, 'list');
   }
@@ -242,12 +245,37 @@ router.post('/messages/:uid/move', requireAdmin, requireMailbox, async (req, res
   }
 });
 
+// DELETE /mail/messages/:uid?folder=trash|junk — delete for good. Only from
+// Trash or Junk: everywhere else the UI moves to Trash, which is recoverable.
+router.delete('/messages/:uid', requireAdmin, requireMailbox, async (req, res) => {
+  const uid = parseUid(req.params.uid);
+  if (uid === null) return res.status(400).json({ error: 'Invalid message id' });
+  const folder = parseFolder(req.query.folder);
+  if (folder !== 'trash' && folder !== 'junk') {
+    return res.status(400).json({
+      error: 'Only messages in Trash or Junk can be deleted for good. Move it to Trash first.',
+      code: 'MAIL_DELETE_NOT_ALLOWED',
+    });
+  }
+  try {
+    await deleteMessage(uid, { mailbox: await resolveFolder(folder) });
+    recordAdminAction(pool, {
+      actorId: req.user.id, action: 'mail.deleted', targetType: 'mail', targetId: uid,
+      summary: `Message deleted for good from ${folder}`, metadata: { folder },
+    }).catch((err) => log.error('mail delete audit failed', { error: err.message }));
+    res.json({ ok: true });
+  } catch (err) {
+    fail(res, err, 'delete');
+  }
+});
+
 // POST /mail/messages/:uid/reply — reply in-thread to the sender, with
 // optional attachments (multipart; ≤5 files, ≤8 MB each, ≤15 MB together).
 //
-// INBOX only, structurally: in Sent the "sender" is contact@ itself and in
-// Drafts there may be no recipient at all — replying only means anything to a
-// message someone sent US.
+// Inbox or Junk only (?folder / body.folder, default inbox): in Sent the
+// "sender" is contact@ itself and in Drafts there may be no recipient at all —
+// replying only means anything to a message someone sent US. Junk is allowed
+// because a real customer caught by the spam filter still deserves an answer.
 router.post(
   '/messages/:uid/reply',
   requireAdmin,
@@ -266,8 +294,14 @@ router.post(
     const uid = parseUid(req.params.uid);
     if (uid === null) return res.status(400).json({ error: 'Invalid message id' });
     const { text } = req.body || {};
+    const folder = parseFolder(req.body?.folder || req.query.folder);
+    if (folder !== 'inbox' && folder !== 'junk') {
+      return res.status(400).json({ error: 'Replies are only possible from Inbox or Junk.' });
+    }
     try {
-      const sent = await sendReply(uid, text, { attachments: req.files || [] });
+      const sent = await sendReply(uid, text, {
+        attachments: req.files || [], mailbox: await resolveFolder(folder),
+      });
       recordAdminAction(pool, {
         actorId: req.user.id, action: 'mail.replied', targetType: 'mail', targetId: uid,
         summary: `Reply sent to ${sent.to}`, metadata: { to: sent.to, subject: sent.subject, attachments: (req.files || []).length },

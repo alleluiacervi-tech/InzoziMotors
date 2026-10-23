@@ -62,6 +62,7 @@ const ADMIN_ROUTES = [
   ['patch', '/mail/messages/12/flags'],
   ['post', '/mail/messages/12/move'],
   ['post', '/mail/messages/12/reply'],
+  ['delete', '/mail/messages/12?folder=trash'],
   ['post', '/mail/messages'],
 ];
 
@@ -126,6 +127,24 @@ test('a malformed message id is rejected before any connection is attempted', as
       .send({ flag: 'deleted', value: true });
     assert.equal(badFlag.status, 400, 'an unsupported flag was accepted');
     assert.match(badFlag.body.error, /seen or flagged/);
+  } finally {
+    delete process.env.MAIL_USER;
+    delete process.env.MAIL_PASS;
+  }
+});
+
+test('permanent delete is refused outside Trash and Junk, before any connection', async () => {
+  process.env.MAIL_USER = 'contact@example.test';
+  process.env.MAIL_PASS = 'not-a-real-password';
+  try {
+    const auth = { Authorization: `Bearer ${token('admin', ADMIN_ID)}` };
+    for (const folder of ['inbox', 'sent', 'drafts', '']) {
+      const res = await api().delete(`/mail/messages/12?folder=${folder}`).set(auth);
+      assert.equal(res.status, 400, `delete from "${folder}" was not refused`);
+      assert.equal(res.body.code, 'MAIL_DELETE_NOT_ALLOWED');
+    }
+    const reply = await api().post('/mail/messages/12/reply').set(auth).send({ text: 'hi', folder: 'sent' });
+    assert.equal(reply.status, 400, 'a reply from Sent was accepted');
   } finally {
     delete process.env.MAIL_USER;
     delete process.env.MAIL_PASS;

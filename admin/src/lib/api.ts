@@ -403,10 +403,18 @@ export type MailEnvelope = {
   sizeLabel: string
   attachmentCount: number
   messageId: string | null
+  /** Set in the Starred view, which spans folders: where this message lives. */
+  folder?: MailFolderKey
+}
+
+export type RentalPlateState = {
+  images: string[]
+  plates: { url: string; plate_mask: { points: { x: number; y: number }[] } | null }[]
 }
 
 export type MailFolderKey = 'inbox' | 'sent' | 'drafts' | 'junk' | 'trash'
-export type MailFolder = { key: MailFolderKey; total: number; unread: number }
+/** Counts are null when the server could not report them; the folder still exists. */
+export type MailFolder = { key: MailFolderKey; total: number | null; unread: number | null }
 
 export type MailList = {
   messages: MailEnvelope[]
@@ -414,7 +422,7 @@ export type MailList = {
   unread: number
   limit: number
   offset: number
-  mailbox: string
+  mailbox?: string
   search?: string
 }
 
@@ -934,6 +942,19 @@ export const api = {
       method: 'PATCH', body: JSON.stringify({ plate_state: 'none' }),
     }),
 
+  // Rental photos: plate covers (routes/rental-plates.js). A rental photo is
+  // addressed by its current URL; every call returns the gallery as it now is.
+  rentalPhotoPlates: (carId: string) =>
+    request<RentalPlateState>(`/rentals/${carId}/photo-plates`),
+  maskRentalPlate: (carId: string, url: string, quad: { x: number; y: number }[]) =>
+    request<RentalPlateState>(`/rentals/${carId}/photo-plates`, {
+      method: 'PATCH', body: JSON.stringify({ url, quad }),
+    }),
+  clearRentalPlate: (carId: string, url: string) =>
+    request<RentalPlateState>(`/rentals/${carId}/photo-plates`, {
+      method: 'PATCH', body: JSON.stringify({ url, plate_state: 'none' }),
+    }),
+
   setCarPhotoCover: (carId: string, photoId: string) =>
     request<any>(`/inspections/cars/${carId}/photos/${photoId}/cover`, { method: 'PATCH' }),
   deleteCarPhoto: (carId: string, photoId: string) =>
@@ -1165,19 +1186,23 @@ export const api = {
     }),
   /** Reply with optional attachments. FormData when files ride along —
    *  request() already skips the JSON content-type for FormData bodies. */
-  mailReply: (uid: number, text: string, files: File[] = []) => {
+  mailReply: (uid: number, text: string, files: File[] = [], folder: MailFolderKey = 'inbox') => {
     if (!files.length) {
       return request<{ messageId?: string; to: string; subject: string }>(
-        `/mail/messages/${uid}/reply`, { method: 'POST', body: JSON.stringify({ text }) }
+        `/mail/messages/${uid}/reply`, { method: 'POST', body: JSON.stringify({ text, folder }) }
       )
     }
     const form = new FormData()
     form.set('text', text)
+    form.set('folder', folder)
     for (const f of files) form.append('attachments', f, f.name)
     return request<{ messageId?: string; to: string; subject: string }>(
       `/mail/messages/${uid}/reply`, { method: 'POST', body: form }
     )
   },
+  /** Delete for good. The server allows it only from Trash or Junk. */
+  mailDelete: (uid: number, folder: 'trash' | 'junk') =>
+    request<{ ok: true }>(`/mail/messages/${uid}?folder=${folder}`, { method: 'DELETE' }),
   mailCompose: (to: string, subject: string, text: string, files: File[] = []) => {
     const form = new FormData()
     form.set('to', to)

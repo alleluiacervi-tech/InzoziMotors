@@ -72,10 +72,23 @@ function boxFromPoints(points: unknown): Box | null {
   }
 }
 
-export function PlateMasker({ carId, photo, onDone, onCancel }: {
-  carId: string
+/** Where the editor reads the clean original and sends its decision. Sale
+ *  photos (car_photos) use the inspections routes by default; rental photos
+ *  pass their own (routes/rental-plates.js). */
+export type PlateTarget = {
+  sourceUrl: string
+  mask: (quad: { x: number; y: number }[]) => Promise<unknown>
+  clear: () => Promise<unknown>
+  /** False where "no plate here" is not a recorded state (rental photos): the
+   *  button then only appears as "Remove the cover" on a covered photo. */
+  recordsNoPlate?: boolean
+}
+
+export function PlateMasker({ carId, photo, target, onDone, onCancel }: {
+  carId?: string
   photo: { id: string; url: string; plate_state?: string; plate_mask?: any; has_original?: boolean }
-  onDone: () => void
+  target?: PlateTarget
+  onDone: (result?: unknown) => void
   onCancel: () => void
 }) {
   const toast = useToast()
@@ -86,7 +99,12 @@ export function PlateMasker({ carId, photo, onDone, onCancel }: {
   // aiming at a plate you could not see — and a badge dropped in the wrong place
   // could never be corrected, only stacked on. The route redirects to the
   // published file when no original was kept, so one source serves both cases.
-  const sourceUrl = `/api/backend/inspections/cars/${carId}/photos/${photo.id}/original`
+  const actions: PlateTarget = target ?? {
+    sourceUrl: `/api/backend/inspections/cars/${carId}/photos/${photo.id}/original`,
+    mask: (quad) => api.maskPlate(carId as string, photo.id, quad),
+    clear: () => api.clearPlate(carId as string, photo.id),
+  }
+  const sourceUrl = actions.sourceUrl
   const [box, setBox] = useState<Box>(() => boxFromPoints(photo.plate_mask?.points) || INITIAL)
   const [drag, setDrag] = useState<null | { mode: 'move' | 'resize'; ox: number; oy: number; start: Box }>(null)
   const [saving, setSaving] = useState(false)
@@ -156,9 +174,9 @@ export function PlateMasker({ carId, photo, onDone, onCancel }: {
   async function save() {
     setSaving(true)
     try {
-      await api.maskPlate(carId, photo.id, corners(box))
+      const result = await actions.mask(corners(box))
       toast('Plate hidden. The published photo has been replaced.', 'success')
-      onDone()
+      onDone(result)
     } catch (e) {
       toast(e instanceof Error ? e.message : 'Could not mask the plate.', 'error')
     } finally { setSaving(false) }
@@ -171,10 +189,10 @@ export function PlateMasker({ carId, photo, onDone, onCancel }: {
   async function noPlate() {
     setSaving(true)
     try {
-      await api.clearPlate(carId, photo.id)
+      const result = await actions.clear()
       toast(masked ? 'Cover removed — the original photo is published again.'
                    : 'Recorded: no plate visible in this photo.', 'success')
-      onDone()
+      onDone(result)
     } catch (e) {
       toast(e instanceof Error ? e.message : 'Could not save.', 'error')
     } finally { setSaving(false) }
@@ -247,10 +265,12 @@ export function PlateMasker({ carId, photo, onDone, onCancel }: {
             className="rounded-xl bg-brand px-5 py-3 text-label font-bold text-brand-on hover:bg-brand-bright disabled:opacity-50">
             {saving ? 'Saving…' : masked ? 'Save new position' : 'Hide the plate'}
           </button>
-          <button onClick={noPlate} disabled={saving}
-            className="rounded-xl border border-line px-4 py-3 text-label font-bold text-content hover:bg-surface-alt disabled:opacity-50">
-            {masked ? 'Remove the cover' : 'No plate in this photo'}
-          </button>
+          {masked || actions.recordsNoPlate !== false ? (
+            <button onClick={noPlate} disabled={saving}
+              className="rounded-xl border border-line px-4 py-3 text-label font-bold text-content hover:bg-surface-alt disabled:opacity-50">
+              {masked ? 'Remove the cover' : 'No plate in this photo'}
+            </button>
+          ) : null}
           <button onClick={onCancel} disabled={saving}
             className="ml-auto rounded-xl px-4 py-3 text-label font-semibold text-content-muted hover:text-content">
             Cancel
