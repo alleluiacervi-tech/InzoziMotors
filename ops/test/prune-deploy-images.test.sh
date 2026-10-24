@@ -15,7 +15,14 @@ case "$1 $2" in
     [ "${3:-}" = "--all" ] || { echo "STUB FAILURE image ls omitted --all" >&2; exit 99; }
     # Two old Sawa images, one current Sawa image. A neighbour image is
     # deliberately absent because it has no Sawa ownership label.
-    printf '%s\n' sha256:old-labeled sha256:referenced-old sha256:current-api ;;
+    # Like real Docker, `-q` without `--no-trunc` prints short IDs, which never
+    # match the full IDs `inspect` returns (the bug that deleted freshly
+    # loaded images on a re-run deploy).
+    if [[ " $* " == *" --no-trunc "* ]]; then
+      printf '%s\n' sha256:old-labeled sha256:referenced-old sha256:current-api sha256:current-web
+    else
+      printf '%s\n' old-labeled referenced-old current-api current-web
+    fi ;;
   "image inspect")
     case "${5:-}" in
       sawa-api:latest) echo sha256:current-api ;;
@@ -51,6 +58,8 @@ echo "live cleanup"
 out="$(bash "$CLEANER")"
 grep -q 'removed old-labeled' <<< "$out"
 grep -q 'keep  current-api' <<< "$out"
+# Loaded but not yet running (no container uses it): still protected by its tag.
+grep -q 'keep  current-web' <<< "$out"
 grep -q 'keep  referenced-old' <<< "$out"
 grep -qx 'RM sha256:old-labeled' "$CALLS"
 [ "$(wc -l < "$CALLS" | tr -d ' ')" = 1 ]

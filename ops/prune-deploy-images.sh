@@ -37,7 +37,11 @@ while IFS= read -r id; do add_id "$id"; done < <(
   # and disappear from that view even though they retain the ownership label.
   # `--all` is essential: without it cleanup reports success while every deploy
   # leaves another ~1.3 GB generation behind.
-  docker image ls --all -q --filter 'label=com.sawacars.managed=true' 2>/dev/null | sort -u
+  # `--no-trunc` is essential too: `-q` alone prints 12-character IDs, which
+  # never equal the full `sha256:` IDs protected below, so nothing was
+  # protected and a deploy that loaded images without restarting (a re-run of
+  # an already-deployed revision) deleted the images it had just loaded.
+  docker image ls --all -q --no-trunc --filter 'label=com.sawacars.managed=true' 2>/dev/null | sort -u
 )
 
 # Protect the three current tags even before Compose has attached containers.

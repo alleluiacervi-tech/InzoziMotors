@@ -127,7 +127,22 @@ NEXT="$(git rev-parse "$TARGET")"
 # needs a record of what is actually deployed, which this host does not keep
 # yet — see docs/DEPLOY-PHASE-2.md. For now, recover by restarting the stack
 # explicitly (Ops workflow, action=start-stack) before re-deploying.
+#
+# One case is handled: CI re-running a deploy (SKIP_BUILD=1) has just loaded
+# fresh images for this same revision, e.g. rebuilt with a changed repository
+# variable such as TURNSTILE_SITE_KEY. `up -d` recreates only the containers
+# whose image changed, so this is a no-op when nothing did. No migrations run:
+# the revision, and so the schema, is the one already deployed.
 if [ "$PREVIOUS" = "$NEXT" ]; then
+  if [ "${SKIP_BUILD:-}" = "1" ]; then
+    log "already at $TARGET — starting any containers whose image was rebuilt"
+    run_bounded 300 $COMPOSE up -d api web admin encar-sync || die "restart failed — run ops/rollback.sh"
+    for i in $(seq 1 30); do
+      curl -fsS -m 3 "$READY_URL" >/dev/null 2>&1 && { log "healthy — $(git rev-parse --short HEAD)"; exit 0; }
+      sleep 2
+    done
+    die "did not become ready within 60s — run ops/rollback.sh"
+  fi
   log "already at $TARGET — nothing to do"
   exit 0
 fi
