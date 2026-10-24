@@ -262,6 +262,15 @@ app.use('/auth/accept-invite', authLimiter);
 app.use('/auth/reopen', authLimiter);
 app.use('/auth/oauth', authLimiter);
 app.use('/auth/forgot-password', resetLimiter);
+// Each account is limited too (one code a minute, five a day, five guesses a
+// code); this caps one address working through many accounts.
+app.use('/auth/email-verification', rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 30,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: { error: 'Too many attempts. Please wait a while and try again.' },
+}));
 app.use('/auth/reset-password', resetLimiter);
 app.use('/messages', postOnly(writeLimiter));
 app.use('/reviews', postOnly(writeLimiter));
@@ -322,6 +331,7 @@ app.use('/admin/vehicles',  require('./src/routes/vehicle-history'));
 app.use('/admin/vehicles',  require('./src/routes/vehicle-intelligence'));
 app.use('/vehicles',        require('./src/routes/public-vehicles'));
 app.use('/admin/encar',     require('./src/routes/admin-encar'));
+app.use('/admin',           require('./src/routes/admin-security')); // bots, holds, IP history
 app.use('/admin',           require('./src/routes/admin'));
 // Ahead of /imports: that router's /:id would otherwise swallow "korea".
 app.use('/imports/korea',   require('./src/routes/imports-korea'));

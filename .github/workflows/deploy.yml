@@ -147,6 +147,10 @@ jobs:
         # Observed cold, no cache, all three images: 2m26s. Twenty minutes is
         # room for a slow runner, not an expectation.
         timeout-minutes: 20
+        env:
+          # Public by design (inlined into the sign-up page); a repository
+          # variable, not a secret. Empty keeps Turnstile off on the website.
+          NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${{ vars.TURNSTILE_SITE_KEY }}
         run: |
           set -euo pipefail
           # Parse-only placeholders: docker-compose.prod.yml uses ${VAR:?}

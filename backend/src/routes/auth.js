@@ -5,7 +5,13 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const pool = require('../db');
 const { requireAuth } = require('../middleware/auth');
-const { sendResetCode, sendWelcome, sendPasswordChanged, sendAccountClosed } = require('../lib/mailer');
+const {
+  sendResetCode, sendWelcome, sendPasswordChanged, sendAccountClosed, sendEmailVerificationCode,
+} = require('../lib/mailer');
+const { clientIp, clientCountry } = require('../lib/client-ip');
+const { noteIp } = require('../lib/ip-activity');
+const { screenSignup, recordScreening } = require('../lib/signup-risk');
+const { turnstileConfigured, verifyTurnstile } = require('../lib/turnstile');
 const {
   CLOSURE_REASONS, REASON_VALUES, RECOVERY_DAYS, closeAccount, reopenAccount,
 } = require('../lib/account-closure');
@@ -113,21 +119,49 @@ router.post('/register', async (req, res) => {
     return res.status(400).json({ error: 'role must be buyer or seller' });
   }
   try {
+    // Screened before anything costly (bcrypt) or visible (an email) happens.
+    // The website says it is the website and forwards its Turnstile token and
+    // hidden-field value; anything else is treated as the app.
+    const client = req.body.client === 'web' ? 'web' : 'app';
+    const ip = clientIp(req);
+    const country = clientCountry(req);
+    let turnstile = 'off';
+    if (client === 'web' && turnstileConfigured()) {
+      turnstile = req.body.turnstile_token ? await verifyTurnstile(req.body.turnstile_token, ip) : 'missing';
+    }
+    const screening = await screenSignup(pool, {
+      name, email, ip, country, client, turnstile,
+      honeypot: typeof req.body.website === 'string' && req.body.website.trim() !== '',
+    });
+    const record = (userId) => recordScreening(pool, { ip, country, email, client, ...screening, userId })
+      .catch((err) => log.warn('signup screening record failed', { error: err.message }));
+    if (screening.decision === 'blocked') {
+      await record(null);
+      return res.status(400).json({
+        error: 'We could not confirm this sign-up came from a person. Refresh the page and try again.',
+        code: 'BOT_CHECK_FAILED',
+      });
+    }
+
     const existing = await pool.query('SELECT id FROM users WHERE email = $1', [email.toLowerCase()]);
     if (existing.rows.length) {
       return res.status(409).json({ error: 'Email already registered' });
     }
+    const held = screening.decision === 'held';
     const hash = await bcrypt.hash(password, 12);
     const { rows } = await pool.query(
-      `INSERT INTO users (name, email, password_hash, role, phone)
-       VALUES ($1, $2, $3, $4, $5)
-       RETURNING id, name, email, phone, role, id_verified, trust_score, token_version, created_at`,
-      [name, email.toLowerCase(), hash, role, cleanPhone]
+      `INSERT INTO users (name, email, password_hash, role, phone, access_hold, access_hold_reasons, access_hold_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, CASE WHEN $6::text IS NULL THEN NULL ELSE NOW() END)
+       RETURNING id, name, email, phone, role, id_verified, trust_score, token_version, access_hold, created_at`,
+      [name, email.toLowerCase(), hash, role, cleanPhone, held ? 'suspected_bot' : null, held ? screening.reasons : []]
     );
     const user = rows[0];
-    // Fire-and-forget: a slow mail server must never slow a signup down, and
-    // the welcome mail doubles as the soft check that the address is real.
-    sendWelcome(user.email, user.name);
+    await record(user.id);
+    noteIp(user.id, req, 'signup');
+    // Fire-and-forget: a slow mail server must never slow a signup down. A held
+    // account gets no welcome: the address may belong to somebody who never
+    // signed up, and the confirmation code is sent only when the person asks.
+    if (!held) sendWelcome(user.email, user.name);
     res.status(201).json({ user, token: makeToken(user) });
   } catch (err) {
     log.error('register error', { error: err.message });
@@ -172,7 +206,10 @@ router.post('/login', async (req, res) => {
         reopen_until: user.purge_after,
       });
     }
-    const { password_hash, ...safe } = user;
+    // The hold's reasons are for the team; telling a script which rule it
+    // tripped teaches it.
+    const { password_hash, access_hold_reasons, ...safe } = user;
+    noteIp(user.id, req, 'login');
     res.json({ user: safe, token: makeToken(user) });
   } catch (err) {
     log.error('login error', { error: err.message });
@@ -359,6 +396,114 @@ router.post('/reset-password', async (req, res) => {
   }
 });
 
+// ─── Email confirmation ──────────────────────────────────────────────────────
+// How a held account (lib/signup-risk.js) proves a person reads the inbox it
+// signed up with. Any account may confirm; for a held one, confirming lifts the
+// hold. The code goes out only when the person asks for it, never at sign-up,
+// so a script that typed somebody else's address sends that person nothing.
+// Same shape as the password reset: six digits, hashed, 30 minutes, five tries.
+
+const EMAIL_CODE_TTL = '30 minutes';
+const EMAIL_CODE_MAX_ATTEMPTS = 5;
+const EMAIL_CODES_PER_DAY = 5;
+const EMAIL_CODE_INVALID = 'That code is not right or has expired. Ask for a new one.';
+
+// POST /auth/email-verification/send
+router.post('/email-verification/send', requireAuth, async (req, res) => {
+  try {
+    const { rows: [user] } = await pool.query(
+      'SELECT id, email, email_verified_at, access_hold FROM users WHERE id = $1', [req.user.id]
+    );
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    // A team hold on a confirmed address still takes a fresh code to lift.
+    if (user.email_verified_at && !user.access_hold) return res.json({ verified: true, email: user.email });
+
+    const { rows: [recent] } = await pool.query(
+      `SELECT COUNT(*) FILTER (WHERE created_at > NOW() - INTERVAL '60 seconds')::int AS last_minute,
+              COUNT(*)::int AS last_day
+         FROM email_verification_codes
+        WHERE user_id = $1 AND created_at > NOW() - INTERVAL '24 hours'`,
+      [user.id]
+    );
+    if (recent.last_minute > 0) {
+      return res.status(429).json({ error: 'A code is on its way. Wait a minute before asking for another.', code: 'EMAIL_CODE_RECENT' });
+    }
+    if (recent.last_day >= EMAIL_CODES_PER_DAY) {
+      return res.status(429).json({ error: 'Too many codes today. Try again tomorrow, or write to the Sawa Cars team.', code: 'EMAIL_CODE_LIMIT' });
+    }
+
+    const code = String(crypto.randomInt(100000, 1000000));
+    const codeHash = await bcrypt.hash(code, 10);
+    await withTransaction(async (client) => {
+      await client.query(
+        'UPDATE email_verification_codes SET used_at = NOW() WHERE user_id = $1 AND used_at IS NULL', [user.id]
+      );
+      await client.query(
+        `INSERT INTO email_verification_codes (user_id, code_hash, expires_at)
+         VALUES ($1, $2, NOW() + INTERVAL '${EMAIL_CODE_TTL}')`,
+        [user.id, codeHash]
+      );
+    });
+    const delivered = await sendEmailVerificationCode(user.email, code);
+    if (!delivered) log.warn('email confirmation code not emailed (no mail configured)', { userId: user.id });
+    if (process.env.RESET_CODE_ECHO === 'true' && process.env.NODE_ENV !== 'production') {
+      return res.json({ sent: true, email: user.email, dev_code: code });
+    }
+    res.json({ sent: true, email: user.email });
+  } catch (err) {
+    log.error('email verification send error', { error: err.message });
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// POST /auth/email-verification/confirm { code }
+router.post('/email-verification/confirm', requireAuth, async (req, res) => {
+  const code = String((req.body && req.body.code) || '').replace(/\s+/g, '');
+  if (!/^\d{6}$/.test(code)) return res.status(400).json({ error: 'Enter the six-digit code from the email.' });
+  try {
+    const result = await withTransaction(async (client) => {
+      const { rows: [user] } = await client.query(
+        'SELECT id, name, email, access_hold, email_verified_at FROM users WHERE id = $1 FOR UPDATE', [req.user.id]
+      );
+      if (!user) return { status: 404, body: { error: 'User not found' } };
+      if (user.email_verified_at && !user.access_hold) return { status: 200, body: { verified: true } };
+
+      const { rows: [pending] } = await client.query(
+        `SELECT * FROM email_verification_codes
+          WHERE user_id = $1 AND used_at IS NULL AND expires_at > NOW()
+          ORDER BY created_at DESC LIMIT 1 FOR UPDATE`,
+        [user.id]
+      );
+      if (!pending) return { status: 400, body: { error: EMAIL_CODE_INVALID, code: 'EMAIL_CODE_INVALID' } };
+      if (!(await bcrypt.compare(code, pending.code_hash))) {
+        const { rows: [bumped] } = await client.query(
+          'UPDATE email_verification_codes SET attempts = attempts + 1 WHERE id = $1 RETURNING attempts', [pending.id]
+        );
+        if (bumped.attempts >= EMAIL_CODE_MAX_ATTEMPTS) {
+          await client.query('UPDATE email_verification_codes SET used_at = NOW() WHERE id = $1', [pending.id]);
+        }
+        return { status: 400, body: { error: EMAIL_CODE_INVALID, code: 'EMAIL_CODE_INVALID' } };
+      }
+      await client.query(
+        'UPDATE email_verification_codes SET used_at = NOW() WHERE user_id = $1 AND used_at IS NULL', [user.id]
+      );
+      await client.query(
+        `UPDATE users SET email_verified_at = COALESCE(email_verified_at, NOW()),
+                access_hold = NULL, access_hold_reasons = '{}', access_hold_at = NULL
+          WHERE id = $1`,
+        [user.id]
+      );
+      return { status: 200, body: { verified: true }, welcome: user.access_hold ? user : null };
+    });
+    // The welcome a held account never got, now that a person is confirmed.
+    if (result.welcome) sendWelcome(result.welcome.email, result.welcome.name);
+    res.status(result.status).json(result.body);
+  } catch (err) {
+    log.error('email verification confirm error', { error: err.message });
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // GET /auth/me
 router.get('/me', requireAuth, async (req, res) => {
   try {
@@ -369,6 +514,7 @@ router.get('/me', requireAuth, async (req, res) => {
               response_rate, completed_sales, avatar_url, message_email_notifications,
               alert_search_matches, alert_price_drops, alert_daily_digest, preferred_language,
               marketplace_terms_accepted_at, marketplace_terms_version, created_at,
+              access_hold, email_verified_at,
               (password_hash IS NOT NULL) AS has_password,
               ARRAY(SELECT provider FROM user_identities ui WHERE ui.user_id = users.id ORDER BY provider)
                 AS sign_in_providers

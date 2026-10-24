@@ -49,9 +49,17 @@ export async function POST(request: Request) {
 
   let upstream: Response
   try {
+    // The visitor's address, so the API's sign-in limit and the team's own
+    // sign-in history see the person, not this server (Caddy sets the header).
+    const forwarded = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+    const country = request.headers.get('cf-ipcountry')
     upstream = await fetch(`${BACKEND_URL}/auth/login`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(forwarded ? { 'X-Forwarded-For': forwarded } : {}),
+        ...(country ? { 'CF-IPCountry': country } : {}),
+      },
       body: JSON.stringify({ email, password }),
       cache: 'no-store',
     })

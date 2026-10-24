@@ -15,6 +15,10 @@ export interface User {
   id: string
   name: string
   email: string
+  /** Set when the sign-up looked scripted: the account can do nothing but
+   *  confirm its email (/verify-email) until that is done. */
+  access_hold?: 'suspected_bot' | null
+  email_verified_at?: string | null
   phone?: string | null
   whatsapp_phone?: string | null
   phone_visible?: boolean

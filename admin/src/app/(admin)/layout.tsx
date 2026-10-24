@@ -67,6 +67,7 @@ const NAV_GROUPS: { title: string; items: { href: string; icon: IconName; label:
     title: 'People',
     items: [
       { href: '/users', icon: 'id-card', label: 'Users & ID checks' },
+      { href: '/bot-signups', icon: 'shield', label: 'Bot sign-ups' },
       { href: '/reports', icon: 'flag', label: 'Reported chats' },
       { href: '/account-closures', icon: 'user-x', label: 'Account closures' },
     ],

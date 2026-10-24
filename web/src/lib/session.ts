@@ -2,6 +2,9 @@ import 'server-only'
 import { cookies } from 'next/headers'
 import { cache } from 'react'
 import { account, ApiError } from './api'
+// Registers the visitor-forwarding headers for every API call made with a
+// session token, all of which get that token from here.
+import './forwarded-ip'
 import type { User } from './types'
 
 // ─────────────────────────────────────────────────────────────────────────────

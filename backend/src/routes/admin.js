@@ -36,7 +36,7 @@ const {
 const { stripUploadMetadata } = require('../middleware/strip-metadata');
 const {
   CLOSURE_REASONS, REASON_LABELS, RECOVERY_DAYS,
-  purgeAccount, removeIdDocuments, CLOSED_ACCOUNTS, DUE_FOR_PURGE,
+  purgeAccount, eraseAccountRow, removeIdDocuments, CLOSED_ACCOUNTS, DUE_FOR_PURGE,
 } = require('../lib/account-closure');
 const { sendAccountDeleted } = require('../lib/mailer');
 const { normalizeAbout, normalizeAddress, normalizeHours } = require('../lib/showroom-profile');
@@ -733,12 +733,17 @@ router.get('/listings', requireAdmin, paginate({ defaultLimit: 50, maxLimit: 200
   }
 });
 
-// GET /admin/users?q=&test=1 — search users by name/email/phone; test=1 lists
-// only the accounts marked as test accounts.
+// GET /admin/users?q=&test=1&held=1&erased=1 — search users by name/email/phone;
+// test=1 lists only test accounts, held=1 only accounts held as suspected bots.
+// Erased accounts (anonymised rows kept for someone else's history) are left
+// out unless erased=1 asks for them.
 router.get('/users', requireAdmin, async (req, res) => {
   const { q = '', limit = 25 } = req.query;
   const safeLimit = Math.min(Math.max(parseInt(limit) || 25, 1), 100);
-  const onlyTest = req.query.test === '1' || req.query.test === 'true';
+  const flag = (name) => req.query[name] === '1' || req.query[name] === 'true';
+  const onlyTest = flag('test');
+  const onlyHeld = flag('held');
+  const withErased = flag('erased');
   try {
     const { rows } = await pool.query(
       `SELECT id, name, email, phone, whatsapp_phone, phone_visible,
@@ -756,14 +761,23 @@ router.get('/users', requireAdmin, async (req, res) => {
               -- operator can see they are about to set one below the count.
               (SELECT COUNT(*)::int FROM cars c
                 WHERE c.seller_id = users.id AND c.status IN ('live','paused')) AS active_listings,
-              completed_sales, created_at
+              completed_sales, created_at,
+              access_hold, access_hold_reasons, access_hold_at, email_verified_at,
+              -- Where the account is being used from now (migration 0069).
+              (SELECT host(a.ip) FROM user_ip_addresses a WHERE a.user_id = users.id
+                ORDER BY a.last_seen_at DESC LIMIT 1) AS last_ip,
+              (SELECT a.country FROM user_ip_addresses a WHERE a.user_id = users.id
+                ORDER BY a.last_seen_at DESC LIMIT 1) AS last_country,
+              (SELECT MAX(a.last_seen_at) FROM user_ip_addresses a WHERE a.user_id = users.id) AS last_seen_at
        FROM users
        WHERE (name ILIKE $1 OR email ILIKE $1 OR COALESCE(phone, '') ILIKE $1
           OR COALESCE(whatsapp_phone, '') ILIKE $1 OR COALESCE(business_name, '') ILIKE $1)
          AND ($3::boolean = FALSE OR is_test)
+         AND ($4::boolean = FALSE OR access_hold IS NOT NULL)
+         AND ($5::boolean OR deleted_at IS NULL)
        ORDER BY created_at DESC
        LIMIT $2`,
-      [`%${q}%`, safeLimit, onlyTest]
+      [`%${q}%`, safeLimit, onlyTest, onlyHeld, withErased]
     );
     res.json(rows);
   } catch (err) {
@@ -1068,13 +1082,15 @@ router.post('/users/:id/erase', requireAdmin, requireUuid('id'), async (req, res
   try {
     const result = await withTransaction(async (client) => {
       const target = await client.query(
-        'SELECT id, email, role, is_test FROM users WHERE id=$1 AND deleted_at IS NULL FOR UPDATE', [req.params.id]
+        'SELECT id, email, role, is_test, access_hold FROM users WHERE id=$1 AND deleted_at IS NULL FOR UPDATE', [req.params.id]
       );
       if (!target.rows.length) throw Object.assign(new Error('Active user not found'), { status: 404 });
       const user = target.rows[0];
       if (user.role === 'admin') throw Object.assign(new Error('Administrator accounts cannot be erased here'), { status: 403 });
-      if (!user.is_test) {
-        throw Object.assign(new Error('Only an account marked as a test account can be erased by the team. Mark it first.'), {
+      // A test account, or one held as a suspected script (migration 0069):
+      // either way the team has first said "this is not a customer".
+      if (!user.is_test && !user.access_hold) {
+        throw Object.assign(new Error('Only a test account or one held as a suspected bot can be erased by the team. Mark or hold it first.'), {
           status: 409, code: 'NOT_A_TEST_ACCOUNT',
         });
       }
@@ -1097,25 +1113,32 @@ router.post('/users/:id/erase', requireAdmin, requireUuid('id'), async (req, res
       const rentals = await client.query(
         "UPDATE rental_cars SET status = 'maintenance' WHERE provider_id = $1 AND status = 'active'", [user.id]
       );
-      const done = await purgeAccount(client, user.id);
+      const done = await eraseAccountRow(client, user.id);
       if (!done) throw Object.assign(new Error('Active user not found'), { status: 404 });
-      // A test showroom's name and storefront are test data too.
-      await client.query('UPDATE users SET business_name = NULL WHERE id = $1', [user.id]);
       await recordAdminAction(client, {
         actorId: req.user.id,
-        action: 'account.erased_test',
+        action: user.is_test ? 'account.erased_test' : 'account.erased_suspected_bot',
         targetType: 'user',
         targetId: user.id,
-        summary: 'Erased a test account',
+        summary: user.is_test ? 'Erased a test account' : 'Erased an account held as a suspected bot',
         // No name and no email: this log is permanent, and writing the
         // identity into it would undo the erasure it records.
-        metadata: { listings_archived: listings.rows[0].n, rentals_taken_down: rentals.rowCount },
+        metadata: {
+          listings_archived: listings.rows[0].n, rentals_taken_down: rentals.rowCount,
+          removed: done.removed, kept_because: done.kept_because,
+        },
       });
-      return { files: done.files, listings_archived: listings.rows[0].n, rentals_taken_down: rentals.rowCount };
+      return { ...done, listings_archived: listings.rows[0].n, rentals_taken_down: rentals.rowCount };
     });
     // After the commit, never inside it: there is no undelete for a file.
     removeIdDocuments(result.files);
-    res.json({ erased: true, listings_archived: result.listings_archived, rentals_taken_down: result.rentals_taken_down });
+    res.json({
+      erased: true,
+      removed: result.removed,
+      kept_because: result.kept_because,
+      listings_archived: result.listings_archived,
+      rentals_taken_down: result.rentals_taken_down,
+    });
   } catch (err) {
     if (err.status) return res.status(err.status).json({ error: err.message, code: err.code, details: err.details });
     log.error('admin test-account erase error', { error: err.message });

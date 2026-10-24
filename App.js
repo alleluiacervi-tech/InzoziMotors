@@ -8,6 +8,7 @@ import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
 import { useFonts } from 'expo-font';
 import { AppProvider } from './src/context/AppContext';
 import RootNavigator from './src/navigation/RootNavigator';
+import HeldAccountGate from './src/components/HeldAccountGate';
 import linking from './src/navigation/linking';
 import { navigationRef, initPushNavigation, flushPendingPushNavigation } from './src/utils/pushNavigation';
 import AnimatedSplash from './src/components/AnimatedSplash';
@@ -113,6 +114,9 @@ export default function App() {
             <RootNavigator initialRoute={initialRoute} />
           </NavigationContainer>
         )}
+        {/* Over everything while the account is held as a suspected bot:
+            the server refuses the rest until the email is confirmed. */}
+        <HeldAccountGate />
         {/* Floats over the app when a downloaded update is waiting. Renders
             nothing at all otherwise, and nothing ever in a dev build. */}
         <UpdateBanner />

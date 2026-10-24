@@ -579,7 +579,7 @@ async function optionalAuth(req, _res, next) {
     try {
       const payload = verifySessionToken(header.slice(7));
       const live = await verifyLiveSession(payload);
-      if (live.ok) req.user = payload;
+      if (live.ok && !live.held) req.user = payload;
     } catch { /* invalid, revoked or unavailable optional identity is anonymous */ }
   }
   next();

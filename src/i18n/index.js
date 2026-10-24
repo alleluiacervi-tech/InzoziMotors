@@ -459,6 +459,20 @@ export const TRANSLATIONS = {
       "totalRepaid": "Total repaid",
       "yourEstimate": "Your estimate · {{bank}}"
     },
+    "verifyEmail": {
+      "title": "Confirm your email address",
+      "sub": "One quick step before you use your account. We email a six-digit code to {{email}}.",
+      "send": "Email me the code",
+      "sending": "Sending…",
+      "sentSub": "We sent a code to {{email}}. It works for 30 minutes; check spam if it is not there.",
+      "codeLabel": "6-digit code",
+      "confirm": "Confirm email",
+      "confirming": "Checking…",
+      "resend": "Send a new code",
+      "err6Digit": "Enter the six-digit code from the email.",
+      "confirmed": "Email confirmed. Welcome to Sawa Cars.",
+      "signOut": "Sign out"
+    },
     "forgotPassword": {
       "code6Digit": "6-digit code",
       "codeLabel": "6-digit code",

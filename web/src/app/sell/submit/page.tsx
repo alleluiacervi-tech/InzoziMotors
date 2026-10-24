@@ -18,6 +18,7 @@ export default async function SubmitCarPage() {
   const t = await getServerT()
   const user = await getCurrentUser()
   if (!user) redirect('/signin?next=/sell/submit')
+  if (user.access_hold) redirect('/verify-email?next=/sell/submit')
 
   const makes = await vehicleMakes.list().catch(() => [])
 

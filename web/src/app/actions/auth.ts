@@ -43,9 +43,11 @@ export async function signInAction(_prev: AuthState, formData: FormData): Promis
   if (password.length < 6) fieldErrors.password = 'Your password is at least 6 characters.'
   if (Object.keys(fieldErrors).length) return { fieldErrors }
 
+  let held = false
   try {
-    const { token } = await authApi.login(email, password)
+    const { token, user } = await authApi.login(email, password)
     await setSession(token)
+    held = Boolean(user.access_hold)
   } catch (err) {
     if (err instanceof ApiError) {
       // 401 is deliberately vague — never confirm which half was wrong.
@@ -63,7 +65,13 @@ export async function signInAction(_prev: AuthState, formData: FormData): Promis
   }
 
   revalidatePath('/', 'layout')
-  redirect(next)
+  redirect(held ? verifyEmailPath(next) : next)
+}
+
+/** Where a held account (suspected bot, backend lib/signup-risk.js) goes
+ *  instead: it can do nothing else until its email is confirmed. */
+function verifyEmailPath(next: string): string {
+  return `/verify-email?next=${encodeURIComponent(next)}`
 }
 
 /** G7 in docs/WEB-PARITY-PLAN.md — the app's "Reopen my account", on the web.
@@ -112,9 +120,14 @@ export async function signUpAction(_prev: AuthState, formData: FormData): Promis
   if (password.length < 6) fieldErrors.password = 'Use at least 6 characters.'
   if (Object.keys(fieldErrors).length) return { fieldErrors }
 
+  let held = false
   try {
-    const { token } = await authApi.register(name, email, password, role, cleanPhone)
+    const { token, user } = await authApi.register(name, email, password, role, cleanPhone, {
+      turnstileToken: String(formData.get('turnstile_token') || ''),
+      website: String(formData.get('website') || ''),
+    })
     await setSession(token)
+    held = Boolean(user.access_hold)
   } catch (err) {
     if (err instanceof ApiError) {
       if (err.status === 409) {
@@ -127,7 +140,7 @@ export async function signUpAction(_prev: AuthState, formData: FormData): Promis
   }
 
   revalidatePath('/', 'layout')
-  redirect(next)
+  redirect(held ? verifyEmailPath(next) : next)
 }
 
 /** The step after a first Google/Apple sign-in: phone number and role. */
@@ -215,4 +228,43 @@ export async function confirmResetAction(prev: ResetState, formData: FormData): 
   } catch (err) {
     return back(err instanceof ApiError ? err.message : 'That code is invalid or has expired.')
   }
+}
+
+/** Email the six-digit code. */
+export async function sendEmailCodeAction(_prev: EmailCodeState, _formData: FormData): Promise<EmailCodeState> {
+  const token = await getToken()
+  if (!token) redirect('/signin')
+  try {
+    const res = await authApi.sendEmailCode(token)
+    if (res.verified) return { verified: true }
+    return { sent: true, email: res.email }
+  } catch (err) {
+    if (err instanceof ApiError) {
+      if (err.isNetworkError) return { error: 'We could not reach Sawa Cars. Please try again.' }
+      return { error: err.message }
+    }
+    return { error: 'Could not send the code. Please try again.' }
+  }
+}
+
+export type EmailCodeState = { sent?: boolean; email?: string; verified?: boolean; error?: string } | null
+
+/** Check the code; on success the hold is gone and the person carries on. */
+export async function confirmEmailCodeAction(_prev: EmailCodeState, formData: FormData): Promise<EmailCodeState> {
+  const token = await getToken()
+  if (!token) redirect('/signin')
+  const code = String(formData.get('code') || '').replace(/\s+/g, '')
+  const next = safeNext(formData.get('next'))
+  if (!/^\d{6}$/.test(code)) return { sent: true, error: 'Enter the six-digit code from the email.' }
+  try {
+    await authApi.confirmEmailCode(token, code)
+  } catch (err) {
+    if (err instanceof ApiError) {
+      if (err.isNetworkError) return { sent: true, error: 'We could not reach Sawa Cars. Please try again.' }
+      return { sent: true, error: err.message }
+    }
+    return { sent: true, error: 'Could not check the code. Please try again.' }
+  }
+  revalidatePath('/', 'layout')
+  redirect(next)
 }

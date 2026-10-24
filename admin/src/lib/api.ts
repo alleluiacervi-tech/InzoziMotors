@@ -506,6 +506,43 @@ export type CatalogImageryRow = {
   state: 'official' | 'render' | 'review' | 'none'
 }
 
+export type SignupDecision = 'allowed' | 'held' | 'blocked'
+
+export type UserAddress = {
+  ip: string
+  /** Cloudflare's estimate; 'T1' is Tor. */
+  country: string | null
+  first_seen_at: string
+  last_seen_at: string
+  seen_count: number
+  first_source: 'signup' | 'login' | 'request'
+  last_source: 'signup' | 'login' | 'request'
+  user_agent: string | null
+  /** Other accounts seen at the same address. */
+  other_accounts: number
+}
+
+export type UserNetwork = {
+  current: UserAddress | null
+  addresses: UserAddress[]
+  related_accounts: {
+    id: string; name: string; email: string; role: string; account_status: string
+    access_hold: string | null; created_at: string; shared_addresses: number; last_seen_at: string
+  }[]
+  screenings: { created_at: string; ip: string | null; country: string | null; client: 'web' | 'app'; decision: SignupDecision; reasons: string[] }[]
+}
+
+export type SignupScreening = {
+  id: string; created_at: string; ip: string | null; country: string | null; email: string
+  client: 'web' | 'app'; decision: SignupDecision; reasons: string[]
+  user_id: string | null; access_hold: string | null; erased: boolean | null
+}
+
+export type SuspectedBot = {
+  id: string; name: string; email: string; created_at: string
+  access_hold_reasons: string[]; access_hold_at: string | null; last_ip: string | null
+}
+
 export const api = {
   // Auth — sign-in is NOT here: it goes through signIn() above, which posts to
   // this app's own /api/session so the token never reaches the browser.
@@ -798,8 +835,31 @@ export const api = {
       `/cars/${id}/permanently`, { method: 'DELETE', body: JSON.stringify({ reason }) }),
 
   // Users / ID verification
-  searchUsers: (q: string, limit = 8, opts: { test?: boolean } = {}) =>
-    request<any[]>(`/admin/users?q=${encodeURIComponent(q)}&limit=${limit}${opts.test ? '&test=1' : ''}`),
+  searchUsers: (q: string, limit = 8, opts: { test?: boolean; held?: boolean } = {}) =>
+    request<any[]>(`/admin/users?q=${encodeURIComponent(q)}&limit=${limit}${opts.test ? '&test=1' : ''}${opts.held ? '&held=1' : ''}`),
+
+  // ─── Account protection (backend routes/admin-security.js) ─────────────────
+  /** Where an account is used from. Every call is written to the activity log. */
+  userNetwork: (userId: string) => request<UserNetwork>(`/admin/users/${userId}/network`),
+  /** Hold (suspected bot: it can only confirm its email) or release. */
+  setUserHold: (userId: string, action: 'hold' | 'release', reason?: string) =>
+    request<{ id: string; access_hold: string | null }>(`/admin/users/${userId}/hold`, {
+      method: 'PATCH', body: JSON.stringify({ action, reason }),
+    }),
+  signupScreenings: (decision?: SignupDecision) =>
+    request<{ last_7_days: Record<SignupDecision, number>; screenings: SignupScreening[] }>(
+      `/admin/signup-screenings?limit=100${decision ? `&decision=${decision}` : ''}`),
+  /** Held accounts that did nothing (no message, car, rental or order). */
+  suspectedBots: () =>
+    request<{ count: number; limit: number; accounts: SuspectedBot[] }>('/admin/suspected-bots'),
+  /** `confirm_count` must equal the count shown, or nothing is erased. */
+  eraseSuspectedBots: (confirm_count: number) =>
+    request<{ erased: number; removed_completely: number; anonymised: number }>('/admin/suspected-bots/erase', {
+      method: 'POST', body: JSON.stringify({ confirm_count }),
+    }),
+  /** Remove the rows earlier erases left behind, where nothing still needs them. */
+  purgeErasedRows: () =>
+    request<{ checked: number; removed: number; kept: number }>('/admin/users/purge-erased', { method: 'POST' }),
   idVerificationQueue: () => request<any[]>('/id-verification/queue'),
   // ─── Report entitlements ───────────────────────────────────────────────────
   // Who may read an inspection report. Access is a row, not a column on the
@@ -873,9 +933,14 @@ export const api = {
   /** Mark or unmark a test account: it can still sign in, but nothing it owns is public. */
   setTestAccount: (userId: string, is_test: boolean) =>
     request<{ id: string; is_test: boolean; test_marked_at: string | null }>(`/admin/users/${userId}/test-account`, { method: 'PATCH', body: JSON.stringify({ is_test }) }),
-  /** Erase a MARKED test account for good (anonymised, cars archived). The email must be typed. */
+  /** Erase a test account or a held suspected bot for good. The email must be typed.
+   *  `removed` is 'completely' when the row itself went, 'anonymised' when
+   *  someone else's history (`kept_because`) still points at it. */
   eraseTestAccount: (userId: string, confirm_email: string) =>
-    request<{ erased: true; listings_archived: number; rentals_taken_down: number }>(`/admin/users/${userId}/erase`, { method: 'POST', body: JSON.stringify({ confirm_email }) }),
+    request<{
+      erased: true; removed: 'completely' | 'anonymised'; kept_because?: string | null
+      listings_archived: number; rentals_taken_down: number
+    }>(`/admin/users/${userId}/erase`, { method: 'POST', body: JSON.stringify({ confirm_email }) }),
   initiateUserPasswordReset: (userId: string) =>
     request<{ success: boolean; delivery: 'email_sent' | 'email_not_configured' }>(`/admin/users/${userId}/password-reset`, { method: 'POST' }),
   setUserAccess: (userId: string, action: 'suspend' | 'restore', reason?: string) =>

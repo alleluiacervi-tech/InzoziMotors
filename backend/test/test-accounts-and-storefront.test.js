@@ -185,6 +185,11 @@ test('only a marked account can be erased, with its email typed, and never one w
 
   const done = await erase({ confirm_email: ` ${seller.email.toUpperCase()} ` }).expect(200);
   assert.equal(done.body.erased, true);
+  // The waived fee is still a record that names this seller, so the row is
+  // anonymised rather than deleted (an account with no such history is
+  // removed completely: bot-signups.test.js).
+  assert.equal(done.body.removed, 'anonymised');
+  assert.equal(done.body.kept_because, 'platform_fees');
   assert.equal(done.body.listings_archived, 1);
   assert.equal(done.body.rentals_taken_down, 1);
 

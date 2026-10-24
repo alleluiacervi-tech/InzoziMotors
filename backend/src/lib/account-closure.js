@@ -140,6 +140,12 @@ async function purgeAccount(client, userId) {
   // The Google/Apple link goes with the account, so the same person can sign
   // up again with the same provider and get a fresh account, not this husk.
   await client.query('DELETE FROM user_identities WHERE user_id = $1', [user.id]);
+  // Where the account was used from and its email codes (migration 0069). The
+  // sign-up screening row keeps its address and decision for the velocity
+  // check and the team's counts, but loses the email.
+  await client.query('DELETE FROM user_ip_addresses WHERE user_id = $1', [user.id]);
+  await client.query('DELETE FROM email_verification_codes WHERE user_id = $1', [user.id]);
+  await client.query("UPDATE signup_screenings SET email = 'erased' WHERE user_id = $1", [user.id]);
 
   await client.query(
     // The email is released for reuse but the column stays UNIQUE, so it is
@@ -170,6 +176,43 @@ async function purgeAccount(client, userId) {
   );
 
   return { id: user.id, email: user.email, files: [user.id_front_url, user.id_back_url, user.selfie_url] };
+}
+
+/**
+ * The team's erase (a test account, or one held as a suspected bot): the row
+ * itself goes, with everything that is only this account's (its cars,
+ * submissions, saved items, sessions, addresses: the ON DELETE CASCADE set).
+ *
+ * Postgres decides whether that is safe. If anybody else's history still points
+ * at the account (a conversation or message with a real person, an inspection
+ * an inspector signed, a payment record), the foreign key refuses the delete,
+ * and the account is anonymised exactly as the thirty-day purge does instead,
+ * so that other person's history stays readable. `kept_because` names the
+ * table that held it.
+ *
+ * Run inside the caller's transaction; delete the returned files after commit.
+ */
+async function eraseAccountRow(client, userId) {
+  const { rows } = await client.query(
+    'SELECT id, id_front_url, id_back_url, selfie_url, deleted_at FROM users WHERE id = $1 FOR UPDATE',
+    [userId]
+  );
+  if (!rows.length) return null;
+  const files = [rows[0].id_front_url, rows[0].id_back_url, rows[0].selfie_url];
+  await client.query('SAVEPOINT erase_account_row');
+  try {
+    await client.query('DELETE FROM users WHERE id = $1', [userId]);
+    await client.query('RELEASE SAVEPOINT erase_account_row');
+    return { removed: 'completely', files };
+  } catch (err) {
+    await client.query('ROLLBACK TO SAVEPOINT erase_account_row');
+    if (err.code !== '23503') throw err;
+    if (rows[0].deleted_at) return { removed: 'anonymised', kept_because: err.table || null, files: [] };
+    const done = await purgeAccount(client, userId);
+    // A showroom's trading name is the account's data too.
+    await client.query('UPDATE users SET business_name = NULL WHERE id = $1', [userId]);
+    return { removed: 'anonymised', kept_because: err.table || null, files: done ? done.files : [] };
+  }
 }
 
 const DUE_FOR_PURGE = `SELECT id, name, email, closed_at, purge_after, closure_reason
@@ -212,6 +255,6 @@ function removeIdDocuments(urls) {
 
 module.exports = {
   RECOVERY_DAYS, CLOSURE_REASONS, REASON_VALUES, REASON_LABELS,
-  closeAccount, reopenAccount, purgeAccount, removeIdDocuments,
+  closeAccount, reopenAccount, purgeAccount, eraseAccountRow, removeIdDocuments,
   DUE_FOR_PURGE, CLOSED_ACCOUNTS,
 };
