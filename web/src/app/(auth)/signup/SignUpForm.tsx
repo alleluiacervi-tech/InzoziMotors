@@ -5,6 +5,7 @@ import { useActionState } from 'react'
 import { signUpAction, type AuthState } from '@/app/actions/auth'
 import { Alert, Field, Icon, Input, type IconName } from '@/components/ui'
 import { useT } from '@/lib/i18n/context'
+import { HoneypotField, TurnstileField } from '@/components/auth/TurnstileField'
 import { PasswordField } from '../_components/PasswordField'
 import { SubmitButton } from '../_components/SubmitButton'
 
@@ -81,8 +82,9 @@ export function SignUpForm({ next, defaultRole = 'buyer' }: { next: string; defa
   const fieldErrors = state?.fieldErrors ?? {}
 
   return (
-    <form action={formAction} noValidate className="space-y-5">
+    <form action={formAction} noValidate className="relative space-y-5">
       <input type="hidden" name="next" value={next} />
+      <HoneypotField />
 
       {state?.error ? <Alert tone="danger">{state.error}</Alert> : null}
 
@@ -184,6 +186,8 @@ export function SignUpForm({ next, defaultRole = 'buyer' }: { next: string; defa
           </span>
         </p>
       </fieldset>
+
+      <TurnstileField resetKey={state} />
 
       <SubmitButton pendingLabel={t('auth.signup.submitting')}>{t('auth.signup.submit')}</SubmitButton>
 

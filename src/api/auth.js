@@ -60,6 +60,11 @@ export const auth = {
     }
   },
 
+  // The six-digit email code. A sign-up that looked scripted is held until it
+  // is confirmed (backend lib/signup-risk.js); any account may confirm.
+  sendEmailCode: async () => api.post('/auth/email-verification/send', {}),
+  confirmEmailCode: async (code) => api.post('/auth/email-verification/confirm', { code }),
+
   // Get current user profile (resolves details like verified status and roles)
   getMe: async () => {
     return await api.get('/auth/me');

@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const { log } = require('../lib/log');
 const pool = require('../db');
+const { noteRequestIp } = require('../lib/ip-activity');
 
 // A verified signature is necessary but not sufficient. Tokens live 30 days,
 // so between minting and expiry the account behind one can have its password
@@ -13,7 +14,7 @@ const pool = require('../db');
 // the right trade for being able to end a session at all.
 async function verifyLiveSession(payload) {
   const { rows } = await pool.query(
-    'SELECT token_version, deleted_at, account_status FROM users WHERE id = $1',
+    'SELECT token_version, deleted_at, account_status, access_hold FROM users WHERE id = $1',
     [payload.id]
   );
   if (!rows.length) return { ok: false, error: 'Account no longer exists' };
@@ -27,7 +28,36 @@ async function verifyLiveSession(payload) {
   if ((payload.tv || 0) !== rows[0].token_version) {
     return { ok: false, error: 'Session ended. Please sign in again.' };
   }
-  return { ok: true };
+  // A live session, but a held one (suspected script, migration 0069): callers
+  // that are not requireAuth (the socket, optional auth on a car page) treat
+  // it as no session at all.
+  return { ok: true, held: Boolean(rows[0].access_hold) };
+}
+
+// ─── Held accounts ───────────────────────────────────────────────────────────
+// A sign-up that looked scripted (lib/signup-risk.js) gets an account that can
+// do only what it takes to prove a person is behind it: read its own profile,
+// get and enter the email code, or close the account. Everything else answers
+// 403 ACCOUNT_VERIFICATION_REQUIRED, which both clients turn into the "Confirm
+// your email" screen. Enforced here, per request, so it holds for every route
+// and lifts the moment the code is confirmed.
+const HELD_ALLOWED = new Set([
+  'GET /auth/me',
+  'DELETE /auth/me',
+  'POST /auth/refresh',
+  'POST /auth/email-verification/send',
+  'POST /auth/email-verification/confirm',
+  'DELETE /devices/token',
+  'DELETE /devices/web-push',
+]);
+const HELD_ERROR = {
+  error: 'Confirm your email address to finish setting up your account.',
+  code: 'ACCOUNT_VERIFICATION_REQUIRED',
+};
+
+function heldMayUse(req) {
+  const path = String(req.originalUrl || '').split('?')[0].replace(/\/+$/, '');
+  return HELD_ALLOWED.has(`${req.method} ${path}`);
 }
 
 // ─── Which JWTs are sessions ─────────────────────────────────────────────────
@@ -84,6 +114,8 @@ function requireAuth(req, res, next) {
       if (!result.ok) {
         return res.status(401).json({ error: result.error, code: 'SESSION_REVOKED' });
       }
+      noteRequestIp(payload.id, req);
+      if (result.held && !heldMayUse(req)) return res.status(403).json(HELD_ERROR);
       req.user = payload;
       next();
     })
@@ -136,4 +168,4 @@ function requireVerified(req, res, next) {
   });
 }
 
-module.exports = { requireAuth, requireAdmin, requireVerified, verifyLiveSession, verifySessionToken };
+module.exports = { HELD_ERROR, requireAuth, requireAdmin, requireVerified, verifyLiveSession, verifySessionToken };

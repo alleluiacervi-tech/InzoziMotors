@@ -48,7 +48,22 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * Headers that tell the API who the visitor is (address, Cloudflare country,
+ * browser), when this server calls it on their behalf. Registered by
+ * lib/forwarded-ip.ts, which is server-only: this file is also bundled into
+ * client components, which must never import next/headers.
+ */
+type ForwardedHeaders = () => Promise<Record<string, string>>
+let forwardedHeaders: ForwardedHeaders | null = null
+export function setForwardedHeadersResolver(resolve: ForwardedHeaders) {
+  forwardedHeaders = resolve
+}
+
 type RequestOptions = {
+  /** Forward the visitor's address even without a token (sign-in, sign-up).
+   *  Signed-in calls always forward it. Never set on a cached public read. */
+  forwardVisitor?: boolean
   token?: string | null
   /** Next.js caching. Public catalogue data is revalidated; anything
    *  user-specific must pass `cache: 'no-store'`, which is the default here. */
@@ -66,9 +81,14 @@ async function request<T>(
   path: string,
   init: RequestInit & RequestOptions = {}
 ): Promise<T> {
-  const { token, revalidate, tags, timeoutMs = DEFAULT_TIMEOUT, ...rest } = init
+  const { token, revalidate, tags, forwardVisitor, timeoutMs = DEFAULT_TIMEOUT, ...rest } = init
 
   const headers = new Headers(rest.headers)
+  // Without this the API sees every website visitor as this server: one
+  // sign-in rate-limit bucket for all of them, and no real address on record.
+  if (forwardedHeaders && typeof window === 'undefined' && (token || forwardVisitor)) {
+    for (const [key, value] of Object.entries(await forwardedHeaders())) headers.set(key, value)
+  }
   headers.set('Accept', 'application/json')
   if (rest.body && !(rest.body instanceof FormData)) {
     headers.set('Content-Type', 'application/json')
@@ -356,13 +376,36 @@ export const auth = {
       method: 'POST',
       body: JSON.stringify({ email, password }),
       cache: 'no-store',
+      forwardVisitor: true,
     }),
 
-  register: (name: string, email: string, password: string, role: 'buyer' | 'seller' = 'buyer', phone?: string) =>
+  /** `botCheck` is the website's sign-up screening (backend lib/signup-risk.js):
+   *  the Turnstile token and the hidden field a person never fills. */
+  register: (
+    name: string, email: string, password: string, role: 'buyer' | 'seller' = 'buyer', phone?: string,
+    botCheck: { turnstileToken?: string; website?: string } = {},
+  ) =>
     request<{ user: User; token: string }>('/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ name, email, password, role, phone }),
+      body: JSON.stringify({
+        name, email, password, role, phone,
+        client: 'web',
+        turnstile_token: botCheck.turnstileToken || undefined,
+        website: botCheck.website || undefined,
+      }),
       cache: 'no-store',
+      forwardVisitor: true,
+    }),
+
+  /** Ask for the six-digit email confirmation code (lifts a suspected-bot hold). */
+  sendEmailCode: (token: string) =>
+    request<{ sent?: true; verified?: true; email: string }>('/auth/email-verification/send', {
+      token, method: 'POST',
+    }),
+
+  confirmEmailCode: (token: string, code: string) =>
+    request<{ verified: true }>('/auth/email-verification/confirm', {
+      token, method: 'POST', body: JSON.stringify({ code }),
     }),
 
   /** Always resolves 200 — the backend never reveals whether an email exists. */
@@ -370,32 +413,32 @@ export const auth = {
     request<{ success: true; dev_code?: string }>('/auth/forgot-password', {
       method: 'POST',
       body: JSON.stringify({ email }),
-      cache: 'no-store',
+      cache: 'no-store', forwardVisitor: true,
     }),
 
   resetPassword: (email: string, code: string, newPassword: string) =>
     request<{ success: true }>('/auth/reset-password', {
       method: 'POST',
       body: JSON.stringify({ email, code, new_password: newPassword }),
-      cache: 'no-store',
+      cache: 'no-store', forwardVisitor: true,
     }),
 
   acceptShowroomInvite: (token: string, password: string) =>
     request<{ user: User; token: string }>('/auth/accept-showroom-invite', {
-      method: 'POST', body: JSON.stringify({ token, password }), cache: 'no-store',
+      method: 'POST', body: JSON.stringify({ token, password }), cache: 'no-store', forwardVisitor: true,
     }),
 
   /** Reopen a closed account within its 30 days, with the same credentials.
    *  401 for anything it won't confirm; 410 ACCOUNT_PURGED once erased. */
   reopen: (email: string, password: string) =>
     request<{ user: User; token: string }>('/auth/reopen', {
-      method: 'POST', body: JSON.stringify({ email, password }), cache: 'no-store',
+      method: 'POST', body: JSON.stringify({ email, password }), cache: 'no-store', forwardVisitor: true,
     }),
 
   /** Activate any admin-created account from its one-use invite link. */
   acceptInvite: (token: string, password: string) =>
     request<{ user: User; token: string }>('/auth/accept-invite', {
-      method: 'POST', body: JSON.stringify({ token, password }), cache: 'no-store',
+      method: 'POST', body: JSON.stringify({ token, password }), cache: 'no-store', forwardVisitor: true,
     }),
 
   /** Sign in or up with Google's ID token (backend/src/routes/oauth.js),
@@ -407,7 +450,7 @@ export const auth = {
     reopen?: boolean
   }) =>
     request<{ user: User; token: string; is_new: boolean; needs_profile: boolean }>('/auth/oauth/google', {
-      method: 'POST', body: JSON.stringify(body), cache: 'no-store',
+      method: 'POST', body: JSON.stringify(body), cache: 'no-store', forwardVisitor: true,
     }),
 }
 

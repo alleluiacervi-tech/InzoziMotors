@@ -796,7 +796,9 @@ export function AppProvider({ children }) {
   // A signed-in person's own rows. Everything here is independent, so it all
   // goes at once.
   const loadPersonalData = useCallback(async (user) => {
-    if (!user) return;
+    // A held account (suspected bot) can read nothing of its own until its
+    // email is confirmed; App.js shows VerifyEmailScreen over everything.
+    if (!user || user.access_hold) return;
 
     const sections = [
       ['your rental inquiries', async () => {
@@ -973,8 +975,9 @@ export function AppProvider({ children }) {
   // on iOS), so sign-in only SYNCS a permission that already exists; the ASK
   // happens at the first moment notifications have visible value — saving a
   // car (maybeAskForPush) or the Settings toggle.
+  const accountHeld = Boolean(currentUser?.access_hold);
   useEffect(() => {
-    if (!isLoggedIn) return;
+    if (!isLoggedIn || accountHeld) return;
     let alive = true;
     // Respect the Settings toggle: a user who turned push off must stay off
     // across restarts — a control that silently re-enables itself is exactly
@@ -984,19 +987,19 @@ export function AppProvider({ children }) {
       syncPushToken({ prompt: false }).then((token) => { if (alive && token) setPushToken(token); });
     });
     return () => { alive = false; };
-  }, [isLoggedIn]);
+  }, [isLoggedIn, accountHeld]);
 
   // Push notifications are written by the server, so it needs to know the
   // person's language: told once per sign-in and again whenever it changes.
   // Best effort — a failed call only means pushes stay in the last language.
   useEffect(() => {
-    if (!isLoggedIn || !currentUser?.id || !languageLoaded) { languageSyncedRef.current = null; return; }
+    if (!isLoggedIn || !currentUser?.id || !languageLoaded || accountHeld) { languageSyncedRef.current = null; return; }
     const key = `${currentUser.id}:${language}`;
     if (languageSyncedRef.current === key) return;
     languageSyncedRef.current = key;
     if (currentUser.preferred_language === language) return;
     authApi.updateProfile({ preferred_language: language }).catch(() => {});
-  }, [isLoggedIn, currentUser?.id, currentUser?.preferred_language, language, languageLoaded]);
+  }, [isLoggedIn, currentUser?.id, currentUser?.preferred_language, language, languageLoaded, accountHeld]);
 
   // The one-time contextual ask. Called from the first user action that push
   // notifications visibly serve (saving a car — "we'll tell you when the price
@@ -1035,7 +1038,7 @@ export function AppProvider({ children }) {
   // getToken().then() — a cleanup returned to a Promise is invisible to React,
   // which is how re-logins used to stack a second live socket on the first.
   useEffect(() => {
-    if (!isLoggedIn || !currentUser) {
+    if (!isLoggedIn || !currentUser || currentUser.access_hold) {
       setSocket((prev) => {
         if (prev) prev.disconnect();
         return null;
@@ -1320,6 +1323,18 @@ export function AppProvider({ children }) {
     // column, not a feature.
     return result;
   }, [pushToken]);
+
+  // Lift a suspected-bot hold with the emailed code, then load the account as
+  // a normal sign-in would have. Without a code it only re-reads the profile
+  // (the server said the address is already confirmed).
+  const confirmEmailCode = useCallback(async (code) => {
+    if (code) await authApi.confirmEmailCode(code);
+    const me = await authApi.getMe();
+    setCurrentUser(withInitials(me));
+    setJSON('cachedProfile', me);
+    await loadPersonalData(me);
+    return me;
+  }, [loadPersonalData]);
 
   // Take a closed account back, inside its thirty days. Deliberately its own
   // call rather than a flag on loginUser: reopening is a decision somebody
@@ -1995,7 +2010,7 @@ export function AppProvider({ children }) {
     // Chat safety
     blockUser, reportConversation, getConversationMeta,
     // Authentication
-    currentUser, isLoggedIn, loginUser, loginAsGuest, signUpUser, logoutUser, deleteAccount, reopenAccount, socialSignIn, completeProfile, updateCurrentUserProfile, loading, error,
+    currentUser, isLoggedIn, loginUser, loginAsGuest, signUpUser, logoutUser, deleteAccount, reopenAccount, confirmEmailCode, socialSignIn, completeProfile, updateCurrentUserProfile, loading, error,
     // Push preference (Settings toggle)
     setPushEnabled,
     // Connectivity — false once a read failed at the transport layer, so screens

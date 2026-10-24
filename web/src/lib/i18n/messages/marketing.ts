@@ -324,7 +324,7 @@ const en = {
       ],
       h4: 'Automatically',
       list4: [
-        'Basic technical logs needed to run and secure the service.',
+        'Basic technical logs needed to run and secure the service, including the IP addresses, approximate country and type of device your account is used from. We keep these to stop fake sign-ups and account takeovers; only the Sawa Cars team sees them, and they are deleted with your account.',
         'In the app only: camera access when you choose to take a photograph, and a push notification token if you allow notifications. Neither is used for anything else.',
       ],
     },

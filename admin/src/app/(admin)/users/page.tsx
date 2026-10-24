@@ -10,6 +10,8 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useFocusRow } from '@/components/useFocusRow'
 import { fmtDate } from '@/lib/format'
 import { RowMenu } from '@/components/RowMenu'
+import { NetworkDrawer } from '@/components/NetworkDrawer'
+import { reasonLabel } from '@/lib/account-protection'
 
 type UserRow = {
   id: string
@@ -58,6 +60,15 @@ type UserRow = {
   business_cover_url?: string | null
   /** A showroom owned by the company behind Sawa Cars (disclosed publicly). */
   sawa_affiliated?: boolean
+  /** Held as a suspected bot (migration 0069): it can only confirm its email. */
+  access_hold?: 'suspected_bot' | null
+  access_hold_reasons?: string[]
+  access_hold_at?: string | null
+  email_verified_at?: string | null
+  /** Where it is being used from now (GET /admin/users/:id/network for all). */
+  last_ip?: string | null
+  last_country?: string | null
+  last_seen_at?: string | null
 }
 
 const DAYS: { key: BusinessDay; label: string }[] = [
@@ -152,6 +163,9 @@ export default function UsersPage() {
   const [role, setRole] = useState('all')
   // Only accounts the team marked as test accounts (GET /admin/users?test=1).
   const [onlyTest, setOnlyTest] = useState(false)
+  // Only accounts held as suspected bots (?held=1); the page can be opened so.
+  const [onlyHeld, setOnlyHeld] = useState(params.get('held') === '1')
+  const [network, setNetwork] = useState<UserRow | null>(null)
   const [actionId, setActionId] = useState<string | null>(null)
   const [showroomOpen, setShowroomOpen] = useState(false)
   const [manualInvite, setManualInvite] = useState<{ email: string; url: string | null } | null>(null)
@@ -186,14 +200,14 @@ export default function UsersPage() {
     try {
       const data = tab === 'verification'
         ? await api.idVerificationQueue()
-        : await api.searchUsers(search, 100, { test: onlyTest })
+        : await api.searchUsers(search, 100, { test: onlyTest, held: onlyHeld })
       setItems(data)
     } catch (e) {
       setError(e)
     } finally {
       setLoading(false)
     }
-  }, [tab, search, onlyTest])
+  }, [tab, search, onlyTest, onlyHeld])
 
   useEffect(() => { load() }, [load])
   useEffect(() => {
@@ -437,16 +451,53 @@ export default function UsersPage() {
     finally { setActionId(null) }
   }
 
-  // Only a marked account can be erased, and only with its email typed: two
-  // deliberate steps, so a real person's account can never go by a slip.
+  // Hold: the account can sign in but do nothing until it confirms its email.
+  // Reversible, and a real person lifts it themselves with the emailed code.
+  async function changeHold(user: UserRow) {
+    const holding = !user.access_hold
+    let reason: string | undefined
+    if (holding) {
+      const typed = await askReason({
+        title: `Hold ${user.business_name || user.name} as a suspected bot?`,
+        message: 'It stays signed in but can do nothing except confirm its email address with a code. A real person confirms in a minute and the hold lifts by itself; a script never gets the code. Nothing it owns changes.',
+        audience: 'Why (for the activity log)',
+        placeholder: 'e.g. scripted email pattern',
+        minLength: 0,
+        confirmLabel: 'Hold account',
+        tone: 'danger',
+      })
+      if (typed === null || typed === undefined) return
+      reason = typed.trim() || undefined
+    } else {
+      const ok = await ask({
+        title: `Release ${user.business_name || user.name}?`,
+        message: 'The account works normally again straight away, without confirming its email.',
+        confirmLabel: 'Release hold',
+        tone: 'primary',
+      })
+      if (!ok) return
+    }
+    setActionId(`hold-${user.id}`)
+    try {
+      await api.setUserHold(user.id, holding ? 'hold' : 'release', reason)
+      toast(holding ? 'Held: it can only confirm its email now' : 'Hold released', 'success')
+      await load()
+    } catch (e: any) { toast(e.message, 'error') }
+    finally { setActionId(null) }
+  }
+
+  // Only a test account or a held suspected bot can be erased, and only with
+  // its email typed: two deliberate steps, so a real person's account can
+  // never go by a slip.
   async function eraseTest(user: UserRow) {
+    const kind = user.is_test ? 'test account' : 'suspected bot'
     const typed = await askReason({
       title: `Erase ${user.business_name || user.name} for good?`,
-      message: 'Its name, email, phone, photos and ID documents are erased, its cars are archived, its rental cars are taken down and it is signed out everywhere. Conversations with real people stay, shown as "Deleted user". This cannot be undone.',
+      message: 'The account and everything only it owns (cars, submissions, saved items, sign-in history) are deleted, and it is signed out everywhere. If a real person\'s conversation, an inspection or a payment record still points at it, that history stays and the account is reduced to "Deleted user" instead. This cannot be undone.',
       audience: `Type the account's email to confirm: ${user.email}`,
       placeholder: user.email,
       minLength: 3,
-      confirmLabel: 'Erase test account',
+      confirmLabel: `Erase ${kind}`,
       tone: 'danger',
     })
     if (!typed) return
@@ -457,7 +508,9 @@ export default function UsersPage() {
     setActionId(`erase-${user.id}`)
     try {
       const done = await api.eraseTestAccount(user.id, typed.trim())
-      toast(`Test account erased — ${done.listings_archived} listing${done.listings_archived === 1 ? '' : 's'} archived`, 'success')
+      toast(done.removed === 'completely'
+        ? 'Account deleted completely'
+        : 'Account erased; kept as "Deleted user" because other people\'s history points at it', 'success')
       await load()
     } catch (e: any) { toast(e.message, 'error') }
     finally { setActionId(null) }
@@ -656,6 +709,10 @@ export default function UsersPage() {
             <label className="flex h-11 shrink-0 cursor-pointer items-center gap-2 rounded-xl border border-line px-3 text-label font-semibold text-content">
               <input type="checkbox" checked={onlyTest} onChange={(e) => setOnlyTest(e.target.checked)} className="h-4 w-4 accent-brand" />
               Test accounts only
+            </label>
+            <label className="flex h-11 shrink-0 cursor-pointer items-center gap-2 rounded-xl border border-line px-3 text-label font-semibold text-content">
+              <input type="checkbox" checked={onlyHeld} onChange={(e) => setOnlyHeld(e.target.checked)} className="h-4 w-4 accent-brand" />
+              Held as bots only
             </label>
           </div>
         </Card>
@@ -880,7 +937,7 @@ export default function UsersPage() {
                   <td className="px-5 py-4"><div className="flex items-center gap-3">{u.avatar_url
                     // eslint-disable-next-line @next/next/no-img-element
                     ? <img src={u.avatar_url} alt="" className="h-9 w-9 shrink-0 rounded-full object-cover ring-1 ring-line" /> : null}<div className="min-w-0"><p className="font-bold text-content">{u.business_name || u.name}</p><p className="text-caption text-content-muted">{u.business_name ? `${u.name} · ` : ''}{u.email}{u.phone ? ` · ${u.phone}` : ''}</p>{u.whatsapp_phone ? <p className="text-caption text-content-muted">WhatsApp: {u.whatsapp_phone}</p> : null}{u.must_change_password ? <p className="mt-1 text-micro font-bold text-warning-text">Invitation awaiting activation</p> : null}</div></div></td>
-                  <td className="px-4 py-4"><div className="space-y-1"><Pill status={u.role} label={u.seller_type === 'showroom' ? 'Showroom' : undefined} />{u.business_verified ? <Pill status="approved" label="Business verified" /> : null}{u.is_test ? <Pill status="draft" label="Test account" /> : null}{u.sawa_affiliated && u.seller_type === 'showroom' ? <Pill status="confirmed" label="Owned by Sawa Cars' company" /> : null}</div></td>
+                  <td className="px-4 py-4"><div className="space-y-1"><Pill status={u.role} label={u.seller_type === 'showroom' ? 'Showroom' : undefined} />{u.business_verified ? <Pill status="approved" label="Business verified" /> : null}{u.is_test ? <Pill status="draft" label="Test account" /> : null}{u.access_hold ? <span className="block" title={(u.access_hold_reasons || []).map(reasonLabel).join(' · ') || undefined}><Pill status="rejected" label="Held · suspected bot" /></span> : null}{u.sawa_affiliated && u.seller_type === 'showroom' ? <Pill status="confirmed" label="Owned by Sawa Cars' company" /> : null}</div></td>
                   <td className="px-4 py-4">
                     <Pill status={u.id_verified || 'none'} label={u.id_verified === 'none' || !u.id_verified ? 'Not submitted' : undefined} />
                     {u.id_verified === 'approved' && u.id_verification_method ? (
@@ -895,6 +952,13 @@ export default function UsersPage() {
                       never move, so they said nothing about anyone. */}
                   <td className="tnum px-4 py-4 text-content">{u.role === 'seller' ? Number(u.active_listings || 0) : <span className="text-content-muted">—</span>}</td>
                   <td className="px-4 py-4"><div className="flex min-w-44 flex-col items-start gap-2">{u.account_status === 'suspended' ? <Pill status="rejected" label="Suspended" /> : null}
+                    {u.last_ip ? (
+                      <button type="button" onClick={() => setNetwork(u)}
+                        className="max-w-52 text-left text-caption text-content-muted hover:text-content hover:underline"
+                        title="Every address this account used">
+                        <span className="break-all font-mono">{u.last_ip}</span>{u.last_country ? ` · ${u.last_country === 'T1' ? 'Tor' : u.last_country}` : ''}
+                      </button>
+                    ) : null}
                     {u.deleted_at ? (
                       <span className="text-caption text-content-muted">Erased {fmtDate(u.deleted_at)}</span>
                     ) : u.role !== 'admin' ? (
@@ -910,6 +974,7 @@ export default function UsersPage() {
                         )}
                         <RowMenu label={`More actions for ${u.business_name || u.name}`} items={[
                           ...(u.id_verified === 'pending' ? [{ label: 'Edit account', onSelect: () => editUser(u) }] : []),
+                          { label: 'Where it signs in from', hint: 'Current and past IP addresses', onSelect: () => setNetwork(u) },
                           { label: actionId === `reset-${u.id}` ? 'Sending…' : 'Send a password reset', onSelect: () => resetPassword(u), disabled: actionId === `reset-${u.id}` },
                           // Verifying in person is for sellers who came to an office without
                           // uploading documents; a buyer never needs it, and someone with
@@ -923,10 +988,13 @@ export default function UsersPage() {
                           u.is_test
                             ? { label: actionId === `test-${u.id}` ? 'Updating…' : 'Unmark test account', hint: 'Makes it public again', onSelect: () => toggleTest(u), disabled: actionId === `test-${u.id}` }
                             : { label: actionId === `test-${u.id}` ? 'Updating…' : 'Mark as test account', hint: 'Hidden from the marketplace; can still sign in', onSelect: () => toggleTest(u), disabled: actionId === `test-${u.id}` },
-                          // Erasing is offered only once the account is marked, so a real
-                          // person's account is never one click away from it.
-                          ...(u.is_test
-                            ? [{ label: actionId === `erase-${u.id}` ? 'Erasing…' : 'Erase test account…', hint: 'For good; you type its email', destructive: true, onSelect: () => eraseTest(u), disabled: actionId === `erase-${u.id}` }]
+                          u.access_hold
+                            ? { label: actionId === `hold-${u.id}` ? 'Updating…' : 'Release bot hold', hint: 'Works normally again', onSelect: () => changeHold(u), disabled: actionId === `hold-${u.id}` }
+                            : { label: actionId === `hold-${u.id}` ? 'Updating…' : 'Hold as suspected bot…', hint: 'Can only confirm its email', destructive: true, onSelect: () => changeHold(u), disabled: actionId === `hold-${u.id}` },
+                          // Erasing is offered only once the account is marked or
+                          // held, so a real person's account is never one click away.
+                          ...(u.is_test || u.access_hold
+                            ? [{ label: actionId === `erase-${u.id}` ? 'Erasing…' : (u.is_test ? 'Erase test account…' : 'Erase suspected bot…'), hint: 'For good; you type its email', destructive: true, onSelect: () => eraseTest(u), disabled: actionId === `erase-${u.id}` }]
                             : []),
                           u.account_status === 'suspended'
                             ? { label: actionId === `access-${u.id}` ? 'Updating…' : 'Restore access', onSelect: () => changeAccess(u), disabled: actionId === `access-${u.id}` }
@@ -965,6 +1033,8 @@ export default function UsersPage() {
           ))}
         </div>
       )}
+
+      {network ? <NetworkDrawer user={network} onClose={() => setNetwork(null)} /> : null}
     </div>
   )
 }

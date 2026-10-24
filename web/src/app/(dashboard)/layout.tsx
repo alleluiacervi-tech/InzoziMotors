@@ -47,6 +47,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
   // them back to /dashboard and loop forever. That route clears the cookie
   // first. See web/src/app/session/expired/route.ts.
   if (!user) redirect('/session/expired?next=/dashboard')
+  // A held account (suspected bot) can do nothing here until its email is
+  // confirmed; the API would refuse every call anyway.
+  if (user.access_hold) redirect('/verify-email?next=/dashboard')
 
   // Pushes are written by the server, so it needs the language the person chose
   // here (same as the app does on sign-in). Only a real choice, and only when it

@@ -28,6 +28,8 @@ module.exports = function attachSocket(io) {
     verifyLiveSession(payload)
       .then((result) => {
         if (!result.ok) return next(new Error(result.error));
+        // A held account (suspected script) has no live messaging.
+        if (result.held) return next(new Error('Confirm your email address to finish setting up your account.'));
         socket.user = payload;
         next();
       })

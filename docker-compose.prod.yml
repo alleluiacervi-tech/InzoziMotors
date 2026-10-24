@@ -69,6 +69,8 @@ services:
       CLOUDINARY_URL:      ${CLOUDINARY_URL:-}
       # Korean imports: on-demand inspection/record fetches only. Empty key = the
       # reports answer 'unavailable'. Paced below the worker so both fit 60/min.
+      # Cloudflare Turnstile secret (backend/src/lib/turnstile.js); empty = off.
+      TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY:-}
       ENCAR_API_KEY:       ${ENCAR_API_KEY:-}
       ENCAR_PHOTO_PREFIX:  ${ENCAR_PHOTO_PREFIX:-}
       ENCAR_RATE_PER_MIN:  20
@@ -178,6 +180,13 @@ services:
         # a secret). Paste the content="..." value from the HTML-tag method
         # here and redeploy; empty omits the tag.
         NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION: ${NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION:-}
+        # Cloudflare Turnstile SITE key for the sign-up form (public). The
+        # deploy workflow passes the repository variable TURNSTILE_SITE_KEY
+        # (GitHub → Settings → Secrets and variables → Variables). Its secret half is
+        # TURNSTILE_SECRET_KEY on the api, in .env. Set both or neither: a site
+        # key without the secret is ignored, a secret without the site key
+        # holds every website sign-up until its email is confirmed.
+        NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${NEXT_PUBLIC_TURNSTILE_SITE_KEY:-}
     restart: unless-stopped
     depends_on:
       - api

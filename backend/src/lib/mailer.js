@@ -225,6 +225,17 @@ async function sendResetCode(email, code) {
   });
 }
 
+async function sendEmailVerificationCode(email, code) {
+  return sendTemplate(email, `${code} is your Sawa Cars confirmation code`, {
+    title: 'Confirm your email address',
+    lines: [
+      { strong: code },
+      'Enter this code in the app or on the website to finish setting up your account. It expires in 30 minutes.',
+      'If you did not create a Sawa Cars account, ignore this email; nothing happens without the code.',
+    ],
+  });
+}
+
 function sendWelcome(email, name) {
   return sendTemplate(email, 'Welcome to Sawa Cars', {
     title: `Welcome, ${name || 'there'}.`,
@@ -483,6 +494,7 @@ function sendNewMessageEmail(email, name, carTitle) {
 }
 
 module.exports = {
+  sendEmailVerificationCode,
   mailEnabled,
   sendNewMessageEmail,
   sendMail,

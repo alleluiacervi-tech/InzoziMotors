@@ -415,6 +415,11 @@ ALTER TABLE users       ADD COLUMN IF NOT EXISTS business_address   TEXT;
 ALTER TABLE users       ADD COLUMN IF NOT EXISTS business_hours     JSONB;
 ALTER TABLE users       ADD COLUMN IF NOT EXISTS business_cover_url TEXT;
 ALTER TABLE users       ADD COLUMN IF NOT EXISTS sawa_affiliated    BOOLEAN NOT NULL DEFAULT FALSE;
+-- Suspected-bot hold and email confirmation (migration 0069; lib/signup-risk.js).
+ALTER TABLE users       ADD COLUMN IF NOT EXISTS access_hold         TEXT CHECK (access_hold IN ('suspected_bot'));
+ALTER TABLE users       ADD COLUMN IF NOT EXISTS access_hold_reasons TEXT[] NOT NULL DEFAULT '{}';
+ALTER TABLE users       ADD COLUMN IF NOT EXISTS access_hold_at      TIMESTAMPTZ;
+ALTER TABLE users       ADD COLUMN IF NOT EXISTS email_verified_at   TIMESTAMPTZ;
 
 -- Account lifecycle (Apple 5.1.1(v) / Google Play deletion requirements).
 -- Soft delete: the row survives so completed handovers, reviews and platform
@@ -997,6 +1002,45 @@ CREATE TABLE IF NOT EXISTS password_resets (
 );
 CREATE INDEX IF NOT EXISTS idx_password_resets_user ON password_resets(user_id);
 ALTER TABLE password_resets ADD COLUMN IF NOT EXISTS attempts INT NOT NULL DEFAULT 0;
+
+-- ─── Email confirmation codes (migration 0069) — same shape as resets ─────────
+CREATE TABLE IF NOT EXISTS email_verification_codes (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id     UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  code_hash   TEXT NOT NULL,
+  attempts    INT NOT NULL DEFAULT 0,
+  expires_at  TIMESTAMPTZ NOT NULL,
+  used_at     TIMESTAMPTZ,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- ─── Where each account is used from (migration 0069; lib/ip-activity.js) ─────
+-- One row per account and address; team-only, never exported.
+CREATE TABLE IF NOT EXISTS user_ip_addresses (
+  user_id        UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  ip             INET NOT NULL,
+  country        TEXT,                       -- Cloudflare's CF-IPCountry; T1 = Tor
+  first_seen_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  last_seen_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  seen_count     INT NOT NULL DEFAULT 1,
+  first_source   TEXT NOT NULL,              -- signup | login | request
+  last_source    TEXT NOT NULL,
+  user_agent     TEXT,
+  PRIMARY KEY (user_id, ip)
+);
+
+-- ─── Every sign-up's screening decision (migration 0069) ──────────────────────
+CREATE TABLE IF NOT EXISTS signup_screenings (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  ip          INET,
+  country     TEXT,
+  email       TEXT NOT NULL,
+  client      TEXT NOT NULL CHECK (client IN ('web', 'app')),
+  decision    TEXT NOT NULL CHECK (decision IN ('allowed', 'held', 'blocked')),
+  reasons     TEXT[] NOT NULL DEFAULT '{}',
+  user_id     UUID REFERENCES users(id) ON DELETE SET NULL
+);
 
 -- ─── Device tokens — Expo push targets ───────────────────────────────────────
 -- UNIQUE(token): a phone re-used by another account moves, never duplicates.

@@ -117,10 +117,34 @@ changes no rule, ranking or eligibility. Plan and status: `docs/SHOWROOMS-AND-PO
 account still signs in (App Review's demo account must keep working) but every
 public read requires `is_test = FALSE`, so its cars, rentals, profile, reports
 and alerts disappear at once; unmarking restores exactly what was there. Only a
-marked account can be erased by the team (`POST /admin/users/:id/erase`, the
+marked (or bot-held) account can be erased by the team (`POST /admin/users/:id/erase`, the
 email typed to confirm, never an admin or yourself, refused while it has
-payment records), using the same anonymisation as the 30-day purge. Insights
+payment records); the row is deleted, or anonymised like the 30-day purge when
+other people's history still points at it. Insights
 does not yet leave test accounts out (the flag survives erasure so it can).
+
+**Bot sign-ups and account addresses** (Oct 2026; migration 0069). Every
+sign-up is screened (`lib/signup-risk.js`): **blocked** (no account) only on
+proof of a script, i.e. the website's hidden field filled or its Cloudflare
+Turnstile check failed (`lib/turnstile.js`, off until `TURNSTILE_SECRET_KEY` on
+the api and the `TURNSTILE_SITE_KEY` repository variable for the web build);
+**held** (`users.access_hold`) when it only looks scripted (an email that is
+the name plus 5–6 digits, a throwaway domain, Tor, a burst from one public
+address, or a website sign-up with no Turnstile token). A held account signs
+in but every route except its profile, the email code and closing answers
+**403 `ACCOUNT_VERIFICATION_REQUIRED`** (`middleware/auth.js`), the socket
+refuses it, and it gets no welcome email; confirming the emailed code
+(`/auth/email-verification/*`) or a provider-verified Google/Apple sign-in lifts
+it. Reasons are never shown to the person. Web `/verify-email`, app
+`VerifyEmailScreen` (over everything, `HeldAccountGate`). Each account's
+addresses are kept in `user_ip_addresses` (sign-up, sign-in, and signed-in
+requests at most every 5 min; internal addresses skipped); the website forwards
+its visitor's address to the API (`web/src/lib/forwarded-ip.ts`), and Caddy
+lets only Cloudflare set `CF-IPCountry`. Team-only (Admin → Users → *Where it
+signs in from*, Admin → Bot sign-ups), every look is audited, never exported.
+The team may erase a test account **or a held one**; the erase deletes the row
+outright (`eraseAccountRow`) and falls back to the anonymising purge only when
+someone else's history references it. The Users list hides erased rows.
 
 **Admin** runs the Action Center triage queue, submissions, inspections,
 rental inquiries, listings, users/ID checks, imports, reported content, the
@@ -401,7 +425,7 @@ password never signs you out). Demo fixtures are `__DEV__`-only.
 - **`uptime.yml`** polls production on a schedule; **`ops.yml`** holds manual levers.
 - Postgres has **no published ports** — reachable only on the container network.
 - Migrations are forward-only files in `backend/migrations/`, applied by
-  `node src/db-init.js` (delegates to `src/migrate.js`). Currently through `0068`.
+  `node src/db-init.js` (delegates to `src/migrate.js`). Currently through `0069`.
   **`src/schema.sql` is never executed** — db-init runs migrations only, so that
   file is documentation. `test/schema-drift.test.js` fails if it ever describes a
   column no migration creates, and reports how far behind it is otherwise.

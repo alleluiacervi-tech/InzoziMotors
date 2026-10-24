@@ -31,6 +31,7 @@ const { log } = require('../lib/log');
 const { requireAuth } = require('../middleware/auth');
 const { withTransaction } = require('../lib/tx');
 const { makeToken } = require('../lib/session-token');
+const { noteIp } = require('../lib/ip-activity');
 const { reopenAccount } = require('../lib/account-closure');
 const { sendWelcome } = require('../lib/mailer');
 const { verifyIdToken, isEnabled, OAuthError } = require('../lib/oauth');
@@ -198,6 +199,17 @@ router.post('/:provider(google|apple)', async (req, res) => {
           provider === 'apple' ? identity.audience : null]
       );
 
+      // The provider has proved this person reads that inbox: the same proof
+      // the email code gives, so it lifts a suspected-script hold (0069).
+      if (identity.emailVerified && identity.email && identity.email === user.email) {
+        await client.query(
+          `UPDATE users SET email_verified_at = COALESCE(email_verified_at, NOW()),
+                  access_hold = NULL, access_hold_reasons = '{}', access_hold_at = NULL
+            WHERE id = $1`,
+          [user.id]
+        );
+      }
+
       return {
         status: isNew ? 201 : 200,
         body: {
@@ -215,6 +227,7 @@ router.post('/:provider(google|apple)', async (req, res) => {
     });
 
     if (result.status >= 200 && result.status < 300) {
+      noteIp(result.after.user.id, req, result.after.isNew ? 'signup' : 'login');
       if (result.after.isNew) sendWelcome(result.after.user.email, result.after.user.name);
       if (provider === 'apple' && code) {
         // Stored for the revoke Apple requires at account deletion. Never in the
