@@ -27,6 +27,39 @@ import type { User } from '@/lib/types'
  * cookie) and handed down as a prop. That keeps the JWT out of the browser
  * entirely while still letting this be a client component for the menu state.
  */
+/**
+ * A nav label whose letters roll up one after another on hover or keyboard
+ * focus: each glyph slides out of a one-line window as its copy slides in from
+ * below, 22 ms apart, so the word turns over like a split-flap board. The
+ * visible letters are decorative; the label itself is read from the sr-only
+ * copy. No motion for people who ask for less.
+ */
+function RollLabel({ text }: { text: string }) {
+  const chars = Array.from(text)
+  return (
+    <>
+      <span className="sr-only">{text}</span>
+      <span aria-hidden="true" className="relative flex overflow-hidden leading-4">
+        {chars.map((ch, i) =>
+          ch === ' ' ? (
+            <span key={i} className="w-[0.35em]" />
+          ) : (
+            <span key={i} className="block h-4 overflow-hidden">
+              <span
+                className="flex flex-col transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:-translate-y-1/2 group-focus-visible:-translate-y-1/2 motion-reduce:transition-none motion-reduce:group-hover:translate-y-0 motion-reduce:group-focus-visible:translate-y-0"
+                style={{ transitionDelay: `${i * 22}ms` }}
+              >
+                <span className="block h-4">{ch}</span>
+                <span className="block h-4">{ch}</span>
+              </span>
+            </span>
+          ),
+        )}
+      </span>
+    </>
+  )
+}
+
 // Nav labels come from NAV_LINKS (hrefs) but are translated by key.
 const NAV_KEY: Record<string, string> = {
   '/cars': 'nav.buy', '/rentals': 'nav.rent', '/sell': 'nav.sell',
@@ -82,16 +115,18 @@ export function Header({
   const isActive = (href: string) =>
     pathname === href || (href !== '/' && pathname.startsWith(href))
 
-  // The desktop nav link. The active page gets an editorial underline bar
-  // rather than a pill — quieter, and it never competes with the buttons on
-  // the right.
+  // The desktop nav link, set to sit beside the Didone wordmark: small tracked
+  // capitals, a letter-by-letter roll on hover (RollLabel) and a hairline that
+  // draws out from the centre. The active page keeps the line, in brand red.
+  // From xl only: in French, Kinyarwanda and Swahili the capitals need the room.
   const navLink = (active: boolean) =>
-    `relative rounded-lg px-3 py-2 text-caption font-semibold transition-colors ` +
-    `after:absolute after:inset-x-3 after:-bottom-px after:h-[2px] after:rounded-full ` +
-    `after:transition-all after:duration-300 after:content-[''] ` +
+    `group relative flex h-11 items-center whitespace-nowrap px-2.5 text-[0.71875rem] font-medium uppercase tracking-[0.12em] 2xl:px-3 2xl:tracking-[0.16em] ` +
+    `transition-colors duration-200 ` +
+    `after:absolute after:inset-x-2.5 after:bottom-2.5 2xl:after:inset-x-3 after:h-px after:origin-center ` +
+    `after:transition-transform after:duration-500 after:ease-[cubic-bezier(0.22,1,0.36,1)] after:content-[''] ` +
     (active
-      ? 'text-content after:bg-brand'
-      : 'text-content-secondary after:bg-transparent hover:text-content')
+      ? 'text-content after:scale-x-100 after:bg-brand'
+      : 'text-content-secondary after:scale-x-0 after:bg-content hover:text-content hover:after:scale-x-100 focus-visible:after:scale-x-100')
 
   // Quiet header furniture: WhatsApp and the hamburger.
   const quiet = 'text-content-secondary hover:bg-surface-alt hover:text-content'
@@ -111,7 +146,7 @@ export function Header({
           <Logo size={17} tone="dark" />
         </Link>
 
-        <nav aria-label="Primary" className="ml-4 hidden lg:block">
+        <nav aria-label="Primary" className="ml-4 hidden xl:block">
           <ul className="flex items-center gap-1">
             {navLinks.map((link) => (
               <li key={link.href}>
@@ -120,7 +155,7 @@ export function Header({
                   aria-current={isActive(link.href) ? 'page' : undefined}
                   className={navLink(isActive(link.href))}
                 >
-                  {t(NAV_KEY[link.href] ?? '') || link.label}
+                  <RollLabel text={t(NAV_KEY[link.href] ?? '') || link.label} />
                 </Link>
               </li>
             ))}
@@ -135,10 +170,12 @@ export function Header({
             <a
               href={`https://wa.me/${CONTACT.whatsapp}`}
               rel="noopener noreferrer"
-              className={`hidden items-center gap-2 rounded-lg px-3 py-2 text-caption font-semibold transition-colors xl:flex ${quiet}`}
+              aria-label={`WhatsApp ${CONTACT.whatsappDisplay}`}
+              className={`hidden h-11 items-center gap-2 whitespace-nowrap rounded-lg px-3 text-caption font-semibold transition-colors xl:flex ${quiet}`}
             >
               <Icon name="whatsapp" size={17} />
-              {CONTACT.whatsappDisplay}
+              {/* The number from 2xl: between xl and 2xl the French nav needs its room. */}
+              <span className="hidden 2xl:inline">{CONTACT.whatsappDisplay}</span>
             </a>
           ) : null}
 
@@ -207,7 +244,7 @@ export function Header({
             aria-expanded={open}
             aria-controls="mobile-nav"
             aria-label={open ? 'Close menu' : 'Open menu'}
-            className="flex h-10 w-10 items-center justify-center rounded-lg text-content transition-colors hover:bg-surface-alt lg:hidden"
+            className="flex h-10 w-10 items-center justify-center rounded-lg text-content transition-colors hover:bg-surface-alt xl:hidden"
           >
             <Icon name={open ? 'close' : 'menu'} size={22} />
           </button>
@@ -217,7 +254,7 @@ export function Header({
       {/* Mobile drawer — items cascade in with a 40ms stagger; one animation,
           six offsets, and the sheet feels composed rather than dumped. */}
       {open ? (
-        <div className="fixed inset-x-0 top-[var(--header-h)] bottom-0 z-50 lg:hidden">
+        <div className="fixed inset-x-0 top-[var(--header-h)] bottom-0 z-50 xl:hidden">
           <button
             type="button"
             aria-label="Close menu"
@@ -229,7 +266,7 @@ export function Header({
             aria-label="Mobile"
             className="relative max-h-full overflow-y-auto rounded-b-3xl border-b border-line bg-surface px-5 pb-8 pt-4 shadow-float"
           >
-            <ul className="space-y-1">
+            <ul className="divide-y divide-line-soft">
               {navLinks.map((link, i) => (
                 <li
                   key={link.href}
@@ -239,14 +276,16 @@ export function Header({
                   <Link
                     href={link.href}
                     aria-current={isActive(link.href) ? 'page' : undefined}
-                    className={`flex items-center justify-between rounded-xl px-4 py-3.5 text-body font-bold ${
-                      isActive(link.href)
-                        ? 'bg-brand/10 text-brand'
-                        : 'text-content hover:bg-surface-alt'
+                    className={`flex min-h-[56px] items-center gap-3 px-1 text-caption font-medium uppercase tracking-[0.16em] transition-colors ${
+                      isActive(link.href) ? 'text-content' : 'text-content-secondary hover:text-content'
                     }`}
                   >
-                    {t(NAV_KEY[link.href] ?? '') || link.label}
-                    <Icon name="chevron-right" size={16} />
+                    <span
+                      aria-hidden="true"
+                      className={`h-1.5 w-1.5 shrink-0 rounded-full ${isActive(link.href) ? 'bg-brand' : 'bg-transparent'}`}
+                    />
+                    <span className="flex-1">{t(NAV_KEY[link.href] ?? '') || link.label}</span>
+                    <Icon name="chevron-right" size={14} className="text-content-muted" />
                   </Link>
                 </li>
               ))}
