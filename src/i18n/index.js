@@ -166,7 +166,7 @@ export const TRANSLATIONS = {
     "carValuation": {
       "basedOnComparables": "Based on {{count}} similar {{make}} cars on Sawa Cars",
       "basedOnMarket": "Based on current Kigali market data",
-      "certifiedPriceSub": "Cars that pass our 150-point inspection sell for up to 12% more — and 3× faster. The inspection is the listing.",
+      "certifiedPriceSub": "Every car on Sawa Cars is inspected on 150 points, and the full report is published with the listing.",
       "checkingMarket": "Checking the market…",
       "estimatedMarketValue": "ESTIMATED MARKET VALUE",
       "fillRequired": "Fill in make, year & mileage",
@@ -2290,7 +2290,7 @@ export const TRANSLATIONS = {
     "carValuation": {
       "basedOnComparables": "Bishingiye ku modoka {{count}} zisa z'ubwoko bwa {{make}} ziri kuri Sawa Cars",
       "basedOnMarket": "Bishingiye ku makuru y'isoko rya Kigali ryo muri iki gihe",
-      "certifiedPriceSub": "Imodoka zitsinze isuzuma ryacu ry'amanota 150 zigurishwa ku kigero kigera kuri 12% hejuru — kandi vuba inshuro 3.",
+      "certifiedPriceSub": "Buri modoka kuri Sawa Cars isuzumwa ku manota 150, kandi raporo yose itangazwa hamwe n'itangazo ry'imodoka.",
       "checkingMarket": "Kugenzura ku isoko…",
       "estimatedMarketValue": "AGACIRO NYAKURI KU ISOKO",
       "fillRequired": "Uzuza ubwoko, umwaka n'ibirometero",
@@ -4352,7 +4352,7 @@ export const TRANSLATIONS = {
     "carValuation": {
       "basedOnComparables": "Basé sur {{count}} véhicules comparables de marque {{make}} sur Sawa Cars",
       "basedOnMarket": "Basé sur les transactions récentes du marché de Kigali",
-      "certifiedPriceSub": "Les véhicules ayant validé notre contrôle en 150 points se vendent jusqu'à 12% plus cher — et 3 fois plus rapidement.",
+      "certifiedPriceSub": "Chaque véhicule sur Sawa Cars est contrôlé sur 150 points, et le rapport complet est publié avec l'annonce.",
       "checkingMarket": "Analyse du marché en cours…",
       "estimatedMarketValue": "VALEUR MARCHANDE ESTIMÉE",
       "fillRequired": "Indiquez la marque, l'année et le kilométrage",
@@ -6414,7 +6414,7 @@ export const TRANSLATIONS = {
     "carValuation": {
       "basedOnComparables": "Kulingana na magari {{count}} yanayofanana ya {{make}} kwenye Sawa Cars",
       "basedOnMarket": "Kulingana na takwimu za sasa za soko la Kigali",
-      "certifiedPriceSub": "Magari yanayofaulu ukaguzi wetu wa pointi 150 huuzwa kwa hadi 12% zaidi — na mara 3 kwa haraka zaidi.",
+      "certifiedPriceSub": "Kila gari kwenye Sawa Cars hukaguliwa kwa pointi 150, na ripoti kamili huchapishwa pamoja na tangazo.",
       "checkingMarket": "Inachambua soko…",
       "estimatedMarketValue": "THAMANI ILIYOKADIRIWA SOKONI",
       "fillRequired": "Jaza aina, mwaka na umbali",
@@ -8476,7 +8476,7 @@ export const TRANSLATIONS = {
     "carValuation": {
       "basedOnComparables": "Sawa Cars에 등록된 {{count}}대의 유사 {{make}} 매물 기반",
       "basedOnMarket": "키갈리 실시간 거래 데이터 기반",
-      "certifiedPriceSub": "150가지 항목 정밀 성능 점검을 통과한 차량은 일반 매물 대비 최대 12% 더 높은 가격에 3배 빠르게 판매됩니다.",
+      "certifiedPriceSub": "Sawa Cars의 모든 차량은 150가지 항목으로 점검되며, 전체 점검 보고서가 매물과 함께 공개됩니다.",
       "checkingMarket": "실시간 시장 시세 분석 중…",
       "estimatedMarketValue": "예상 시장 거래 시세",
       "fillRequired": "제조사, 연식, 주행거리를 입력해 주세요",
@@ -10538,7 +10538,7 @@ export const TRANSLATIONS = {
     "carValuation": {
       "basedOnComparables": "基于 Sawa Cars 平台上 {{count}} 辆同款 {{make}} 真实交易数据",
       "basedOnMarket": "基于当前基加利全网二手车交易行情",
-      "certifiedPriceSub": "通过 150 项官方专业检测的认证车辆，平均成交溢价高达 12% — 成交速度提升 3 倍。",
+      "certifiedPriceSub": "Sawa Cars 上的每辆车都经过 150 项检测，完整的检测报告会随车辆一并公布。",
       "checkingMarket": "正在分析全网交易行情…",
       "estimatedMarketValue": "预估合理市场交易价值",
       "fillRequired": "请完整填写品牌、年份与行驶里程",

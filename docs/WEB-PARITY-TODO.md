@@ -105,7 +105,7 @@ Detailed plan: [`WEB-PARITY-PLAN.md` §11](WEB-PARITY-PLAN.md#11-phase-3-in-deta
 - [ ] **O3** Referrals: implement web page or remove from app, per decision
 - [x] **G13** Web Push: service worker (`web/public/sw.js`), own table `web_push_subscriptions` (migration 0059) instead of `platform` on device tokens, backend sender `lib/web-push.js` + tests, toggle and test button in Profile → Notifications, sign-out drops the subscription. **Ships off** until the VAPID keys are in the server's `.env` (human)
 - [x] PWA install prompt on supported browsers (dashboard overview; Chrome/Edge/Samsung via `beforeinstallprompt`; hidden where the store app is live, so not on iPhone)
-- [ ] **W3** Copy sweep: `AppCapabilities.tsx` (drop 36-angle + app-only claims), `VerificationNotice.tsx`, `dashboard/selling`, `dashboard/profile`, `RequestCarForm.tsx`, `/download` page
-- [ ] **G14** Content check: `/how-it-works`, `/promise` vs app `BuyingGuide`, `SawaPromise`
+- [x] **W3** Copy sweep (25 Oct 2026): `AppCapabilities.tsx` is gone and the other listed components already point to the web flows; the `/download` page was the last offender (photo upload is not app-only, "purchase history" is a retired concept) and is fixed in all six languages
+- [x] **G14** Content check (25 Oct 2026): `/how-it-works` and `/legal/guarantee` agree with the app's `BuyingGuide` and `SawaPromise` (no checkout, escrow, guarantee or fee claims). Fixed the app's valuation screen, which promised cars "sell up to 12% more and 3× faster" with no data behind it. The web has no page named `/promise`; `/legal/guarantee` is its equivalent
 - [ ] Final parity audit — re-run the §3 method; every row "at parity" or listed in §7
 - [ ] Update CLAUDE.md "last verified" and remove "planned" status from the plan

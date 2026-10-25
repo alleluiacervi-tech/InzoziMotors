@@ -250,9 +250,9 @@ const en = {
     appOnly1Title: 'A quicker ID check',
     appOnly1Body:
       'Photograph your national ID and take the verification selfie with the phone’s own camera in one sitting. The website runs the same check; the app is just quicker on a phone.',
-    appOnly2Title: 'Photos with your submission',
+    appOnly2Title: 'Photos as you submit',
     appOnly2Body:
-      'Capture clear reference photos while submitting. The admin gallery supports a flexible set of truthful vehicle images rather than a fixed angle checklist.',
+      'Take clear photos of your vehicle with the phone’s own camera while you submit it. The website takes photos uploaded from your device too; the app is just quicker.',
     appOnly3Title: 'Push notifications',
     appOnly3Body:
       'A price drop, seller message, rental inquiry update or inspection slot appears on your lock screen instead of being buried in email.',
@@ -270,7 +270,7 @@ const en = {
     web4Body:
       'Message a verified seller or use an enabled phone or WhatsApp channel after acknowledging the direct-deal notice.',
     web5Title: 'Your whole account',
-    web5Body: 'Profile, verification status, messages and purchase history.',
+    web5Body: 'Profile, verification status, saved cars and messages.',
     browseCars: 'Browse certified cars',
     inkTitle: 'No checkout, escrow or platform contract',
     inkBody:
@@ -498,7 +498,7 @@ const rw = {
       'Fata ifoto y’indangamuntu yawe na selfie yo kwemeza ukoresheje kamera ya telefoni mu kanya kamwe. Urubuga rukora igenzura rimwe; porogaramu irihuta gusa kuri telefoni.',
     appOnly2Title: 'Amafoto hamwe n’icyo utanze',
     appOnly2Body:
-      'Fata amafoto y’ingenzi asobanutse mu gihe utanga. Igitabo cy’amafoto cy’ubuyobozi kwemera amafoto y’imodoka y’ukuri ahinduka aho gukurikiza urutonde rw’impande zihamye.',
+      'Fata amafoto asobanutse y’imodoka yawe ukoresheje kamera ya telefone mu gihe uyitanga. Urubuga na rwo rwakira amafoto ubikuye kuri telefone cyangwa mudasobwa yawe; porogaramu yo irihuta cyane.',
     appOnly3Title: 'Imenyesha rya push',
     appOnly3Body:
       'Igabanuka ry’igiciro, ubutumwa bw’umugurisha, ihinduka ry’ikibazo cy’ubukode cyangwa igihe cy’isuzuma bigaragara ku kabari kawe aho kwirengagizwa muri imeyili.',
@@ -516,7 +516,7 @@ const rw = {
     web4Body:
       'Andikira umugurisha wemejwe cyangwa ukoreshe telefone cyangwa WhatsApp byemewe nyuma yo kwemera itangazo ry’ubucuruzi butaziguye.',
     web5Title: 'Konti yawe yose',
-    web5Body: 'Umwirondoro, imiterere y’iyemeza, ubutumwa n’amateka y’ibyaguzwe.',
+    web5Body: 'Umwirondoro, imiterere y’iyemeza, imodoka wabikiye n’ubutumwa.',
     browseCars: 'Reba imodoka zemewe',
     inkTitle: 'Nta kwishyura, kubika amafaranga cyangwa amasezerano y’urubuga',
     inkBody:
@@ -747,7 +747,7 @@ const fr = {
       'Photographiez votre carte nationale d’identité et prenez le selfie de vérification avec l’appareil photo du téléphone, en une seule fois. Le site fait la même vérification ; l’application est simplement plus rapide sur un téléphone.',
     appOnly2Title: 'Des photos avec votre soumission',
     appOnly2Body:
-      'Capturez des photos de référence claires pendant la soumission. La galerie d’administration prend en charge un ensemble flexible d’images fidèles du véhicule plutôt qu’une liste d’angles fixes.',
+      'Prenez des photos nettes de votre véhicule avec l’appareil photo du téléphone pendant la soumission. Le site accepte aussi les photos envoyées depuis votre appareil ; l’application est simplement plus rapide.',
     appOnly3Title: 'Notifications push',
     appOnly3Body:
       'Une baisse de prix, un message de vendeur, une mise à jour de demande de location ou un créneau d’inspection apparaît sur votre écran verrouillé au lieu d’être enfoui dans un e-mail.',
@@ -765,7 +765,7 @@ const fr = {
     web4Body:
       'Envoyez un message à un vendeur vérifié ou utilisez un canal téléphone ou WhatsApp activé après avoir accepté l’avis de transaction directe.',
     web5Title: 'Tout votre compte',
-    web5Body: 'Profil, statut de vérification, messages et historique d’achats.',
+    web5Body: 'Profil, statut de vérification, voitures enregistrées et messages.',
     browseCars: 'Voir les voitures certifiées',
     inkTitle: 'Pas de paiement, de séquestre ni de contrat de plateforme',
     inkBody:
@@ -993,7 +993,7 @@ const sw = {
       'Piga picha ya kitambulisho chako cha taifa na selfie ya uthibitisho kwa kamera ya simu kwa mara moja. Wavuti hufanya ukaguzi uleule; programu ni ya haraka zaidi tu kwenye simu.',
     appOnly2Title: 'Picha pamoja na uwasilishaji wako',
     appOnly2Body:
-      'Nasa picha za marejeleo zilizo wazi wakati wa kuwasilisha. Nyumba ya sanaa ya msimamizi inaruhusu seti rahisi ya picha za kweli za gari badala ya orodha ngumu ya pembe.',
+      'Piga picha safi za gari lako kwa kamera ya simu wakati wa kuliwasilisha. Tovuti pia inakubali picha unazopakia kutoka kwenye kifaa chako; programu ni ya haraka zaidi tu.',
     appOnly3Title: 'Arifa za push',
     appOnly3Body:
       'Kushuka kwa bei, ujumbe wa muuzaji, sasisho la ulizo la kukodisha au nafasi ya ukaguzi huonekana kwenye skrini yako iliyofungwa badala ya kuzikwa kwenye barua pepe.',
@@ -1011,7 +1011,7 @@ const sw = {
     web4Body:
       'Tuma ujumbe kwa muuzaji aliyethibitishwa au tumia njia ya simu au WhatsApp iliyowezeshwa baada ya kukubali ilani ya biashara ya moja kwa moja.',
     web5Title: 'Akaunti yako yote',
-    web5Body: 'Wasifu, hali ya uthibitisho, ujumbe na historia ya ununuzi.',
+    web5Body: 'Wasifu, hali ya uthibitisho, magari yaliyohifadhiwa na ujumbe.',
     browseCars: 'Angalia magari yaliyothibitishwa',
     inkTitle: 'Hakuna malipo, udhamini wala mkataba wa jukwaa',
     inkBody:
@@ -1239,7 +1239,7 @@ const ko = {
       '휴대폰 카메라로 국가 신분증과 인증 셀피를 한 번에 촬영하세요. 웹사이트에서도 같은 확인을 할 수 있으며, 앱은 휴대폰에서 조금 더 빠를 뿐입니다.',
     appOnly2Title: '제출과 함께 사진 촬영',
     appOnly2Body:
-      '제출하는 동안 선명한 참고 사진을 촬영하세요. 관리자 갤러리는 고정된 각도 체크리스트 대신 진실한 차량 이미지의 유연한 구성을 지원합니다.',
+      '제출하는 동안 휴대폰 카메라로 차량 사진을 선명하게 촬영하세요. 웹사이트에서도 기기에 있는 사진을 올릴 수 있으며, 앱이 조금 더 빠를 뿐입니다.',
     appOnly3Title: '푸시 알림',
     appOnly3Body:
       '가격 인하, 판매자 메시지, 렌트 문의 업데이트 또는 검사 일정이 이메일에 묻히지 않고 잠금 화면에 표시됩니다.',
@@ -1257,7 +1257,7 @@ const ko = {
     web4Body:
       '직접 거래 안내에 동의한 후 인증 판매자에게 메시지를 보내거나 활성화된 전화 또는 WhatsApp 채널을 이용하세요.',
     web5Title: '계정 전체',
-    web5Body: '프로필, 인증 상태, 메시지, 구매 내역.',
+    web5Body: '프로필, 인증 상태, 저장한 차량, 메시지.',
     browseCars: '인증 차량 둘러보기',
     inkTitle: '결제, 에스크로, 플랫폼 계약 없음',
     inkBody:
@@ -1485,7 +1485,7 @@ const zh = {
       '用手机自带的摄像头一次性拍摄身份证和核验自拍。网站可完成同样的核验，应用只是在手机上更快捷。',
     appOnly2Title: '提交时同步拍照',
     appOnly2Body:
-      '提交车辆时拍摄清晰的参考照片。管理端相册支持灵活的真实车辆图片组合，而非固定角度的清单要求。',
+      '提交车辆时用手机自带相机拍摄清晰的照片。网站同样支持从您的设备上传照片，只是应用更快一些。',
     appOnly3Title: '推送通知',
     appOnly3Body:
       '降价、卖家消息、租赁咨询更新或检测时段提醒会直接显示在您的锁屏上，而不是被淹没在邮件中。',
@@ -1503,7 +1503,7 @@ const zh = {
     web4Body:
       '在确认直接交易须知后，向已认证卖家发送消息，或使用已启用的电话或 WhatsApp 联系方式。',
     web5Title: '您的完整账户',
-    web5Body: '个人资料、验证状态、消息及购买历史。',
+    web5Body: '个人资料、验证状态、收藏车辆和消息。',
     browseCars: '浏览已认证车辆',
     inkTitle: '无结算、无资金代管、无平台合同',
     inkBody:
