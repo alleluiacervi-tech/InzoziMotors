@@ -43,11 +43,42 @@ export function WordMark({
   )
 }
 
+/** Width ÷ height of /brand/wordmark.svg. */
+export const BRAND_NAME_RATIO = 9.2261
+
 /**
- * Horizontal lockup for headers — the squircle beside the product name set as
- * text. The drawn wordmark reads "SAWA" alone, so the full name lives here in
- * type rather than in the mark. Use LogoStack where the brand artwork itself is
- * the point. The SVG is decorative; the accessible name comes from the text.
+ * "SAWA CARS" in high-contrast Didone capitals: /brand/wordmark.svg, outlined
+ * from Bodoni Moda (SIL OFL) at wght 560 / opsz 16 (sturdy enough hairlines
+ * at header size), kerned, +0.16em tracking, 0.55em word space. Outlines, not
+ * a webfont, so nothing loads or reflows.
+ *
+ * Drawn as a CSS mask so it takes the text colour (light or dark) while the
+ * file is fetched once and cached. The real text stays for screen readers.
+ * Independent of LogoMark: never merge the two into one artwork.
+ */
+export function BrandName({ height = 12, className = '' }: { height?: number; className?: string }) {
+  return (
+    <span className={`inline-flex ${className}`}>
+      <span
+        aria-hidden="true"
+        className="block bg-current"
+        style={{
+          height,
+          width: Math.round(height * BRAND_NAME_RATIO),
+          WebkitMask: 'url(/brand/wordmark.svg) no-repeat center / contain',
+          mask: 'url(/brand/wordmark.svg) no-repeat center / contain',
+        }}
+      />
+      <span className="sr-only">Sawa Cars</span>
+    </span>
+  )
+}
+
+/**
+ * Horizontal lockup for headers: the squircle beside the BrandName wordmark,
+ * two separate elements. The drawn WordMark above reads "SAWA" alone, so the
+ * full name lives here. Use LogoStack where the brand artwork itself is the
+ * point. `size` is the old type size the lockup was tuned at.
  */
 export function Logo({
   size = 20,
@@ -59,16 +90,12 @@ export function Logo({
   className?: string
 }) {
   return (
-    <span className={`inline-flex items-center gap-2.5 ${className}`} aria-label="Sawa Cars">
+    <span className={`inline-flex items-center gap-3 ${className}`}>
       <LogoMark size={Math.round(size * 1.85)} />
-      <span
-        className={`font-bold tracking-[-0.02em] ${
-          tone === 'light' ? 'text-white' : 'text-content'
-        }`}
-        style={{ fontSize: size }}
-      >
-        Sawa Cars
-      </span>
+      <BrandName
+        height={Math.round(size * 0.7)}
+        className={tone === 'light' ? 'text-white' : 'text-content'}
+      />
     </span>
   )
 }
