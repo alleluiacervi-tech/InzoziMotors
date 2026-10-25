@@ -96,8 +96,8 @@ does not reference literally; each was checked by hand.
 
 Also found, not parity: `TrustScoreScreen` was registered but nothing navigated to
 it (the trust score is gone from every public page). Deleted on 25 Oct 2026 with
-its grade helper and API call; the unused strings
-in `src/i18n` are still to go.
+its grade helper and API call, and the unused `trustScore.*`, `buyingGuide.step1…5`
+and `sawaPromise` strings were removed from `src/i18n` the same day.
 
 ### 3.4 Blockers and stale content on the web
 
