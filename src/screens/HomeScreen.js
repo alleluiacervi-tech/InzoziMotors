@@ -33,7 +33,7 @@ const FEATURED_GAP = 12;
 // eight — long enough to read a price without the card moving under a thumb.
 const FEATURED_INTERVAL_MS = 5000;
 const FEATURED_TOUCH_PAUSE_MS = 8000;
-const SHOWROOM_CARD_W = Math.min(SCREEN_WIDTH * 0.84, 320);
+const SHOWROOM_CARD_W = Math.min(SCREEN_WIDTH * 0.72, 270);
 
 const TOOLS = [
   { labelKey: 'certifyCar', icon: 'car-outline', screen: 'CarSubmission' },
@@ -621,10 +621,10 @@ export default function HomeScreen({ navigation }) {
                       </View>
                       <View style={styles.showroomFoot}>
                         <View style={styles.showroomBrands}>
-                          {brands.slice(0, 4).map((b) => (
-                            <BrandMark key={b.make} name={b.make} logoUrl={brandRow(b.make)?.logo_url} size={20} style={styles.showroomBrandMark} />
+                          {brands.slice(0, 3).map((b) => (
+                            <BrandMark key={b.make} name={b.make} logoUrl={brandRow(b.make)?.logo_url} size={18} style={styles.showroomBrandMark} />
                           ))}
-                          {brands.length > 4 ? <Text style={styles.showroomMore}>+{brands.length - 4}</Text> : null}
+                          {brands.length > 3 ? <Text style={styles.showroomMore}>+{brands.length - 3}</Text> : null}
                         </View>
                         <Text style={styles.showroomCount} numberOfLines={1}>{t('browse.showroomCars', { count: item.live_count })}</Text>
                       </View>
@@ -1061,39 +1061,39 @@ const styles = StyleSheet.create({
     marginRight: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    padding: 10,
-    borderRadius: radius.xl,
+    gap: 10,
+    padding: 8,
+    borderRadius: radius.lg,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.borderSoft,
   },
   showroomThumb: {
-    width: 72, height: 72, borderRadius: 16, overflow: 'hidden',
+    width: 56, height: 56, borderRadius: 12, overflow: 'hidden',
     backgroundColor: colors.navyMid,
   },
   showroomPhoto: { width: '100%', height: '100%' },
   showroomAvatarBadge: {
     position: 'absolute', right: 4, bottom: 4,
-    width: 26, height: 26, borderRadius: 13,
-    borderWidth: 2, borderColor: '#FFFFFF', backgroundColor: '#FFFFFF',
+    width: 20, height: 20, borderRadius: 10,
+    borderWidth: 1.5, borderColor: '#FFFFFF', backgroundColor: '#FFFFFF',
   },
   showroomAvatarFill: { width: '100%', height: '100%', backgroundColor: '#FFFFFF' },
   showroomAvatarEmpty: { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.navyMid },
-  showroomAvatarText: { fontSize: 26, fontFamily: fonts.extraBold, color: '#fff' },
-  showroomAvatarTextSmall: { fontSize: 11, fontFamily: fonts.extraBold, color: '#fff' },
-  showroomBody: { flex: 1, minWidth: 0, gap: 3 },
-  showroomName: { fontSize: 15.5, fontFamily: fonts.extraBold, color: colors.textPrimary, letterSpacing: -0.2 },
+  showroomAvatarText: { fontSize: 20, fontFamily: fonts.extraBold, color: '#fff' },
+  showroomAvatarTextSmall: { fontSize: 9, fontFamily: fonts.extraBold, color: '#fff' },
+  showroomBody: { flex: 1, minWidth: 0, gap: 1 },
+  showroomName: { fontSize: 14, fontFamily: fonts.extraBold, color: colors.textPrimary, letterSpacing: -0.2 },
   showroomVerifiedRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  showroomVerified: { flexShrink: 1, fontSize: 11.5, fontFamily: fonts.semiBold, color: colors.textSecondary },
+  showroomVerified: { flexShrink: 1, fontSize: 11, fontFamily: fonts.semiBold, color: colors.textSecondary },
   showroomFoot: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    gap: 8, marginTop: 4,
+    gap: 8, marginTop: 3,
   },
   showroomBrands: { flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 1 },
   showroomBrandMark: { borderWidth: 1, borderColor: colors.borderSoft },
   showroomMore: { fontSize: 11, fontFamily: fonts.bold, color: colors.textMuted },
-  showroomCount: { fontSize: 12, fontFamily: fonts.bold, color: colors.textPrimary },
+  showroomCount: { fontSize: 11, fontFamily: fonts.bold, color: colors.textPrimary },
   brandTile: {
     width: 84,
     alignItems: 'center',

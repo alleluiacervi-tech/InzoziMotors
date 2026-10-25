@@ -28,14 +28,14 @@ export async function Showrooms() {
           <p className="mt-2 text-body text-content-secondary">{t('home.showrooms.description')}</p>
         </div>
 
-        <ul className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="-mx-4 mt-6 flex snap-x gap-3 overflow-x-auto px-4 pb-1 sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 lg:grid-cols-3 xl:grid-cols-4">
           {list.map((room) => (
-            <li key={room.id}>
+            <li key={room.id} className="w-[260px] shrink-0 snap-start sm:w-auto">
               <Link
                 href={`/sellers/${room.id}`}
-                className="group flex items-center gap-3.5 rounded-2xl border border-line-soft bg-surface p-3 shadow-card transition-shadow hover:shadow-card-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
+                className="group flex items-center gap-2.5 rounded-xl border border-line-soft bg-surface p-2 shadow-card transition-shadow hover:shadow-card-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
               >
-                <span className="relative h-[72px] w-[72px] shrink-0 overflow-hidden rounded-2xl bg-[#1A1413]">
+                <span className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-[#1A1413]">
                   {room.cover_image ? (
                     // eslint-disable-next-line @next/next/no-img-element -- decorative: the showroom's newest car
                     <img src={room.cover_image} alt="" loading="lazy" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
@@ -45,38 +45,38 @@ export async function Showrooms() {
                     <img
                       src={room.avatar_url}
                       alt=""
-                      className={room.cover_image ? 'absolute bottom-1 right-1 h-6 w-6 rounded-full bg-white object-cover ring-2 ring-white' : 'h-full w-full bg-white object-cover'}
+                      className={room.cover_image ? 'absolute bottom-0.5 right-0.5 h-5 w-5 rounded-full bg-white object-cover ring-[1.5px] ring-white' : 'h-full w-full bg-white object-cover'}
                     />
                   ) : (
                     <span
                       aria-hidden="true"
                       className={room.cover_image
-                        ? 'absolute bottom-1 right-1 flex h-6 w-6 items-center justify-center rounded-full bg-[#1A1413] text-[11px] font-extrabold text-white ring-2 ring-white'
-                        : 'flex h-full w-full items-center justify-center text-title font-extrabold text-white'}
+                        ? 'absolute bottom-0.5 right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#1A1413] text-[9px] font-extrabold text-white ring-[1.5px] ring-white'
+                        : 'flex h-full w-full items-center justify-center text-body font-extrabold text-white'}
                     >
                       {room.name.trim().charAt(0).toUpperCase()}
                     </span>
                   )}
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-body font-extrabold text-content">{room.name}</span>
-                  <span className="mt-0.5 flex items-center gap-1 text-micro font-semibold text-content-secondary">
-                    <Icon name="shield-check" size={13} className="shrink-0 text-success-text" />
+                  <span className="block truncate text-caption font-extrabold text-content">{room.name}</span>
+                  <span className="flex items-center gap-1 text-micro font-semibold text-content-secondary">
+                    <Icon name="shield-check" size={12} className="shrink-0 text-success-text" />
                     <span className="truncate">
                       {t('home.showrooms.verified')}
                       {room.location ? ` · ${room.location}` : ''}
                     </span>
                   </span>
-                  <span className="mt-2 flex items-center justify-between gap-2">
+                  <span className="mt-1 flex items-center justify-between gap-2">
                     <span className="flex min-w-0 items-center gap-1">
-                      {room.brands.slice(0, 4).map((b) => (
-                        <BrandMark key={b.make} name={b.make} logoUrl={logoFor(b.make)} size={22} />
+                      {room.brands.slice(0, 3).map((b) => (
+                        <BrandMark key={b.make} name={b.make} logoUrl={logoFor(b.make)} size={18} />
                       ))}
-                      {room.brands.length > 4 ? (
-                        <span className="text-micro font-bold text-content-muted">+{room.brands.length - 4}</span>
+                      {room.brands.length > 3 ? (
+                        <span className="text-micro font-bold text-content-muted">+{room.brands.length - 3}</span>
                       ) : null}
                     </span>
-                    <span className="tnum shrink-0 text-caption font-bold text-content">
+                    <span className="tnum shrink-0 text-micro font-bold text-content">
                       {t('home.showrooms.cars', { count: room.live_count })}
                     </span>
                   </span>
