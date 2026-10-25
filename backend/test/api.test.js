@@ -351,6 +351,8 @@ test('transaction, contract, payment, and guarantee write endpoints are retired'
     api().post('/disputes').set(auth).send({ handover_id: '00000000-0000-4000-8000-000000000000' }),
     api().post('/payments/checkout').set(auth).send({}),
     api().post('/reviews').set(auth).send({ handover_id: '00000000-0000-4000-8000-000000000000', rating: 5 }),
+    api().post('/referrals/redeem').set(auth).send({ code: 'INZABC123' }),
+    api().get('/referrals/mine').set(auth),
   ];
   for (const attempt of retired) {
     const response = await attempt;

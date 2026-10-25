@@ -14,6 +14,7 @@ const { recordAdminAction } = require('../lib/admin-audit');
 const { parseRange, parseMonth, within, kigaliToday, TZ } = require('../lib/insights-range');
 const { renderRevenueStatement, renderBusinessReport } = require('../lib/documents/admin-statements');
 const { compute } = require('./insights');
+const { realFee, realSubscription } = require('../lib/test-accounts');
 
 const router = express.Router();
 router.use(requireAdmin);
@@ -42,12 +43,12 @@ async function ledger(from, to) {
              f.fee_type AS line, f.method, f.amount::bigint AS amount, i.center, f.reference
         FROM platform_fees f
         LEFT JOIN inspections i ON i.id = f.inspection_id
-       WHERE f.status = 'paid' AND f.currency = 'RWF' AND ${within('COALESCE(f.collected_at, f.created_at)', 1, 2)}
+       WHERE ${realFee('f')} AND f.status = 'paid' AND f.currency = 'RWF' AND ${within('COALESCE(f.collected_at, f.created_at)', 1, 2)}
       UNION ALL
       SELECT to_char(r.created_at AT TIME ZONE '${TZ}', 'DD Mon YYYY'), r.created_at,
              'rental_subscription', r.method, r.amount_rwf::bigint, NULL, r.reference
         FROM rental_subscriptions r
-       WHERE r.voided_at IS NULL AND ${within('r.created_at', 1, 2)}
+       WHERE ${realSubscription('r')} AND r.voided_at IS NULL AND ${within('r.created_at', 1, 2)}
     ) x ORDER BY sort_at`, [from, to]);
   return rows.map((r) => ({ ...r, amount: Number(r.amount) }));
 }
@@ -67,7 +68,7 @@ router.get('/revenue', async (req, res) => {
       ledger(range.from, range.to),
       ledger(parseMonth(range.previous.from.slice(0, 7)).from, range.previous.to),
       pool.query(`SELECT COUNT(*)::int AS n FROM platform_fees
-                   WHERE status = 'paid' AND currency <> 'RWF' AND ${within('COALESCE(collected_at, created_at)', 1, 2)}`, [range.from, range.to]),
+                   WHERE ${realFee()} AND status = 'paid' AND currency <> 'RWF' AND ${within('COALESCE(collected_at, created_at)', 1, 2)}`, [range.from, range.to]),
       actorName(req.user.id),
     ]);
     const buffer = await renderRevenueStatement({

@@ -10,7 +10,8 @@ Buyers and renters browse, message, and contact providers **directly**.
 > disputes among themselves. Every surface must say so, and no code may
 > contradict it. This is a deliberate, enforced position — see *Retired* below.
 
-Last verified against the codebase: **24 Aug 2026** (main @ `6233952`).
+Last verified against the codebase: **24 Aug 2026** (main @ `6233952`). Web ↔ app
+parity re-audited **25 Oct 2026** (section 2, *Web ↔ app parity*).
 
 ---
 
@@ -81,8 +82,10 @@ case is a bug.
   `/dashboard/selling/[id]/schedule`), seller profiles (`/sellers/[id]`),
   compare (`/compare`, up to 3) and reopening a closed account at sign-in.
   Web Push and the install prompt shipped 13 Oct 2026 (Web Push off until the
-  VAPID keys are set, see section 5); what is left of Phase 4 is the copy
-  sweep, the content check and the referrals decision (O3).
+  VAPID keys are set, see section 5); Phase 4's copy sweep, content
+  check and final audit are done (25 Oct 2026), and referrals are retired for
+  good (O3): no screen in the app, a redirect on the web, `/referrals` answers
+  410, the tables stay for history.
 - The plan, phases and decisions are in `docs/WEB-PARITY-PLAN.md`. Tasks are in
   `docs/WEB-PARITY-TODO.md`; tick them in the PR that ships them.
 - Browser rules:
@@ -98,7 +101,7 @@ business name — every public `seller_name` goes through
 `backend/src/lib/seller-display.js` — and its brands are read off its live cars,
 never chosen (`GET /showrooms`). The team sets its photo
 (`POST /admin/users/:userId/avatar`). Storefronts: app `ShowroomScreen`, web
-`/sellers/[id]`. The team also writes each showroom's storefront details in
+`/sellers/[id]`; the website lists them all at `/showrooms` (the homepage shows the first eight, one shared `ShowroomCard`). The team also writes each showroom's storefront details in
 Admin → Users → Edit (about, address with an *Open in Maps* link, opening hours
 shown as *Open now* in Kigali time, a cover photo of the showroom itself;
 migration 0066, `lib/showroom-profile.js`); never a phone number. Seller and
@@ -120,8 +123,9 @@ and alerts disappear at once; unmarking restores exactly what was there. Only a
 marked (or bot-held) account can be erased by the team (`POST /admin/users/:id/erase`, the
 email typed to confirm, never an admin or yourself, refused while it has
 payment records); the row is deleted, or anonymised like the 30-day purge when
-other people's history still points at it. Insights
-does not yet leave test accounts out (the flag survives erasure so it can).
+other people's history still points at it. Insights,
+its CSV exports and PDF statements leave test accounts out of every count and
+sum (`backend/src/lib/test-accounts.js`; the flag survives erasure so it can).
 
 **Bot sign-ups and account addresses** (Oct 2026; migration 0069). Every
 sign-up is screened (`lib/signup-risk.js`): **blocked** (no account) only on

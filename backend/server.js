@@ -309,7 +309,9 @@ app.use('/reviews', (req, res, next) => {
 }, require('./src/routes/reviews'));
 app.use('/rentals',         require('./src/routes/rental-plates')); // team only: plate covers
 app.use('/rentals',         require('./src/routes/rentals'));
-app.use('/referrals',       require('./src/routes/referrals'));
+// Referrals were retired with the commission they discounted; the tables stay
+// so history is readable, and nothing reads or writes them.
+app.use('/referrals', (_req, res) => res.status(410).json({ error: 'Referrals have been retired' }));
 app.use('/disputes', (req, res, next) => req.method === 'POST'
   ? transactionFeatureRetired(req, res, next) : next(), require('./src/routes/disputes'));
 app.use('/devices',         require('./src/routes/devices'));

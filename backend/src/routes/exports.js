@@ -22,6 +22,7 @@ const { log } = require('../lib/log');
 const { recordAdminAction } = require('../lib/admin-audit');
 const { toCsv } = require('../lib/csv');
 const { parseRange, within, TZ } = require('../lib/insights-range');
+const { real, realContact, realFee, realInspection, realSubscription } = require('../lib/test-accounts');
 
 const router = express.Router();
 router.use(requireAdmin);
@@ -47,7 +48,7 @@ const DATASETS = {
                   THEN ROUND(EXTRACT(EPOCH FROM (s.reviewed_at - s.submitted_at)) / 3600, 1) END AS hours_to_review,
              s.car_id, s.seller_id
         FROM submissions s
-       WHERE ${within('s.submitted_at', 1, 2)}
+       WHERE ${real('s.seller_id')} AND ${within('s.submitted_at', 1, 2)}
        ORDER BY s.submitted_at`,
     columns: [
       ['id', 'Submission id'], ['submitted_at', 'Submitted (Kigali)'], ['status', 'Status'], ['purpose', 'Purpose'],
@@ -73,8 +74,9 @@ const DATASETS = {
         LEFT JOIN submissions s ON s.id = i.submission_id
         LEFT JOIN cars c ON c.id = i.car_id
         LEFT JOIN users insp ON insp.id = i.inspector_id
-       WHERE (i.scheduled_on BETWEEN $1::date AND $2::date)
-          OR (i.completed_at IS NOT NULL AND ${within('i.completed_at', 1, 2)})
+       WHERE ${realInspection('i')}
+         AND ((i.scheduled_on BETWEEN $1::date AND $2::date)
+          OR (i.completed_at IS NOT NULL AND ${within('i.completed_at', 1, 2)}))
        ORDER BY COALESCE(i.completed_at, i.scheduled_on::timestamptz)`,
     columns: [
       ['id', 'Inspection id'], ['kind', 'Kind'], ['center', 'Center'], ['scheduled_on', 'Scheduled on'],
@@ -96,7 +98,7 @@ const DATASETS = {
              (SELECT COUNT(*) FROM saved_cars sc WHERE sc.car_id = c.id)::int AS saves,
              (SELECT COUNT(*) FROM listing_contact_events e WHERE e.car_id = c.id)::int AS contact_requests
         FROM cars c
-       WHERE c.listed_at IS NOT NULL AND ${within('c.listed_at', 1, 2)}
+       WHERE ${real('c.seller_id')} AND c.listed_at IS NOT NULL AND ${within('c.listed_at', 1, 2)}
        ORDER BY c.listed_at`,
     columns: [
       ['id', 'Listing id'], ['title', 'Title'], ['make', 'Make'], ['model', 'Model'], ['year', 'Year', true],
@@ -118,13 +120,13 @@ const DATASETS = {
           FROM platform_fees f
           LEFT JOIN inspections i ON i.id = f.inspection_id
           LEFT JOIN users rec ON rec.id = f.recorded_by
-         WHERE f.status = 'paid' AND ${within('COALESCE(f.collected_at, f.created_at)', 1, 2)}
+         WHERE ${realFee('f')} AND f.status = 'paid' AND ${within('COALESCE(f.collected_at, f.created_at)', 1, 2)}
         UNION ALL
         SELECT ${at('r.created_at')}, r.created_at, 'subscription', 'rental_subscription', r.method, r.amount_rwf, 'RWF',
                NULL, r.reference, rec.name, r.id
           FROM rental_subscriptions r
           LEFT JOIN users rec ON rec.id = r.recorded_by
-         WHERE r.voided_at IS NULL AND ${within('r.created_at', 1, 2)}
+         WHERE ${realSubscription('r')} AND r.voided_at IS NULL AND ${within('r.created_at', 1, 2)}
       ) x ORDER BY sort_at`,
     columns: [
       ['collected_at', 'Collected (Kigali)'], ['source', 'Source'], ['line', 'Line'], ['method', 'Method'],
@@ -140,7 +142,7 @@ const DATASETS = {
       SELECT ${at('e.created_at')} AS created_at, e.channel, e.car_id, c.title, c.make, c.model
         FROM listing_contact_events e
         LEFT JOIN cars c ON c.id = e.car_id
-       WHERE ${within('e.created_at', 1, 2)}
+       WHERE ${realContact('e')} AND ${within('e.created_at', 1, 2)}
        ORDER BY e.created_at`,
     columns: [
       ['created_at', 'Requested (Kigali)'], ['channel', 'Channel'], ['car_id', 'Listing id'],
@@ -156,7 +158,7 @@ const DATASETS = {
              u.id_verified, u.business_verified, ${at('u.id_verified_at')} AS id_verified_at,
              (u.deleted_at IS NOT NULL OR u.closed_at IS NOT NULL) AS closed
         FROM users u
-       WHERE ${within('u.created_at', 1, 2)}
+       WHERE NOT u.is_test AND ${within('u.created_at', 1, 2)}
        ORDER BY u.created_at`,
     columns: [
       ['id', 'User id'], ['created_at', 'Created (Kigali)'], ['role', 'Role'], ['seller_type', 'Seller type'],
@@ -175,7 +177,7 @@ const DATASETS = {
              (SELECT ${at('MAX(p.verified_at)')} FROM import_payments p WHERE p.import_order_id = o.id AND p.milestone = 'final_50' AND p.status = 'verified') AS balance_verified_at,
              ${at('o.updated_at')} AS updated_at
         FROM import_orders o
-       WHERE ${within('o.created_at', 1, 2)}
+       WHERE ${real('o.buyer_id')} AND ${within('o.created_at', 1, 2)}
        ORDER BY o.created_at`,
     columns: [
       ['order_ref', 'Order'], ['created_at', 'Opened (Kigali)'], ['status', 'Status'], ['origin_country', 'Origin'],
@@ -195,7 +197,7 @@ const DATASETS = {
              ${at('q.closed_at')} AS closed_at
         FROM rental_inquiries q
         LEFT JOIN rental_cars rc ON rc.id = q.rental_car_id
-       WHERE ${within('q.created_at', 1, 2)}
+       WHERE ${real('q.renter_id')} AND ${within('q.created_at', 1, 2)}
        ORDER BY q.created_at`,
     columns: [
       ['inquiry_ref', 'Inquiry'], ['created_at', 'Received (Kigali)'], ['status', 'Status'], ['start_date', 'Wanted from'],

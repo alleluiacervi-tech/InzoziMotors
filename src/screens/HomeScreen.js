@@ -5,7 +5,6 @@ import {
 } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import Screen from '../components/Screen';
 import CarCard from '../components/CarCard';
 import StaggerEntrance from '../components/StaggerEntrance';
@@ -34,7 +33,7 @@ const FEATURED_GAP = 12;
 // eight — long enough to read a price without the card moving under a thumb.
 const FEATURED_INTERVAL_MS = 5000;
 const FEATURED_TOUCH_PAUSE_MS = 8000;
-const SHOWROOM_CARD_W = Math.min(SCREEN_WIDTH * 0.78, 340);
+const SHOWROOM_CARD_W = Math.min(SCREEN_WIDTH * 0.72, 270);
 
 const TOOLS = [
   { labelKey: 'certifyCar', icon: 'car-outline', screen: 'CarSubmission' },
@@ -598,38 +597,37 @@ export default function HomeScreen({ navigation }) {
                     accessibilityRole="button"
                     accessibilityLabel={`${item.name}, ${t('browse.showroomCars', { count: item.live_count })}`}
                   >
-                    <View style={styles.showroomCover}>
+                    <View style={styles.showroomThumb}>
                       {item.cover_image ? (
                         <Photo uri={item.cover_image} width={PHOTO.CARD} style={styles.showroomPhoto} resizeMode="cover" />
                       ) : null}
-                      <LinearGradient colors={['transparent', 'rgba(12,10,10,0.82)']} style={styles.showroomFade} />
-                      <View style={styles.showroomCaption}>
-                        {item.avatar_url ? (
-                          <Image source={{ uri: item.avatar_url }} style={styles.showroomAvatar} />
-                        ) : (
-                          <View style={[styles.showroomAvatar, styles.showroomAvatarEmpty]}>
-                            <Text style={styles.showroomAvatarText}>{String(item.name || '?').charAt(0).toUpperCase()}</Text>
-                          </View>
-                        )}
-                        <View style={{ flex: 1, minWidth: 0 }}>
-                          <Text style={styles.showroomName} numberOfLines={1}>{item.name}</Text>
-                          <View style={styles.showroomVerifiedRow}>
-                            <Ionicons name="checkmark-circle" size={12} color={colors.greenLight} />
-                            <Text style={styles.showroomVerified} numberOfLines={1}>
-                              {t('browse.verifiedShowroom')}{item.location ? ` · ${item.location}` : ''}
-                            </Text>
-                          </View>
+                      {item.avatar_url ? (
+                        <Image source={{ uri: item.avatar_url }} style={item.cover_image ? styles.showroomAvatarBadge : styles.showroomAvatarFill} />
+                      ) : (
+                        <View style={item.cover_image ? [styles.showroomAvatarBadge, styles.showroomAvatarEmpty] : [styles.showroomAvatarFill, styles.showroomAvatarEmpty]}>
+                          <Text style={item.cover_image ? styles.showroomAvatarTextSmall : styles.showroomAvatarText}>
+                            {String(item.name || '?').charAt(0).toUpperCase()}
+                          </Text>
                         </View>
-                      </View>
+                      )}
                     </View>
-                    <View style={styles.showroomFoot}>
-                      <View style={styles.showroomBrands}>
-                        {brands.slice(0, 5).map((b) => (
-                          <BrandMark key={b.make} name={b.make} logoUrl={brandRow(b.make)?.logo_url} size={24} style={styles.showroomBrandMark} />
-                        ))}
-                        {brands.length > 5 ? <Text style={styles.showroomMore}>+{brands.length - 5}</Text> : null}
+                    <View style={styles.showroomBody}>
+                      <Text style={styles.showroomName} numberOfLines={1}>{item.name}</Text>
+                      <View style={styles.showroomVerifiedRow}>
+                        <Ionicons name="shield-checkmark" size={12} color={colors.greenText} />
+                        <Text style={styles.showroomVerified} numberOfLines={1}>
+                          {t('browse.verifiedShowroom')}{item.location ? ` · ${item.location}` : ''}
+                        </Text>
                       </View>
-                      <Text style={styles.showroomCount}>{t('browse.showroomCars', { count: item.live_count })}</Text>
+                      <View style={styles.showroomFoot}>
+                        <View style={styles.showroomBrands}>
+                          {brands.slice(0, 3).map((b) => (
+                            <BrandMark key={b.make} name={b.make} logoUrl={brandRow(b.make)?.logo_url} size={18} style={styles.showroomBrandMark} />
+                          ))}
+                          {brands.length > 3 ? <Text style={styles.showroomMore}>+{brands.length - 3}</Text> : null}
+                        </View>
+                        <Text style={styles.showroomCount} numberOfLines={1}>{t('browse.showroomCars', { count: item.live_count })}</Text>
+                      </View>
                     </View>
                   </Pressable>
                 );
@@ -1061,36 +1059,41 @@ const styles = StyleSheet.create({
   showroomCard: {
     width: SHOWROOM_CARD_W,
     marginRight: 12,
-    borderRadius: radius.xl,
-    overflow: 'hidden',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    padding: 8,
+    borderRadius: radius.lg,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.borderSoft,
   },
-  showroomCover: { height: 148, backgroundColor: '#1C1A1A' },
+  showroomThumb: {
+    width: 56, height: 56, borderRadius: 12, overflow: 'hidden',
+    backgroundColor: colors.navyMid,
+  },
   showroomPhoto: { width: '100%', height: '100%' },
-  showroomFade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '70%' },
-  showroomCaption: {
-    position: 'absolute', left: 12, right: 12, bottom: 12,
-    flexDirection: 'row', alignItems: 'center', gap: 10,
+  showroomAvatarBadge: {
+    position: 'absolute', right: 4, bottom: 4,
+    width: 20, height: 20, borderRadius: 10,
+    borderWidth: 1.5, borderColor: '#FFFFFF', backgroundColor: '#FFFFFF',
   },
-  showroomAvatar: {
-    width: 44, height: 44, borderRadius: 22,
-    borderWidth: 2, borderColor: '#FFFFFF', backgroundColor: '#FFFFFF',
-  },
+  showroomAvatarFill: { width: '100%', height: '100%', backgroundColor: '#FFFFFF' },
   showroomAvatarEmpty: { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.navyMid },
-  showroomAvatarText: { fontSize: 18, fontFamily: fonts.extraBold, color: '#fff' },
-  showroomName: { fontSize: 17, fontFamily: fonts.extraBold, color: '#fff', letterSpacing: -0.3 },
-  showroomVerifiedRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
-  showroomVerified: { flexShrink: 1, fontSize: 11.5, fontFamily: fonts.semiBold, color: 'rgba(255,255,255,0.82)' },
+  showroomAvatarText: { fontSize: 20, fontFamily: fonts.extraBold, color: '#fff' },
+  showroomAvatarTextSmall: { fontSize: 9, fontFamily: fonts.extraBold, color: '#fff' },
+  showroomBody: { flex: 1, minWidth: 0, gap: 1 },
+  showroomName: { fontSize: 14, fontFamily: fonts.extraBold, color: colors.textPrimary, letterSpacing: -0.2 },
+  showroomVerifiedRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  showroomVerified: { flexShrink: 1, fontSize: 11, fontFamily: fonts.semiBold, color: colors.textSecondary },
   showroomFoot: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    gap: 8, paddingHorizontal: 12, paddingVertical: 10,
+    gap: 8, marginTop: 3,
   },
-  showroomBrands: { flexDirection: 'row', alignItems: 'center', gap: 5, flexShrink: 1 },
+  showroomBrands: { flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 1 },
   showroomBrandMark: { borderWidth: 1, borderColor: colors.borderSoft },
   showroomMore: { fontSize: 11, fontFamily: fonts.bold, color: colors.textMuted },
-  showroomCount: { fontSize: 12, fontFamily: fonts.bold, color: colors.textSecondary },
+  showroomCount: { fontSize: 11, fontFamily: fonts.bold, color: colors.textPrimary },
   brandTile: {
     width: 84,
     alignItems: 'center',

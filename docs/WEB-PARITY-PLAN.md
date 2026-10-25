@@ -1,7 +1,7 @@
 # Web parity plan: sawacars.com can do everything the app can
 
 Status: **Phases 0–2 implemented 27 Sep 2026 (messaging, seller onboarding); Phase 3 (account & trust) next** · Drafted 27 Sep 2026 against `main` @ `c7d64b2`
-O1, O2 and O4 were accepted as their recommended defaults on 27 Sep 2026 — O3 (referrals) is still open; see [§8](#8-open-decisions).
+O1, O2 and O4 were accepted as their recommended defaults on 27 Sep 2026 — O3 (referrals) was decided on 25 Oct 2026: retired for good; see [§8](#8-open-decisions).
 
 ## 1. Goal
 
@@ -75,6 +75,29 @@ languages · light/dark theme.
 | B3 | ✅ *fixed 27 Sep 2026* **The socket doesn't re-check the session.** A suspended or deleted user keeps a live socket until it drops, which breaks invariant 5 for realtime. | `backend/src/socket.js:7` |
 | B4 | ✅ *fixed 27 Sep 2026* **ID documents keep their EXIF data**, which can include GPS location, because they're stored uncompressed on purpose. | `routes/id-verification.js`, `middleware/upload.js` |
 | B5 | ✅ *fixed 27 Sep 2026* **The app's seller notes are dropped.** It sent `seller_notes`; the backend only stores `notes`. Found while planning Phase 2 (§10.1 F7). | `src/context/AppContext.js` `addSubmission` |
+
+### 3.5 Final audit (25 Oct 2026)
+
+Method as in §3: every app screen (56) and every API call in `src/` was compared
+with the routes in `web/src/app/` and the calls in `web/src/lib/api.ts`. A
+path-by-path diff of the app's API calls against the web's left 22 paths the web
+does not reference literally; each was checked by hand.
+
+**Result: no open parity gap.** Every row of §3.2 and §3.3 is closed except G12.
+
+| Area | Result |
+|---|---|
+| Messaging, seller onboarding, scheduling, compare, profiles, reopen, Web Push | At parity (§3.2, shipped 27 Sep and 13 Oct) |
+| Added since the first audit: Korea imports and market guide, held-account email code (`/verify-email`), rental proposals, photos and the provider's calendar of taken days, daily-summary and alert settings, saved-search `instant`/`daily`, rate card (`/tools/pricing`) | At parity |
+| `/auth/oauth/*` | Google on web, Google and Apple in the app, by decision (CLAUDE.md, *Sign in with Google / Apple*) |
+| `/admin/*`, `/inspections/*`, `/id-verification/queue`, `PATCH /cars/:id/status`, `PATCH /submissions/:id` | Staff tools (§7) |
+| `/auth/refresh`, `/devices/token`, `/settings/app-release` | Native only: token refresh, the app's push token (the web has its own subscription) and the store-update prompt |
+| G12 referrals (O3) | **Retired for good (25 Oct 2026).** App strings, web components and API client deleted; `/referrals` answers 410; tables kept |
+
+Also found, not parity: `TrustScoreScreen` was registered but nothing navigated to
+it (the trust score is gone from every public page). Deleted on 25 Oct 2026 with
+its grade helper and API call, and the unused `trustScore.*`, `buyingGuide.step1…5`
+and `sawaPromise` strings were removed from `src/i18n` the same day.
 
 ### 3.4 Blockers and stale content on the web
 
@@ -175,7 +198,7 @@ Rough size: phase 0 is 2–3 days; phases 1 and 2 are 4–5 days each; phase 3 i
 |---|---|---|---|
 | O1 | Phase order: messaging first, or seller onboarding first? | Messaging first. It's a broken loop today, not a missing feature. | **Accepted 27 Sep 2026** (default) |
 | O2 | May desktop users *upload* ID photos, or only take live webcam or phone-camera shots? | Allow upload, and flag uploaded (non-live) captures to reviewers so staff can apply extra care | **Accepted 27 Sep 2026** (default) |
-| O3 | Referrals were deliberately retired on the web. Bring them back, or retire them in the app too? | Decide on product grounds; don't restore by default | **Still open** — no safe default; Phase 4 will not touch referrals until this is answered |
+| O3 | Referrals were deliberately retired on the web. Bring them back, or retire them in the app too? | Decide on product grounds; don't restore by default | **Decided 25 Oct 2026: retire for good** |
 | O4 | Offline message email: on by default with opt-out, or opt-in? | On by default, with opt-out; it's transactional, not marketing | **Accepted 27 Sep 2026** (default) |
 
 ## 9. Tracking

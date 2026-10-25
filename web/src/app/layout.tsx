@@ -7,7 +7,7 @@ import { cookies } from 'next/headers'
 import { getCurrentUser, QUIET_GOOGLE_COOKIE } from '@/lib/session'
 import { googleConfig, googleEnabled } from '@/lib/oauth'
 import { GoogleOneTap } from '@/components/auth/GoogleOneTap'
-import { duty, fx, rentals } from '@/lib/api'
+import { duty, fx, rentals, showrooms } from '@/lib/api'
 import { setDutyRates, setRwfRate } from '@/lib/business'
 import { DutySync } from '@/components/DutySync'
 import { FxSync } from '@/components/FxSync'
@@ -124,6 +124,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // Rent rather than failing the page.
   const showRent = rentPromoted((await rentals.list().catch(() => [])).length)
 
+  // Showrooms is in the navigation only while one holds public stock, so the
+  // menu never points at an empty page. Same cached request as /showrooms.
+  const showShowrooms = (await showrooms.list().catch(() => [])).length > 0
+
   // The visitor's language, from the cookie the switcher writes. Drives
   // <html lang> and seeds the client provider so the first paint is already
   // translated — no flash of English.
@@ -168,7 +172,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             reload. */}
         <CurrencyProvider initial={rate}>
           <LanguageProvider initialLocale={locale} messages={messagesFor(locale, CHROME_NAMESPACES)}>
-            <SiteChrome><Header user={user} showRent={showRent} google={!user && googleEnabled()} /></SiteChrome>
+            <SiteChrome><Header user={user} showRent={showRent} showShowrooms={showShowrooms} google={!user && googleEnabled()} /></SiteChrome>
             <main id="main" className="flex-1">
               {children}
             </main>

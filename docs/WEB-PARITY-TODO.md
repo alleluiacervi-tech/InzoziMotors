@@ -6,7 +6,7 @@ D#, O#) refer to that document. Tick items in the PR that ships them.
 ## Before starting
 - [x] O1 — confirm phase order → **messaging first** (recommended default, accepted 2026-09-27)
 - [x] O2 — desktop ID upload allowed? → **yes, flagged for reviewers** (recommended default, accepted 2026-09-27)
-- [ ] O3 — referrals: restore on web or retire in app — **still open**, no safe default; needs an actual product call, not just a "go ahead"
+- [x] O3 — referrals retired for good on 25 Oct 2026 (decided by the owner): app strings, web components and the API client deleted, `/referrals` answers 410, tables kept for history
 - [x] O4 — offline message email default → **on, with opt-out** (recommended default, accepted 2026-09-27)
 
 ## Phase 0 — Foundations
@@ -102,10 +102,10 @@ Detailed plan: [`WEB-PARITY-PLAN.md` §11](WEB-PARITY-PLAN.md#11-phase-3-in-deta
 - [x] Playwright: mark sold removes the car from `/cars`; a profile lists live cars; compare renders chosen cars; reopen a closed account from sign-in
 
 ## Phase 4 — Reach & polish (G12–G14, W3)
-- [ ] **O3** Referrals: implement web page or remove from app, per decision
+- [x] **O3** Referrals: retired (see top of file)
 - [x] **G13** Web Push: service worker (`web/public/sw.js`), own table `web_push_subscriptions` (migration 0059) instead of `platform` on device tokens, backend sender `lib/web-push.js` + tests, toggle and test button in Profile → Notifications, sign-out drops the subscription. **Ships off** until the VAPID keys are in the server's `.env` (human)
 - [x] PWA install prompt on supported browsers (dashboard overview; Chrome/Edge/Samsung via `beforeinstallprompt`; hidden where the store app is live, so not on iPhone)
-- [ ] **W3** Copy sweep: `AppCapabilities.tsx` (drop 36-angle + app-only claims), `VerificationNotice.tsx`, `dashboard/selling`, `dashboard/profile`, `RequestCarForm.tsx`, `/download` page
-- [ ] **G14** Content check: `/how-it-works`, `/promise` vs app `BuyingGuide`, `SawaPromise`
-- [ ] Final parity audit — re-run the §3 method; every row "at parity" or listed in §7
-- [ ] Update CLAUDE.md "last verified" and remove "planned" status from the plan
+- [x] **W3** Copy sweep (25 Oct 2026): `AppCapabilities.tsx` is gone and the other listed components already point to the web flows; the `/download` page was the last offender (photo upload is not app-only, "purchase history" is a retired concept) and is fixed in all six languages
+- [x] **G14** Content check (25 Oct 2026): `/how-it-works` and `/legal/guarantee` agree with the app's `BuyingGuide` and `SawaPromise` (no checkout, escrow, guarantee or fee claims). Fixed the app's valuation screen, which promised cars "sell up to 12% more and 3× faster" with no data behind it. The web has no page named `/promise`; `/legal/guarantee` is its equivalent
+- [x] Final parity audit (25 Oct 2026) — re-run the §3 method; result in `WEB-PARITY-PLAN.md` §3.5: every row at parity or listed in §7
+- [x] Update CLAUDE.md "last verified" (parity line only) and remove "planned" status from the plan

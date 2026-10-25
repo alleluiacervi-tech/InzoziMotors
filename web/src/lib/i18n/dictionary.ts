@@ -42,6 +42,7 @@ const en = {
     rent: 'Rent',
     imports: 'Import',
     howItWorks: 'How Sawa works',
+    showrooms: 'Showrooms',
     browseCertified: 'Browse certified cars',
   },
   footer: {
@@ -66,6 +67,7 @@ const en = {
     links: {
       '/cars': 'Browse certified cars',
       '/rentals': 'Rent a car',
+      '/showrooms': 'Verified showrooms',
       '/sell': 'Sell your car',
       '/tools/valuation': 'Free valuation',
       '/imports': 'Import a car',
@@ -116,6 +118,7 @@ const rw = {
     rent: 'Kodesha',
     imports: 'Gutumiza',
     howItWorks: 'Uko Sawa ikora',
+    showrooms: 'Amaduka',
     browseCertified: 'Reba imodoka zemewe',
   },
   footer: {
@@ -140,6 +143,7 @@ const rw = {
     links: {
       '/cars': 'Reba imodoka zemewe',
       '/rentals': 'Kodesha imodoka',
+      '/showrooms': 'Amaduka yemejwe',
       '/sell': 'Gurisha imodoka yawe',
       '/tools/valuation': 'Isuzuma ry’agaciro ku buntu',
       '/imports': 'Tumiza imodoka',
@@ -190,6 +194,7 @@ const fr = {
     rent: 'Louer',
     imports: 'Importer',
     howItWorks: 'Comment fonctionne Sawa',
+    showrooms: 'Showrooms',
     browseCertified: 'Voir les voitures certifiées',
   },
   footer: {
@@ -214,6 +219,7 @@ const fr = {
     links: {
       '/cars': 'Voir les voitures certifiées',
       '/rentals': 'Louer une voiture',
+      '/showrooms': 'Showrooms vérifiés',
       '/sell': 'Vendre votre voiture',
       '/tools/valuation': 'Estimation gratuite',
       '/imports': 'Importer une voiture',
@@ -264,6 +270,7 @@ const sw = {
     rent: 'Kodi',
     imports: 'Agiza',
     howItWorks: 'Jinsi Sawa inavyofanya kazi',
+    showrooms: 'Maonyesho',
     browseCertified: 'Angalia magari yaliyothibitishwa',
   },
   footer: {
@@ -288,6 +295,7 @@ const sw = {
     links: {
       '/cars': 'Angalia magari yaliyothibitishwa',
       '/rentals': 'Kodisha gari',
+      '/showrooms': 'Maonyesho yaliyothibitishwa',
       '/sell': 'Uza gari lako',
       '/tools/valuation': 'Ukadiriaji bila malipo',
       '/imports': 'Agiza gari',
@@ -338,6 +346,7 @@ const ko = {
     rent: '렌트',
     imports: '수입',
     howItWorks: 'Sawa 이용 방법',
+    showrooms: '쇼룸',
     browseCertified: '인증 차량 둘러보기',
   },
   footer: {
@@ -362,6 +371,7 @@ const ko = {
     links: {
       '/cars': '인증 차량 둘러보기',
       '/rentals': '차량 렌트',
+      '/showrooms': '인증된 쇼룸',
       '/sell': '내 차량 판매',
       '/tools/valuation': '무료 시세 평가',
       '/imports': '차량 수입',
@@ -412,6 +422,7 @@ const zh = {
     rent: '租车',
     imports: '进口',
     howItWorks: 'Sawa 如何运作',
+    showrooms: '展厅',
     browseCertified: '浏览已认证车辆',
   },
   footer: {
@@ -436,6 +447,7 @@ const zh = {
     links: {
       '/cars': '浏览已认证车辆',
       '/rentals': '租车',
+      '/showrooms': '已认证展厅',
       '/sell': '出售我的车辆',
       '/tools/valuation': '免费估值',
       '/imports': '进口汽车',

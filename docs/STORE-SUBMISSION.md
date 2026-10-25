@@ -66,7 +66,10 @@ transaction intermediation or a vehicle/payment warranty.
 > Expo/EAS (builds, updates and push notifications), Cloudinary or managed upload
 > storage (vehicle/identity images), and configured SMTP/Resend (transactional
 > account email). There is no advertising SDK, analytics SDK, tracking SDK,
-> payment processor or AI service in the core marketplace flow.
+> payment processor or AI service in the core marketplace flow. Crash reporting
+> (Sentry) is built in but switched off in this build (no DSN is set), so no
+> crash data leaves the device. If it is ever switched on, declare crash logs
+> and diagnostics in the privacy forms first.
 >
 > The app functions consistently across supported regions. Inventory, phone
 > formats, inspection centres, bank estimates and service availability are
@@ -114,7 +117,11 @@ or the review-message reply; also provide a stable view-only link in Notes.
   - user ID and optional Expo push-token/device identifier;
   - identity-document photos and selfie for sellers;
   - vehicle photos/submissions, saved items/searches and rental inquiries;
-  - in-app messages and user reports.
+  - in-app messages and user reports;
+  - IP address and approximate location (country, from the IP address) and
+    device type, collected for security and fraud prevention only (stopping fake
+    sign-ups and account takeovers). Not shared, not used for ads. Deleted with
+    the account.
 - Do **not** declare payment information or purchase history for this build. No
   marketplace transaction or rental payment is processed or recorded.
 - The app uses the system photo picker and camera for user-requested identity and
@@ -128,6 +135,9 @@ Data linked to the user for App Functionality/Account Management:
 
 - Contact Info: name, email, optional phone number.
 - Identifiers: user ID; device ID/push token when notifications are enabled.
+- Usage Data / Other Data: IP address, approximate country and device type,
+  used for Security and Fraud Prevention only (purpose: App Functionality),
+  linked to the account, not used for tracking.
 - User Content: vehicle/identity photos, in-app messages, submissions, saved
   searches and reports.
 - Sensitive Info: government-ID images/selfie for seller verification.
@@ -213,12 +223,17 @@ What's New (Apple):
 > • Clear messages in your language when you contact a seller or ask about a rental.
 > • You can ask about a rental that starts today.
 
-Release notes (Google Play, 476/500 with tags):
+Release notes (Google Play, 476/500 with tags). **Do not publish the first
+bullet until Settings → Send a test notification has reached a real Android
+phone** (FCM delivery is still unconfirmed). Until then use the fallback
+bullet below in its place:
+
+Fallback bullet: `• Messages and alerts appear in the app as they arrive.`
 
 ```
 <en-US>
 Alerts that reach you, in your language, and stay calm.
-• Messages, new cars matching a saved search and price drops arrive with the app open or closed.
+• Messages, new cars matching a saved search and price drops arrive with the app open or closed. [ANDROID: publish only after a real-phone test]
 • New-car and price alerts wait until 7 am if they arrive between 9 pm and 7 am (Kigali).
 • Optional daily summary of new cars, off until you turn it on.
 • Showroom pages with address, directions and opening hours.
@@ -245,7 +260,8 @@ Use actual app screens, not splash/login-only art:
 - [ ] Reviewer credentials tested immediately before submission.
 - [ ] Physical-device recording attached and view-only link tested logged out.
 - [ ] Device/OS list and external-services list pasted into Notes.
-- [ ] Privacy/Data Safety answers match this binary.
+- [ ] Privacy/Data Safety answers match this binary (incl. IP address / approximate location for security).
+- [ ] Android test notification received on a real phone, or the Play notes use the fallback bullet.
 - [ ] Play App Signing fingerprint deployed in `assetlinks.json`.
 - [ ] `npm run release:check` passes.
 - [ ] Manual release selected until production smoke tests are complete.

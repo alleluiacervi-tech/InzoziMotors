@@ -17,6 +17,7 @@ import { imports } from './imports'
 import { messages } from './messages'
 import { onboarding } from './onboarding'
 import { market } from './market'
+import { showrooms } from './showrooms'
 
 export const SECTIONS: Record<string, Record<Locale, Record<string, unknown>>> = {
   home,
@@ -34,4 +35,5 @@ export const SECTIONS: Record<string, Record<Locale, Record<string, unknown>>> =
   messages,
   onboarding,
   market,
+  showrooms,
 }

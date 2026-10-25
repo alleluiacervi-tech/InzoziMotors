@@ -30,16 +30,18 @@ import type { User } from '@/lib/types'
 // Nav labels come from NAV_LINKS (hrefs) but are translated by key.
 const NAV_KEY: Record<string, string> = {
   '/cars': 'nav.buy', '/rentals': 'nav.rent', '/sell': 'nav.sell',
-  '/imports': 'nav.imports', '/how-it-works': 'nav.howItWorks',
+  '/imports': 'nav.imports', '/how-it-works': 'nav.howItWorks', '/showrooms': 'nav.showrooms',
 }
 
 export function Header({
   user,
   showRent = false,
+  showShowrooms = false,
   google = false,
 }: {
   user: User | null
   showRent?: boolean
+  showShowrooms?: boolean
   /** Signed out, with Google sign-in configured: draw "Continue with Google". */
   google?: boolean
 }) {
@@ -75,7 +77,7 @@ export function Header({
     return () => window.removeEventListener('keydown', onKey)
   }, [open])
 
-  const navLinks = NAV_LINKS.filter((link) => showRent || link.href !== '/rentals')
+  const navLinks = NAV_LINKS.filter((link) => (showRent || link.href !== '/rentals') && (showShowrooms || link.href !== '/showrooms'))
 
   const isActive = (href: string) =>
     pathname === href || (href !== '/' && pathname.startsWith(href))

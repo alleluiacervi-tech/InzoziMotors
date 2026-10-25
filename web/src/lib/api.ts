@@ -880,13 +880,6 @@ export const disputes = {
     }),
 }
 
-export const referrals = {
-  redeem: (token: string, code: string) =>
-    request<{ success: true }>('/referrals/redeem', {
-      token, method: 'POST', body: JSON.stringify({ code }),
-    }),
-}
-
 export const handovers = {
   cancel: (token: string, id: string) =>
     request<{ success: true }>(`/handovers/${id}/cancel`, { token, method: 'POST' }),
@@ -895,7 +888,7 @@ export const handovers = {
 export const api = {
   cars, rentals, sellers, showrooms, auth, account, saved,
   submissions, notifications, messages, sellerListings,
-  disputes, referrals, handovers,
+  disputes, handovers,
 }
 
 export default api
