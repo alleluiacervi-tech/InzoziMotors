@@ -31,6 +31,7 @@ const { log } = require('../lib/log');
 const { ALL_ITEMS, PUBLISH_THRESHOLD, SCORE_MAX } = require('../lib/inspection-policy');
 const { parseRange, within, kigaliDay, kigaliToday, TZ } = require('../lib/insights-range');
 const { BUDGET_EDGES_RWF, budgetBands } = require('../lib/insights-bands');
+const { real, realContact, realFee, realInspection, realSubscription } = require('../lib/test-accounts');
 
 const router = express.Router();
 router.use(requireAdmin);
@@ -60,27 +61,27 @@ function handle(fn, label) {
 /** Every windowed count in one round trip. $1 = from, $2 = to. */
 const WINDOW_COUNTS = `
   SELECT
-    (SELECT COUNT(*) FROM submissions WHERE ${within('submitted_at', 1, 2)})::int AS submissions,
-    (SELECT COUNT(*) FROM submissions WHERE reviewed_at IS NOT NULL AND ${within('reviewed_at', 1, 2)})::int AS reviewed,
-    (SELECT COUNT(*) FROM submissions WHERE reviewed_at IS NOT NULL AND ${within('reviewed_at', 1, 2)}
+    (SELECT COUNT(*) FROM submissions WHERE ${real('seller_id')} AND ${within('submitted_at', 1, 2)})::int AS submissions,
+    (SELECT COUNT(*) FROM submissions WHERE ${real('seller_id')} AND reviewed_at IS NOT NULL AND ${within('reviewed_at', 1, 2)})::int AS reviewed,
+    (SELECT COUNT(*) FROM submissions WHERE ${real('seller_id')} AND reviewed_at IS NOT NULL AND ${within('reviewed_at', 1, 2)}
        AND reviewed_at - submitted_at <= INTERVAL '24 hours')::int AS reviewed_in_sla,
-    (SELECT COUNT(*) FROM inspections WHERE status = 'complete' AND ${within('completed_at', 1, 2)})::int AS inspections_completed,
-    (SELECT COUNT(*) FROM inspections WHERE status = 'complete' AND passed AND ${within('completed_at', 1, 2)})::int AS inspections_passed,
-    (SELECT COUNT(*) FROM cars WHERE listed_at IS NOT NULL AND ${within('listed_at', 1, 2)})::int AS published,
-    (SELECT COUNT(*) FROM cars WHERE sold_at IS NOT NULL AND ${within('sold_at', 1, 2)})::int AS marked_sold,
+    (SELECT COUNT(*) FROM inspections WHERE ${realInspection('inspections')} AND status = 'complete' AND ${within('completed_at', 1, 2)})::int AS inspections_completed,
+    (SELECT COUNT(*) FROM inspections WHERE ${realInspection('inspections')} AND status = 'complete' AND passed AND ${within('completed_at', 1, 2)})::int AS inspections_passed,
+    (SELECT COUNT(*) FROM cars WHERE ${real('seller_id')} AND listed_at IS NOT NULL AND ${within('listed_at', 1, 2)})::int AS published,
+    (SELECT COUNT(*) FROM cars WHERE ${real('seller_id')} AND sold_at IS NOT NULL AND ${within('sold_at', 1, 2)})::int AS marked_sold,
     (SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY EXTRACT(EPOCH FROM (c.listed_at - s.submitted_at)) / 86400)
        FROM cars c JOIN submissions s ON s.car_id = c.id
-      WHERE c.listed_at IS NOT NULL AND c.listed_at >= s.submitted_at AND ${within('c.listed_at', 1, 2)}) AS median_days_to_live,
-    (SELECT COUNT(*) FROM users WHERE role = 'buyer' AND ${within('created_at', 1, 2)})::int AS new_buyers,
-    (SELECT COUNT(*) FROM users WHERE role = 'seller' AND ${within('created_at', 1, 2)})::int AS new_sellers,
-    (SELECT COUNT(*) FROM saved_cars WHERE ${within('saved_at', 1, 2)})::int AS saves,
-    (SELECT COUNT(*) FROM listing_contact_events WHERE ${within('created_at', 1, 2)})::int AS contacts,
-    (SELECT COUNT(*) FROM rental_inquiries WHERE ${within('created_at', 1, 2)})::int AS rental_inquiries,
-    (SELECT COUNT(*) FROM import_orders WHERE ${within('created_at', 1, 2)})::int AS import_enquiries,
+      WHERE ${real('c.seller_id')} AND c.listed_at IS NOT NULL AND c.listed_at >= s.submitted_at AND ${within('c.listed_at', 1, 2)}) AS median_days_to_live,
+    (SELECT COUNT(*) FROM users WHERE NOT is_test AND role = 'buyer' AND ${within('created_at', 1, 2)})::int AS new_buyers,
+    (SELECT COUNT(*) FROM users WHERE NOT is_test AND role = 'seller' AND ${within('created_at', 1, 2)})::int AS new_sellers,
+    (SELECT COUNT(*) FROM saved_cars WHERE ${real('user_id')} AND ${within('saved_at', 1, 2)})::int AS saves,
+    (SELECT COUNT(*) FROM listing_contact_events WHERE ${realContact()} AND ${within('created_at', 1, 2)})::int AS contacts,
+    (SELECT COUNT(*) FROM rental_inquiries WHERE ${real('renter_id')} AND ${within('created_at', 1, 2)})::int AS rental_inquiries,
+    (SELECT COUNT(*) FROM import_orders WHERE ${real('buyer_id')} AND ${within('created_at', 1, 2)})::int AS import_enquiries,
     (SELECT COALESCE(SUM(amount), 0) FROM platform_fees
-      WHERE status = 'paid' AND currency = 'RWF' AND ${within('COALESCE(collected_at, created_at)', 1, 2)})::bigint AS fees_rwf,
+      WHERE ${realFee()} AND status = 'paid' AND currency = 'RWF' AND ${within('COALESCE(collected_at, created_at)', 1, 2)})::bigint AS fees_rwf,
     (SELECT COALESCE(SUM(amount_rwf), 0) FROM rental_subscriptions
-      WHERE voided_at IS NULL AND ${within('created_at', 1, 2)})::bigint AS subscriptions_rwf`;
+      WHERE ${realSubscription('rental_subscriptions')} AND voided_at IS NULL AND ${within('created_at', 1, 2)})::bigint AS subscriptions_rwf`;
 
 function shapeKpis(row) {
   return {
@@ -109,11 +110,11 @@ async function overview(range) {
     pool.query(WINDOW_COUNTS, [previous.from, previous.to]),
     pool.query(`
       SELECT
-        (SELECT COUNT(*) FROM cars WHERE status = 'live')::int AS live_inventory,
-        (SELECT COUNT(*) FROM submissions WHERE status IN ('under_review','pending'))::int AS awaiting_review,
-        (SELECT COUNT(*) FROM submissions WHERE status IN ('under_review','pending')
+        (SELECT COUNT(*) FROM cars WHERE ${real('seller_id')} AND status = 'live')::int AS live_inventory,
+        (SELECT COUNT(*) FROM submissions WHERE ${real('seller_id')} AND status IN ('under_review','pending'))::int AS awaiting_review,
+        (SELECT COUNT(*) FROM submissions WHERE ${real('seller_id')} AND status IN ('under_review','pending')
            AND submitted_at < NOW() - INTERVAL '24 hours')::int AS reviews_breached,
-        (SELECT COUNT(*) FROM users WHERE id_verified = 'pending')::int AS identity_queue,
+        (SELECT COUNT(*) FROM users WHERE NOT is_test AND id_verified = 'pending')::int AS identity_queue,
         (SELECT COUNT(*) FROM message_reports WHERE status = 'open')::int AS open_reports`),
     // One row per Kigali day of the CURRENT window and one per day of the
     // previous window, aligned by index so a chart can draw both.
@@ -126,32 +127,32 @@ async function overview(range) {
           FROM generate_series($3::date, $4::date, INTERVAL '1 day') d
       )
       SELECT days.day, days.period, days.idx,
-        (SELECT COUNT(*) FROM submissions WHERE ${kigaliDay('submitted_at')} = days.day)::int AS submissions,
-        (SELECT COUNT(*) FROM cars WHERE listed_at IS NOT NULL AND ${kigaliDay('listed_at')} = days.day)::int AS published,
-        (SELECT COUNT(*) FROM listing_contact_events WHERE ${kigaliDay('created_at')} = days.day)::int AS contacts,
-        (SELECT COUNT(*) FROM saved_cars WHERE ${kigaliDay('saved_at')} = days.day)::int AS saves,
-        (SELECT COUNT(*) FROM users WHERE ${kigaliDay('created_at')} = days.day)::int AS new_users,
+        (SELECT COUNT(*) FROM submissions WHERE ${real('seller_id')} AND ${kigaliDay('submitted_at')} = days.day)::int AS submissions,
+        (SELECT COUNT(*) FROM cars WHERE ${real('seller_id')} AND listed_at IS NOT NULL AND ${kigaliDay('listed_at')} = days.day)::int AS published,
+        (SELECT COUNT(*) FROM listing_contact_events WHERE ${realContact()} AND ${kigaliDay('created_at')} = days.day)::int AS contacts,
+        (SELECT COUNT(*) FROM saved_cars WHERE ${real('user_id')} AND ${kigaliDay('saved_at')} = days.day)::int AS saves,
+        (SELECT COUNT(*) FROM users WHERE NOT is_test AND ${kigaliDay('created_at')} = days.day)::int AS new_users,
         ((SELECT COALESCE(SUM(amount), 0) FROM platform_fees
-           WHERE status = 'paid' AND currency = 'RWF' AND ${kigaliDay('COALESCE(collected_at, created_at)')} = days.day)
+           WHERE ${realFee()} AND status = 'paid' AND currency = 'RWF' AND ${kigaliDay('COALESCE(collected_at, created_at)')} = days.day)
          + (SELECT COALESCE(SUM(amount_rwf), 0) FROM rental_subscriptions
-           WHERE voided_at IS NULL AND ${kigaliDay('created_at')} = days.day))::bigint AS revenue_rwf
+           WHERE ${realSubscription('rental_subscriptions')} AND voided_at IS NULL AND ${kigaliDay('created_at')} = days.day))::bigint AS revenue_rwf
       FROM days ORDER BY days.period, days.day`, [from, to, previous.from, previous.to]),
     pool.query(`
       SELECT channel,
              COUNT(*) FILTER (WHERE ${within('created_at', 1, 2)})::int AS current,
              COUNT(*) FILTER (WHERE ${within('created_at', 3, 4)})::int AS previous
-        FROM listing_contact_events GROUP BY channel`, [from, to, previous.from, previous.to]),
+        FROM listing_contact_events WHERE ${realContact()} GROUP BY channel`, [from, to, previous.from, previous.to]),
     pool.query(`
       SELECT 'fee' AS source, f.fee_type AS line, COALESCE(f.method, 'unrecorded') AS method,
              COALESCE(i.center, '—') AS center, SUM(f.amount)::bigint AS total, COUNT(*)::int AS count
         FROM platform_fees f LEFT JOIN inspections i ON i.id = f.inspection_id
-       WHERE f.status = 'paid' AND f.currency = 'RWF' AND ${within('COALESCE(f.collected_at, f.created_at)', 1, 2)}
+       WHERE ${realFee('f')} AND f.status = 'paid' AND f.currency = 'RWF' AND ${within('COALESCE(f.collected_at, f.created_at)', 1, 2)}
        GROUP BY f.fee_type, method, center
       UNION ALL
       SELECT 'subscription', 'rental_subscription', COALESCE(method, 'unrecorded'), '—',
              SUM(amount_rwf)::bigint, COUNT(*)::int
         FROM rental_subscriptions
-       WHERE voided_at IS NULL AND ${within('created_at', 1, 2)}
+       WHERE ${realSubscription('rental_subscriptions')} AND voided_at IS NULL AND ${within('created_at', 1, 2)}
        GROUP BY method`, [from, to]),
   ]);
 
@@ -225,7 +226,7 @@ async function funnels(range) {
             SELECT id, status, passed, completed_at FROM inspections
              WHERE submission_id = s.id ORDER BY completed_at DESC NULLS LAST LIMIT 1
           ) insp ON TRUE
-         WHERE ${within('s.submitted_at', 1, 2)}
+         WHERE ${real('s.seller_id')} AND ${within('s.submitted_at', 1, 2)}
       )
       SELECT
         COUNT(*)::int AS s0,
@@ -253,7 +254,7 @@ async function funnels(range) {
         SELECT o.id, o.status, o.agreement_accepted_at,
                ARRAY(SELECT e.to_status FROM import_order_events e WHERE e.import_order_id = o.id AND e.to_status IS NOT NULL) AS seen,
                EXISTS (SELECT 1 FROM import_payments p WHERE p.import_order_id = o.id AND p.milestone = 'initial_50' AND p.status = 'verified') AS deposit_verified
-          FROM import_orders o WHERE ${within('o.created_at', 1, 2)}
+          FROM import_orders o WHERE ${real('o.buyer_id')} AND ${within('o.created_at', 1, 2)}
       )
       SELECT id, status, agreement_accepted_at, seen, deposit_verified FROM cohort`, [from, to]),
     pool.query(`
@@ -262,7 +263,7 @@ async function funnels(range) {
         COUNT(*) FILTER (WHERE EXISTS (SELECT 1 FROM saved_cars sc WHERE sc.user_id = u.id)
                             OR EXISTS (SELECT 1 FROM listing_contact_events e WHERE e.buyer_id = u.id))::int AS engaged,
         COUNT(*) FILTER (WHERE EXISTS (SELECT 1 FROM listing_contact_events e WHERE e.buyer_id = u.id))::int AS contacted
-      FROM users u WHERE u.role = 'buyer' AND ${within('u.created_at', 1, 2)}`, [from, to]),
+      FROM users u WHERE NOT u.is_test AND u.role = 'buyer' AND ${within('u.created_at', 1, 2)}`, [from, to]),
   ]);
 
   const s = seller.rows[0];
@@ -320,12 +321,12 @@ router.get('/funnels', handle(funnels, 'funnels'));
 
 async function inventory(range) {
   const [total, makes, bodies, bands, ages, stale, drops, dom, soldValue] = await Promise.all([
-    pool.query(`SELECT COUNT(*)::int AS n FROM cars WHERE status = 'live'`),
-    pool.query(`SELECT make AS key, COUNT(*)::int AS count FROM cars WHERE status = 'live' GROUP BY make ORDER BY count DESC, make LIMIT 12`),
-    pool.query(`SELECT COALESCE(NULLIF(body_type, ''), 'Unspecified') AS key, COUNT(*)::int AS count FROM cars WHERE status = 'live' GROUP BY 1 ORDER BY count DESC`),
+    pool.query(`SELECT COUNT(*)::int AS n FROM cars WHERE ${real('seller_id')} AND status = 'live'`),
+    pool.query(`SELECT make AS key, COUNT(*)::int AS count FROM cars WHERE ${real('seller_id')} AND status = 'live' GROUP BY make ORDER BY count DESC, make LIMIT 12`),
+    pool.query(`SELECT COALESCE(NULLIF(body_type, ''), 'Unspecified') AS key, COUNT(*)::int AS count FROM cars WHERE ${real('seller_id')} AND status = 'live' GROUP BY 1 ORDER BY count DESC`),
     pool.query(`
       SELECT width_bucket(price - 1, $1::int[]) AS bucket, COUNT(*)::int AS count
-        FROM cars WHERE status = 'live' AND price IS NOT NULL AND currency = 'RWF' GROUP BY bucket ORDER BY bucket`, [BUDGET_EDGES_RWF]),
+        FROM cars WHERE ${real('seller_id')} AND status = 'live' AND price IS NOT NULL AND currency = 'RWF' GROUP BY bucket ORDER BY bucket`, [BUDGET_EDGES_RWF]),
     pool.query(`
       SELECT CASE
                WHEN listed_at IS NULL THEN 'unknown'
@@ -335,14 +336,14 @@ async function inventory(range) {
                WHEN NOW() - listed_at <= INTERVAL '90 days' THEN '61-90'
                ELSE '90+' END AS key,
              COUNT(*)::int AS count
-        FROM cars WHERE status = 'live' GROUP BY 1`),
+        FROM cars WHERE ${real('seller_id')} AND status = 'live' GROUP BY 1`),
     // Live for more than 14 days with no save and no contact request in the
     // last 14: the listings a price review would most help.
     pool.query(`
       SELECT c.id, c.title, c.price, c.views, c.listed_at,
              FLOOR(EXTRACT(EPOCH FROM (NOW() - c.listed_at)) / 86400)::int AS days_live
         FROM cars c
-       WHERE c.status = 'live' AND c.listed_at < NOW() - INTERVAL '14 days'
+       WHERE ${real('c.seller_id')} AND c.status = 'live' AND c.listed_at < NOW() - INTERVAL '14 days'
          AND NOT EXISTS (SELECT 1 FROM listing_contact_events e WHERE e.car_id = c.id AND e.created_at >= NOW() - INTERVAL '14 days')
          AND NOT EXISTS (SELECT 1 FROM saved_cars sc WHERE sc.car_id = c.id AND sc.saved_at >= NOW() - INTERVAL '14 days')
        ORDER BY c.listed_at ASC LIMIT 25`),
@@ -350,18 +351,19 @@ async function inventory(range) {
       SELECT COUNT(DISTINCT ph.car_id)::int AS cars_with_drop
         FROM price_history ph
        WHERE ${within('ph.changed_at', 1, 2)}
+         AND NOT EXISTS (SELECT 1 FROM cars tc JOIN users tu ON tu.id = tc.seller_id WHERE tc.id = ph.car_id AND tu.is_test)
          AND ph.price < (SELECT p2.price FROM price_history p2 WHERE p2.car_id = ph.car_id AND p2.changed_at < ph.changed_at
                           ORDER BY p2.changed_at DESC LIMIT 1)`, [range.from, range.to]),
     pool.query(`
       SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY EXTRACT(EPOCH FROM (sold_at - listed_at)) / 86400) AS median_days
-        FROM cars WHERE sold_at IS NOT NULL AND listed_at IS NOT NULL AND sold_at >= listed_at AND ${within('sold_at', 1, 2)}`,
+        FROM cars WHERE ${real('seller_id')} AND sold_at IS NOT NULL AND listed_at IS NOT NULL AND sold_at >= listed_at AND ${within('sold_at', 1, 2)}`,
       [range.from, range.to]),
     // Asking prices of listings the SELLER marked sold. Not a sale price, not
     // verified, and never Sawa revenue — Sawa is not a party to the deal. The
     // console labels it exactly that way.
     pool.query(`
       SELECT COALESCE(SUM(price), 0)::bigint AS total FROM cars
-       WHERE sold_at IS NOT NULL AND currency = 'RWF' AND ${within('sold_at', 1, 2)}`, [range.from, range.to]),
+       WHERE ${real('seller_id')} AND sold_at IS NOT NULL AND currency = 'RWF' AND ${within('sold_at', 1, 2)}`, [range.from, range.to]),
   ]);
 
   const AGE_ORDER = ['0-7', '8-30', '31-60', '61-90', '90+', 'unknown'];
@@ -400,14 +402,14 @@ async function quality(range) {
              COUNT(*) FILTER (WHERE score >= $3 AND score < 120)::int AS b_105,
              COUNT(*) FILTER (WHERE score >= 120 AND score < 135)::int AS b_120,
              COUNT(*) FILTER (WHERE score >= 135)::int AS b_135
-        FROM inspections WHERE status = 'complete' AND score IS NOT NULL AND ${within('completed_at', 1, 2)}`,
+        FROM inspections WHERE ${realInspection('inspections')} AND status = 'complete' AND score IS NOT NULL AND ${within('completed_at', 1, 2)}`,
       [from, to, PUBLISH_THRESHOLD]),
     pool.query(`
       SELECT kv.key AS item_id,
              COUNT(*) FILTER (WHERE kv.value = 'fail')::int AS fails,
              COUNT(*) FILTER (WHERE kv.value = 'flag')::int AS flags
         FROM inspections i, jsonb_each_text(COALESCE(i.checklist_results, '{}'::jsonb)) kv
-       WHERE i.status = 'complete' AND ${within('i.completed_at', 1, 2)} AND kv.value IN ('fail','flag')
+       WHERE ${realInspection('i')} AND i.status = 'complete' AND ${within('i.completed_at', 1, 2)} AND kv.value IN ('fail','flag')
        GROUP BY kv.key ORDER BY fails DESC, flags DESC LIMIT 12`, [from, to]),
     pool.query(`
       SELECT i.inspector_id, COALESCE(u.name, 'Unassigned') AS name, COUNT(*)::int AS completed,
@@ -415,11 +417,11 @@ async function quality(range) {
              ROUND(STDDEV_POP(i.score)::numeric, 1) AS score_spread,
              COUNT(*) FILTER (WHERE i.passed)::int AS passed
         FROM inspections i LEFT JOIN users u ON u.id = i.inspector_id
-       WHERE i.status = 'complete' AND i.score IS NOT NULL AND ${within('i.completed_at', 1, 2)}
+       WHERE ${realInspection('i')} AND i.status = 'complete' AND i.score IS NOT NULL AND ${within('i.completed_at', 1, 2)}
        GROUP BY i.inspector_id, u.name ORDER BY completed DESC LIMIT 20`, [from, to]),
     pool.query(`
       SELECT COUNT(*)::int AS rejected FROM submissions
-       WHERE status = 'rejected' AND reviewed_at IS NOT NULL AND ${within('reviewed_at', 1, 2)}`, [from, to]),
+       WHERE ${real('seller_id')} AND status = 'rejected' AND reviewed_at IS NOT NULL AND ${within('reviewed_at', 1, 2)}`, [from, to]),
   ]);
 
   const d = dist.rows[0];
@@ -469,7 +471,7 @@ async function centers(range) {
       WITH fees AS (
         SELECT inspection_id, SUM(amount)::bigint AS revenue_rwf
           FROM platform_fees
-         WHERE inspection_id IS NOT NULL AND status = 'paid' AND currency = 'RWF'
+         WHERE ${realFee()} AND inspection_id IS NOT NULL AND status = 'paid' AND currency = 'RWF'
            AND ${within('COALESCE(collected_at, created_at)', 1, 2)}
          GROUP BY inspection_id
       )
@@ -483,7 +485,7 @@ async function centers(range) {
              COALESCE(SUM(f.revenue_rwf), 0)::bigint AS revenue_rwf
         FROM inspections i
         LEFT JOIN fees f ON f.inspection_id = i.id
-       WHERE i.center IS NOT NULL
+       WHERE i.center IS NOT NULL AND ${realInspection('i')}
        GROUP BY lower(i.center)`, [from, to, today]),
     pool.query(`SELECT id, name, area, daily_capacity, active FROM inspection_centers ORDER BY name`),
   ]);

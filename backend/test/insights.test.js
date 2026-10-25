@@ -363,3 +363,51 @@ test('the dataset catalogue lists every export the console offers', async () => 
     assert.ok(!d.columns.some((c) => /e-?mail|phone|password|national/i.test(c)), `${d.key} exposes PII`);
   }
 });
+
+test('accounts marked as test are left out of insights, exports and statements', async () => {
+  const ours = await register({ role: 'seller', name: 'Insights Test Seller' });
+  await pool.query('UPDATE users SET is_test = TRUE WHERE id = $1', [ours.id]);
+  const d = addDays(BASE, 40);
+  const created = kigali(40);
+  try {
+    const { rows: [car] } = await pool.query(
+      `INSERT INTO cars (seller_id, title, make, model, year, mileage, price, status, listed_at)
+       VALUES ($1, '2018 Test Car', 'Toyota', 'Rav4', 2018, 50000, 15000000, 'archived', ${created}) RETURNING id`, [ours.id]);
+    await pool.query(
+      `INSERT INTO submissions (seller_id, make, model, year, mileage, asking_price, status, submitted_at)
+       VALUES ($1, 'Toyota', 'Rav4', 2018, 50000, 15000000, 'under_review', ${created})`, [ours.id]);
+    await pool.query(
+      `INSERT INTO listing_contact_events (car_id, buyer_id, seller_id, channel, created_at)
+       VALUES ($1, $2, $3, 'phone', ${created})`, [car.id, buyer.id, ours.id]);
+    await pool.query(
+      `INSERT INTO platform_fees (fee_type, amount, status, currency, seller_id, method, collected_at)
+       VALUES ('featured', 9000, 'paid', 'RWF', $1, 'cash', ${created})`, [ours.id]);
+    // One real submission and one real fee on the same day, so the figures are not simply zero.
+    await pool.query(
+      `INSERT INTO submissions (seller_id, make, model, year, mileage, asking_price, status, submitted_at)
+       VALUES ($1, 'Toyota', 'Harrier', 2019, 60000, 20000000, 'under_review', ${created})`, [seller.id]);
+    await pool.query(
+      `INSERT INTO platform_fees (fee_type, amount, status, currency, seller_id, method, collected_at)
+       VALUES ('featured', 4000, 'paid', 'RWF', $1, 'cash', ${created})`, [seller.id]);
+
+    const res = await api().get(`/admin/insights?from=${d}&to=${d}`).set(adminAuth).expect(200);
+    const k = res.body.kpis.current;
+    assert.equal(k.submissions, 1, 'the test account\'s submission is not counted');
+    assert.equal(k.published, 0);
+    assert.equal(k.contacts, 0, 'a contact request to a test seller is not counted');
+    assert.equal(k.new_sellers, 0);
+    assert.equal(k.revenue_rwf, 4000, 'a test account\'s fee is not revenue');
+    assert.equal(res.body.series.current[0].submissions, 1);
+
+    const csv = await api().get(`/admin/exports/revenue?from=${d}&to=${d}`).set(adminAuth).expect(200);
+    assert.equal(csv.text.trim().split('\r\n').length, 2, 'header and the one real fee');
+    const users = await api().get(`/admin/exports/users?from=${d}&to=${d}`).set(adminAuth).expect(200);
+    assert.ok(!users.text.includes(ours.id), 'a test account is not a new account');
+  } finally {
+    await pool.query('DELETE FROM listing_contact_events WHERE seller_id = $1', [ours.id]);
+    await pool.query('DELETE FROM platform_fees WHERE seller_id = $1', [ours.id]);
+    await pool.query('DELETE FROM submissions WHERE seller_id = $1', [ours.id]);
+    await pool.query('DELETE FROM cars WHERE seller_id = $1', [ours.id]);
+    await pool.query('DELETE FROM users WHERE id = $1', [ours.id]);
+  }
+});

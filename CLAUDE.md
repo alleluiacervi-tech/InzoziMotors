@@ -120,8 +120,9 @@ and alerts disappear at once; unmarking restores exactly what was there. Only a
 marked (or bot-held) account can be erased by the team (`POST /admin/users/:id/erase`, the
 email typed to confirm, never an admin or yourself, refused while it has
 payment records); the row is deleted, or anonymised like the 30-day purge when
-other people's history still points at it. Insights
-does not yet leave test accounts out (the flag survives erasure so it can).
+other people's history still points at it. Insights,
+its CSV exports and PDF statements leave test accounts out of every count and
+sum (`backend/src/lib/test-accounts.js`; the flag survives erasure so it can).
 
 **Bot sign-ups and account addresses** (Oct 2026; migration 0069). Every
 sign-up is screened (`lib/signup-risk.js`): **blocked** (no account) only on
