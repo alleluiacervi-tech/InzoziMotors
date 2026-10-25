@@ -10,7 +10,8 @@ Buyers and renters browse, message, and contact providers **directly**.
 > disputes among themselves. Every surface must say so, and no code may
 > contradict it. This is a deliberate, enforced position — see *Retired* below.
 
-Last verified against the codebase: **24 Aug 2026** (main @ `6233952`).
+Last verified against the codebase: **24 Aug 2026** (main @ `6233952`). Web ↔ app
+parity re-audited **25 Oct 2026** (section 2, *Web ↔ app parity*).
 
 ---
 
@@ -81,8 +82,10 @@ case is a bug.
   `/dashboard/selling/[id]/schedule`), seller profiles (`/sellers/[id]`),
   compare (`/compare`, up to 3) and reopening a closed account at sign-in.
   Web Push and the install prompt shipped 13 Oct 2026 (Web Push off until the
-  VAPID keys are set, see section 5); what is left of Phase 4 is the copy
-  sweep, the content check and the referrals decision (O3).
+  VAPID keys are set, see section 5); Phase 4's copy sweep, content
+  check and final audit are done (25 Oct 2026); what is left is the referrals
+  decision (O3): the app no longer has a referrals screen and the website's page
+  is a redirect, so only `/referrals` in the backend is still mounted.
 - The plan, phases and decisions are in `docs/WEB-PARITY-PLAN.md`. Tasks are in
   `docs/WEB-PARITY-TODO.md`; tick them in the PR that ships them.
 - Browser rules:

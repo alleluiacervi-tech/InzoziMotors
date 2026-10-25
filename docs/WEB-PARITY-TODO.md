@@ -107,5 +107,5 @@ Detailed plan: [`WEB-PARITY-PLAN.md` §11](WEB-PARITY-PLAN.md#11-phase-3-in-deta
 - [x] PWA install prompt on supported browsers (dashboard overview; Chrome/Edge/Samsung via `beforeinstallprompt`; hidden where the store app is live, so not on iPhone)
 - [x] **W3** Copy sweep (25 Oct 2026): `AppCapabilities.tsx` is gone and the other listed components already point to the web flows; the `/download` page was the last offender (photo upload is not app-only, "purchase history" is a retired concept) and is fixed in all six languages
 - [x] **G14** Content check (25 Oct 2026): `/how-it-works` and `/legal/guarantee` agree with the app's `BuyingGuide` and `SawaPromise` (no checkout, escrow, guarantee or fee claims). Fixed the app's valuation screen, which promised cars "sell up to 12% more and 3× faster" with no data behind it. The web has no page named `/promise`; `/legal/guarantee` is its equivalent
-- [ ] Final parity audit — re-run the §3 method; every row "at parity" or listed in §7
-- [ ] Update CLAUDE.md "last verified" and remove "planned" status from the plan
+- [x] Final parity audit (25 Oct 2026) — re-run the §3 method; result in `WEB-PARITY-PLAN.md` §3.5: every row at parity or listed in §7
+- [x] Update CLAUDE.md "last verified" (parity line only) and remove "planned" status from the plan

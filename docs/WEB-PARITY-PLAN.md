@@ -76,6 +76,28 @@ languages · light/dark theme.
 | B4 | ✅ *fixed 27 Sep 2026* **ID documents keep their EXIF data**, which can include GPS location, because they're stored uncompressed on purpose. | `routes/id-verification.js`, `middleware/upload.js` |
 | B5 | ✅ *fixed 27 Sep 2026* **The app's seller notes are dropped.** It sent `seller_notes`; the backend only stores `notes`. Found while planning Phase 2 (§10.1 F7). | `src/context/AppContext.js` `addSubmission` |
 
+### 3.5 Final audit (25 Oct 2026)
+
+Method as in §3: every app screen (56) and every API call in `src/` was compared
+with the routes in `web/src/app/` and the calls in `web/src/lib/api.ts`. A
+path-by-path diff of the app's API calls against the web's left 22 paths the web
+does not reference literally; each was checked by hand.
+
+**Result: no open parity gap.** Every row of §3.2 and §3.3 is closed except G12.
+
+| Area | Result |
+|---|---|
+| Messaging, seller onboarding, scheduling, compare, profiles, reopen, Web Push | At parity (§3.2, shipped 27 Sep and 13 Oct) |
+| Added since the first audit: Korea imports and market guide, held-account email code (`/verify-email`), rental proposals, photos and the provider's calendar of taken days, daily-summary and alert settings, saved-search `instant`/`daily`, rate card (`/tools/pricing`) | At parity |
+| `/auth/oauth/*` | Google on web, Google and Apple in the app, by decision (CLAUDE.md, *Sign in with Google / Apple*) |
+| `/admin/*`, `/inspections/*`, `/id-verification/queue`, `PATCH /cars/:id/status`, `PATCH /submissions/:id` | Staff tools (§7) |
+| `/auth/refresh`, `/devices/token`, `/settings/app-release` | Native only: token refresh, the app's push token (the web has its own subscription) and the store-update prompt |
+| G12 referrals (O3) | **Open, but de facto retired.** The app has no referrals screen (only unused strings in `src/i18n`), the web page is a redirect, and `/referrals` is still mounted in the backend. Needs your confirmation, then the strings and the route can go |
+
+Also found, not parity: `TrustScoreScreen` is registered but nothing navigates to
+it (the trust score is gone from every public page); delete it with the unused
+referral and "step1…step5" strings.
+
 ### 3.4 Blockers and stale content on the web
 
 | # | Issue | Where |
