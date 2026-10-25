@@ -447,7 +447,7 @@ export function AppProvider({ children }) {
       sellerWhatsApp: c.seller_whatsapp || null,
       sellerContactAvailable: c.seller_contact_available || { phone: false, whatsapp: false, in_app: true },
       directDealNotice: c.direct_deal_notice || '',
-      // The seller's user id — what SellerProfile/TrustScore need to fetch the
+      // The seller's user id — what SellerProfile needs to fetch the
       // real trust breakdown instead of falling back to a canned profile.
       sellerId: c.seller_id || null,
       make: c.make,

@@ -94,9 +94,10 @@ does not reference literally; each was checked by hand.
 | `/auth/refresh`, `/devices/token`, `/settings/app-release` | Native only: token refresh, the app's push token (the web has its own subscription) and the store-update prompt |
 | G12 referrals (O3) | **Retired for good (25 Oct 2026).** App strings, web components and API client deleted; `/referrals` answers 410; tables kept |
 
-Also found, not parity: `TrustScoreScreen` is registered but nothing navigates to
-it (the trust score is gone from every public page); delete it with the unused
-referral and "step1…step5" strings.
+Also found, not parity: `TrustScoreScreen` was registered but nothing navigated to
+it (the trust score is gone from every public page). Deleted on 25 Oct 2026 with
+its grade helper and API call; the unused `trustScore.*` and "step1…step5" strings
+in `src/i18n` are still to go.
 
 ### 3.4 Blockers and stale content on the web
 

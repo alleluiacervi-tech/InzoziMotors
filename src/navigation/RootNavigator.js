@@ -41,7 +41,6 @@ import SellerAnalyticsScreen from '../screens/SellerAnalyticsScreen';
 import AdminAnalyticsScreen from '../screens/AdminAnalyticsScreen';
 import DealerProfileScreen from '../screens/DealerProfileScreen';
 import FinancingScreen from '../screens/FinancingScreen';
-import TrustScoreScreen from '../screens/TrustScoreScreen';
 // Rentals
 import RentalDetailScreen from '../screens/RentalDetailScreen';
 import RentalInquiryScreen from '../screens/RentalInquiryScreen';
@@ -120,7 +119,6 @@ export default function RootNavigator({ initialRoute = 'Onboarding' }) {
       <Stack.Screen name="AdminAnalytics" component={AdminAnalyticsScreen} />
       <Stack.Screen name="DealerProfile" component={DealerProfileScreen} />
       <Stack.Screen name="Financing" component={FinancingScreen} />
-      <Stack.Screen name="TrustScore" component={TrustScoreScreen} />
       {/* Rentals */}
       <Stack.Screen name="RentalDetail" component={RentalDetailScreen} />
       <Stack.Screen
