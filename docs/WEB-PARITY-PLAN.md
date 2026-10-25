@@ -1,7 +1,7 @@
 # Web parity plan: sawacars.com can do everything the app can
 
 Status: **Phases 0–2 implemented 27 Sep 2026 (messaging, seller onboarding); Phase 3 (account & trust) next** · Drafted 27 Sep 2026 against `main` @ `c7d64b2`
-O1, O2 and O4 were accepted as their recommended defaults on 27 Sep 2026 — O3 (referrals) is still open; see [§8](#8-open-decisions).
+O1, O2 and O4 were accepted as their recommended defaults on 27 Sep 2026 — O3 (referrals) was decided on 25 Oct 2026: retired for good; see [§8](#8-open-decisions).
 
 ## 1. Goal
 
@@ -92,7 +92,7 @@ does not reference literally; each was checked by hand.
 | `/auth/oauth/*` | Google on web, Google and Apple in the app, by decision (CLAUDE.md, *Sign in with Google / Apple*) |
 | `/admin/*`, `/inspections/*`, `/id-verification/queue`, `PATCH /cars/:id/status`, `PATCH /submissions/:id` | Staff tools (§7) |
 | `/auth/refresh`, `/devices/token`, `/settings/app-release` | Native only: token refresh, the app's push token (the web has its own subscription) and the store-update prompt |
-| G12 referrals (O3) | **Open, but de facto retired.** The app has no referrals screen (only unused strings in `src/i18n`), the web page is a redirect, and `/referrals` is still mounted in the backend. Needs your confirmation, then the strings and the route can go |
+| G12 referrals (O3) | **Retired for good (25 Oct 2026).** App strings, web components and API client deleted; `/referrals` answers 410; tables kept |
 
 Also found, not parity: `TrustScoreScreen` is registered but nothing navigates to
 it (the trust score is gone from every public page); delete it with the unused
@@ -197,7 +197,7 @@ Rough size: phase 0 is 2–3 days; phases 1 and 2 are 4–5 days each; phase 3 i
 |---|---|---|---|
 | O1 | Phase order: messaging first, or seller onboarding first? | Messaging first. It's a broken loop today, not a missing feature. | **Accepted 27 Sep 2026** (default) |
 | O2 | May desktop users *upload* ID photos, or only take live webcam or phone-camera shots? | Allow upload, and flag uploaded (non-live) captures to reviewers so staff can apply extra care | **Accepted 27 Sep 2026** (default) |
-| O3 | Referrals were deliberately retired on the web. Bring them back, or retire them in the app too? | Decide on product grounds; don't restore by default | **Still open** — no safe default; Phase 4 will not touch referrals until this is answered |
+| O3 | Referrals were deliberately retired on the web. Bring them back, or retire them in the app too? | Decide on product grounds; don't restore by default | **Decided 25 Oct 2026: retire for good** |
 | O4 | Offline message email: on by default with opt-out, or opt-in? | On by default, with opt-out; it's transactional, not marketing | **Accepted 27 Sep 2026** (default) |
 
 ## 9. Tracking

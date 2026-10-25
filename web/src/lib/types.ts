@@ -676,10 +676,4 @@ export interface Dispute {
   resolved_at?: string | null
 }
 
-export interface ReferralStats {
-  code: string
-  total_referrals: number
-  completed_handovers: number
-  reward_earned: number
-}
 

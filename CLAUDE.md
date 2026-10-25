@@ -83,9 +83,9 @@ case is a bug.
   compare (`/compare`, up to 3) and reopening a closed account at sign-in.
   Web Push and the install prompt shipped 13 Oct 2026 (Web Push off until the
   VAPID keys are set, see section 5); Phase 4's copy sweep, content
-  check and final audit are done (25 Oct 2026); what is left is the referrals
-  decision (O3): the app no longer has a referrals screen and the website's page
-  is a redirect, so only `/referrals` in the backend is still mounted.
+  check and final audit are done (25 Oct 2026), and referrals are retired for
+  good (O3): no screen in the app, a redirect on the web, `/referrals` answers
+  410, the tables stay for history.
 - The plan, phases and decisions are in `docs/WEB-PARITY-PLAN.md`. Tasks are in
   `docs/WEB-PARITY-TODO.md`; tick them in the PR that ships them.
 - Browser rules:
