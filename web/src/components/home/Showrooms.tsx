@@ -28,51 +28,59 @@ export async function Showrooms() {
           <p className="mt-2 text-body text-content-secondary">{t('home.showrooms.description')}</p>
         </div>
 
-        <ul className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {list.map((room) => (
             <li key={room.id}>
               <Link
                 href={`/sellers/${room.id}`}
-                className="group block overflow-hidden rounded-3xl border border-line-soft bg-surface shadow-card transition-shadow hover:shadow-card-lg"
+                className="group flex items-center gap-3.5 rounded-2xl border border-line-soft bg-surface p-3 shadow-card transition-shadow hover:shadow-card-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
               >
-                <div className="relative h-40 bg-surface-alt">
+                <span className="relative h-[72px] w-[72px] shrink-0 overflow-hidden rounded-2xl bg-[#1A1413]">
                   {room.cover_image ? (
                     // eslint-disable-next-line @next/next/no-img-element -- decorative: the showroom's newest car
-                    <img src={room.cover_image} alt="" loading="lazy" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]" />
+                    <img src={room.cover_image} alt="" loading="lazy" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
                   ) : null}
-                  <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
-                  <div className="absolute inset-x-4 bottom-4 flex items-center gap-3">
-                    {room.avatar_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element -- the showroom's own photo
-                      <img src={room.avatar_url} alt="" className="h-12 w-12 shrink-0 rounded-full bg-white object-cover ring-2 ring-white" />
-                    ) : (
-                      <span aria-hidden="true" className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white/90 text-title-sm font-extrabold text-[#1A1413]">
-                        {room.name.trim().charAt(0).toUpperCase()}
-                      </span>
-                    )}
-                    <span className="min-w-0">
-                      <span className="block truncate text-title-sm font-extrabold text-white">{room.name}</span>
-                      <span className="mt-0.5 flex items-center gap-1 truncate text-micro font-bold text-white/85">
-                        <Icon name="shield-check" size={13} />
-                        {t('home.showrooms.verified')}
-                        {room.location ? ` · ${room.location}` : ''}
-                      </span>
+                  {room.avatar_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- the showroom's own photo
+                    <img
+                      src={room.avatar_url}
+                      alt=""
+                      className={room.cover_image ? 'absolute bottom-1 right-1 h-6 w-6 rounded-full bg-white object-cover ring-2 ring-white' : 'h-full w-full bg-white object-cover'}
+                    />
+                  ) : (
+                    <span
+                      aria-hidden="true"
+                      className={room.cover_image
+                        ? 'absolute bottom-1 right-1 flex h-6 w-6 items-center justify-center rounded-full bg-[#1A1413] text-[11px] font-extrabold text-white ring-2 ring-white'
+                        : 'flex h-full w-full items-center justify-center text-title font-extrabold text-white'}
+                    >
+                      {room.name.trim().charAt(0).toUpperCase()}
                     </span>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between gap-3 px-4 py-3">
-                  <span className="flex min-w-0 items-center gap-1.5">
-                    {room.brands.slice(0, 6).map((b) => (
-                      <BrandMark key={b.make} name={b.make} logoUrl={logoFor(b.make)} size={28} />
-                    ))}
-                    {room.brands.length > 6 ? (
-                      <span className="text-micro font-bold text-content-muted">+{room.brands.length - 6}</span>
-                    ) : null}
+                  )}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-body font-extrabold text-content">{room.name}</span>
+                  <span className="mt-0.5 flex items-center gap-1 text-micro font-semibold text-content-secondary">
+                    <Icon name="shield-check" size={13} className="shrink-0 text-success-text" />
+                    <span className="truncate">
+                      {t('home.showrooms.verified')}
+                      {room.location ? ` · ${room.location}` : ''}
+                    </span>
                   </span>
-                  <span className="tnum shrink-0 text-caption font-bold text-content-secondary">
-                    {t('home.showrooms.cars', { count: room.live_count })}
+                  <span className="mt-2 flex items-center justify-between gap-2">
+                    <span className="flex min-w-0 items-center gap-1">
+                      {room.brands.slice(0, 4).map((b) => (
+                        <BrandMark key={b.make} name={b.make} logoUrl={logoFor(b.make)} size={22} />
+                      ))}
+                      {room.brands.length > 4 ? (
+                        <span className="text-micro font-bold text-content-muted">+{room.brands.length - 4}</span>
+                      ) : null}
+                    </span>
+                    <span className="tnum shrink-0 text-caption font-bold text-content">
+                      {t('home.showrooms.cars', { count: room.live_count })}
+                    </span>
                   </span>
-                </div>
+                </span>
               </Link>
             </li>
           ))}
