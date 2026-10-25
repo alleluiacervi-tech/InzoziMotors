@@ -21,7 +21,7 @@ export function ShowroomCard({
   return (
     <Link
       href={`/sellers/${room.id}`}
-      className="group flex items-center gap-2.5 rounded-xl border border-line-soft bg-surface p-2 shadow-card transition-shadow hover:shadow-card-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
+      className="group relative flex items-center gap-2.5 rounded-xl border border-line-soft bg-surface p-2 shadow-card transition-shadow hover:shadow-card-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
     >
       <span className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-[#1A1413]">
         {room.cover_image ? (

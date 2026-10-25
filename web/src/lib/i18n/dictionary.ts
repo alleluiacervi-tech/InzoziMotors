@@ -42,6 +42,7 @@ const en = {
     rent: 'Rent',
     imports: 'Import',
     howItWorks: 'How Sawa works',
+    showrooms: 'Showrooms',
     browseCertified: 'Browse certified cars',
   },
   footer: {
@@ -117,6 +118,7 @@ const rw = {
     rent: 'Kodesha',
     imports: 'Gutumiza',
     howItWorks: 'Uko Sawa ikora',
+    showrooms: 'Amaduka',
     browseCertified: 'Reba imodoka zemewe',
   },
   footer: {
@@ -192,6 +194,7 @@ const fr = {
     rent: 'Louer',
     imports: 'Importer',
     howItWorks: 'Comment fonctionne Sawa',
+    showrooms: 'Showrooms',
     browseCertified: 'Voir les voitures certifiées',
   },
   footer: {
@@ -267,6 +270,7 @@ const sw = {
     rent: 'Kodi',
     imports: 'Agiza',
     howItWorks: 'Jinsi Sawa inavyofanya kazi',
+    showrooms: 'Maonyesho',
     browseCertified: 'Angalia magari yaliyothibitishwa',
   },
   footer: {
@@ -342,6 +346,7 @@ const ko = {
     rent: '렌트',
     imports: '수입',
     howItWorks: 'Sawa 이용 방법',
+    showrooms: '쇼룸',
     browseCertified: '인증 차량 둘러보기',
   },
   footer: {
@@ -417,6 +422,7 @@ const zh = {
     rent: '租车',
     imports: '进口',
     howItWorks: 'Sawa 如何运作',
+    showrooms: '展厅',
     browseCertified: '浏览已认证车辆',
   },
   footer: {

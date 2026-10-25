@@ -143,6 +143,7 @@ export const rentPromoted = (fleetSize: number) => fleetSize >= RENT_MIN_FLEET
 export const NAV_LINKS = [
   { href: '/cars', label: 'Buy' },
   { href: '/rentals', label: 'Rent' },
+  { href: '/showrooms', label: 'Showrooms' },
   { href: '/sell', label: 'Sell' },
   { href: '/imports', label: 'Import' },
   { href: '/how-it-works', label: 'How Sawa works' },
