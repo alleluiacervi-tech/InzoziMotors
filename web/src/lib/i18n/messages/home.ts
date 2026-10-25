@@ -68,6 +68,7 @@ export const home: Record<Locale, Record<string, unknown>> = {
       description: 'Verified dealerships and the brands they have in stock right now.',
       cars: '{{count}} cars',
       verified: 'Verified showroom',
+      viewAll: 'View all showrooms',
     },
     featured: {
       eyebrow: 'Just listed',
@@ -316,6 +317,7 @@ export const home: Record<Locale, Record<string, unknown>> = {
       description: 'Amaduka yemejwe n’ibirango by’imodoka afite ubu.',
       cars: 'Imodoka {{count}}',
       verified: 'Iduka ryemejwe',
+      viewAll: 'Reba amaduka yose',
     },
     featured: {
       eyebrow: 'Amaze gutangazwa',
@@ -566,6 +568,7 @@ export const home: Record<Locale, Record<string, unknown>> = {
       description: 'Des concessionnaires vérifiés et les marques qu’ils ont en stock aujourd’hui.',
       cars: '{{count}} voitures',
       verified: 'Showroom vérifié',
+      viewAll: 'Voir tous les showrooms',
     },
     featured: {
       eyebrow: 'À l’instant',
@@ -816,6 +819,7 @@ export const home: Record<Locale, Record<string, unknown>> = {
       description: 'Wauzaji waliothibitishwa na chapa walizo nazo sasa.',
       cars: 'Magari {{count}}',
       verified: 'Chumba cha maonyesho kilichothibitishwa',
+      viewAll: 'Tazama maonyesho yote',
     },
     featured: {
       eyebrow: 'Yametangazwa sasa',
@@ -1066,6 +1070,7 @@ export const home: Record<Locale, Record<string, unknown>> = {
       description: '인증된 딜러와 현재 보유 중인 브랜드.',
       cars: '차량 {{count}}대',
       verified: '인증된 쇼룸',
+      viewAll: '모든 쇼룸 보기',
     },
     featured: {
       eyebrow: '방금 등록됨',
@@ -1315,6 +1320,7 @@ export const home: Record<Locale, Record<string, unknown>> = {
       description: '已认证的车行及其现有品牌。',
       cars: '{{count}} 辆车',
       verified: '已认证展厅',
+      viewAll: '查看所有展厅',
     },
     featured: {
       eyebrow: '新上架',

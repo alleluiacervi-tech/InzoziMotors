@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Hero } from '@/components/home/Hero'
 import { FeaturedCars } from '@/components/home/FeaturedCars'
+import { Showrooms } from '@/components/home/Showrooms'
 import { Standard } from '@/components/home/Standard'
 import { ImportBand } from '@/components/home/ImportBand'
 import { SellStrip } from '@/components/home/SellStrip'
@@ -86,7 +87,7 @@ export default async function HomePage() {
 
   return (
     <>
-      {/* Five sections, each a screen or less on a phone, each showing a car
+      {/* Six sections, each a screen or less on a phone, each showing a car
           or moving someone toward one (docs/WEBSITE-REDESIGN-TODO.md, 2.2).
           1. The promise, one search, and the evidence: the best-scoring car
              in stock with its 150-point result. */}
@@ -102,15 +103,19 @@ export default async function HomePage() {
         sold={sold}
       />
 
-      {/* 3. The standard every car is measured against: the one dark band. */}
+      {/* 3. The verified showrooms and the brands they have in stock. Not there
+             at all until one holds public stock. */}
+      <Showrooms />
+
+      {/* 4. The standard every car is measured against: the one dark band. */}
       <Standard />
 
-      {/* 4. Import, the unfamiliar business, as a photograph. The centres'
+      {/* 5. Import, the unfamiliar business, as a photograph. The centres'
              addresses are not repeated here: the footer prints them right
              below, on every page. */}
       <ImportBand />
 
-      {/* 5. The only ask of sellers on this page. */}
+      {/* 6. The only ask of sellers on this page. */}
       <SellStrip makes={inventory.makes.map((m) => m.value)} />
 
       <script

@@ -101,7 +101,7 @@ business name — every public `seller_name` goes through
 `backend/src/lib/seller-display.js` — and its brands are read off its live cars,
 never chosen (`GET /showrooms`). The team sets its photo
 (`POST /admin/users/:userId/avatar`). Storefronts: app `ShowroomScreen`, web
-`/sellers/[id]`. The team also writes each showroom's storefront details in
+`/sellers/[id]`; the website lists them all at `/showrooms` (the homepage shows the first eight, one shared `ShowroomCard`). The team also writes each showroom's storefront details in
 Admin → Users → Edit (about, address with an *Open in Maps* link, opening hours
 shown as *Open now* in Kigali time, a cover photo of the showroom itself;
 migration 0066, `lib/showroom-profile.js`); never a phone number. Seller and

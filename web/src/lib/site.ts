@@ -154,6 +154,7 @@ export const FOOTER_LINKS = [
     links: [
       { href: '/cars', label: 'Browse certified cars' },
       { href: '/rentals', label: 'Rent a car' },
+      { href: '/showrooms', label: 'Verified showrooms' },
       { href: '/imports', label: 'Import a car' },
       { href: '/sell', label: 'Sell your car' },
       { href: '/tools/valuation', label: 'Free valuation' },

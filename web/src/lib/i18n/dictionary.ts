@@ -66,6 +66,7 @@ const en = {
     links: {
       '/cars': 'Browse certified cars',
       '/rentals': 'Rent a car',
+      '/showrooms': 'Verified showrooms',
       '/sell': 'Sell your car',
       '/tools/valuation': 'Free valuation',
       '/imports': 'Import a car',
@@ -140,6 +141,7 @@ const rw = {
     links: {
       '/cars': 'Reba imodoka zemewe',
       '/rentals': 'Kodesha imodoka',
+      '/showrooms': 'Amaduka yemejwe',
       '/sell': 'Gurisha imodoka yawe',
       '/tools/valuation': 'Isuzuma ry’agaciro ku buntu',
       '/imports': 'Tumiza imodoka',
@@ -214,6 +216,7 @@ const fr = {
     links: {
       '/cars': 'Voir les voitures certifiées',
       '/rentals': 'Louer une voiture',
+      '/showrooms': 'Showrooms vérifiés',
       '/sell': 'Vendre votre voiture',
       '/tools/valuation': 'Estimation gratuite',
       '/imports': 'Importer une voiture',
@@ -288,6 +291,7 @@ const sw = {
     links: {
       '/cars': 'Angalia magari yaliyothibitishwa',
       '/rentals': 'Kodisha gari',
+      '/showrooms': 'Maonyesho yaliyothibitishwa',
       '/sell': 'Uza gari lako',
       '/tools/valuation': 'Ukadiriaji bila malipo',
       '/imports': 'Agiza gari',
@@ -362,6 +366,7 @@ const ko = {
     links: {
       '/cars': '인증 차량 둘러보기',
       '/rentals': '차량 렌트',
+      '/showrooms': '인증된 쇼룸',
       '/sell': '내 차량 판매',
       '/tools/valuation': '무료 시세 평가',
       '/imports': '차량 수입',
@@ -436,6 +441,7 @@ const zh = {
     links: {
       '/cars': '浏览已认证车辆',
       '/rentals': '租车',
+      '/showrooms': '已认证展厅',
       '/sell': '出售我的车辆',
       '/tools/valuation': '免费估值',
       '/imports': '进口汽车',
