@@ -51,8 +51,10 @@ async function seller(name = 'Banner Motors') {
 async function liveCar(sellerId, title = 'Banner Corolla') {
   const V = { make: 'Toyota', model: 'Corolla', year: 2021 };
   const { rows: [car] } = await pool.query(
-    `INSERT INTO cars (seller_id, title, make, model, year, mileage, price, status, images, inspected, inspection_score, listed_at)
-     VALUES ($1,$2,$3,$4,$5,30000,18000000,'live',ARRAY['https://example.com/a.jpg'],TRUE,150,NOW())
+    // Live for 90 days, so the price changes these tests backdate happened
+    // after the car went live (an edit in its first hour is a correction).
+    `INSERT INTO cars (seller_id, title, make, model, year, mileage, price, status, images, inspected, inspection_score, listed_at, first_live_at)
+     VALUES ($1,$2,$3,$4,$5,30000,18000000,'live',ARRAY['https://example.com/a.jpg'],TRUE,150,NOW() - INTERVAL '90 days',NOW() - INTERVAL '90 days')
      RETURNING id, title`,
     [sellerId, `${title} ${Math.random().toString(36).slice(2, 7)}`, V.make, V.model, V.year]
   );
@@ -177,6 +179,23 @@ test('"Hot deal" is only said when the price really fell, and the card gets the 
     assert.equal(row(car).label, 'Featured', `${car.title}: no real, recent drop`);
     assert.equal(row(car).previous_price, null);
   }
+});
+
+test('a price edited in the first hour after going live is a correction, not a hot deal', async () => {
+  const a = await admin();
+  const car = await liveCar((await seller()).id, 'Typo');
+  // Went live five minutes ago at a mistyped 25M, corrected to 18M a minute later.
+  await pool.query("UPDATE cars SET first_live_at = NOW() - INTERVAL '5 minutes', listed_at = NOW() - INTERVAL '5 minutes' WHERE id = $1", [car.id]);
+  await pool.query(
+    `INSERT INTO price_history (car_id, price, changed_at) VALUES
+       ($1, 25000000, NOW() - INTERVAL '5 minutes'), ($1, 18000000, NOW() - INTERVAL '4 minutes')`, [car.id]);
+  await feature(a, car.id, { kind: 'hot_deal', days: 3, slot: 2 }).expect(201);
+
+  const row = (await banner().expect(200)).body.find((r) => r.id === car.id);
+  assert.equal(row.label, 'Featured');
+  assert.equal(row.previous_price, null);
+  const detail = (await api().get(`/cars/${car.id}`).expect(200)).body;
+  assert.deepEqual(detail.price_history.map((p) => Number(p.price)), [18000000], 'the buyer sees one price, not a drop');
 });
 
 test('a sponsored car with a real drop shows the old price and still says Sponsored', async () => {

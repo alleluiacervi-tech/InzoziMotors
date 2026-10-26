@@ -477,7 +477,7 @@ const styles = StyleSheet.create({
   includeCard: {
     width: '47.8%',
     flexDirection: 'row', alignItems: 'center', gap: 8,
-    backgroundColor: colors.greenTint,
+    backgroundColor: colors.surfaceAlt,
     borderRadius: radius.md, padding: 12,
   },
   includeLabel: { flex: 1, fontSize: 11, fontFamily: fonts.semiBold, color: colors.textPrimary, lineHeight: 15 },
@@ -516,8 +516,7 @@ const styles = StyleSheet.create({
   },
   ctaPrice: { flex: 1, minWidth: 0 },
   ctaPriceLabel: {
-    fontSize: 10, lineHeight: 13, fontFamily: fonts.extraBold, color: colors.textMuted,
-    letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 1,
+    fontSize: 10, lineHeight: 13, fontFamily: fonts.extraBold, color: colors.textMuted, marginBottom: 1,
   },
   ctaPriceLine: { flexDirection: 'row', alignItems: 'baseline', minWidth: 0 },
   ctaPriceValue: {

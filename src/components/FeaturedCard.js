@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
   pill: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
   pillLight: { backgroundColor: 'rgba(255,255,255,0.94)' },
   pillDark: { backgroundColor: 'rgba(17,17,17,0.72)' },
-  pillText: { fontSize: 10.5, fontFamily: fonts.semiBold, letterSpacing: 0.4, textTransform: 'uppercase' },
+  pillText: { fontSize: 10.5, fontFamily: fonts.semiBold, },
   pillTextLight: { color: '#6E6660' },
   pillTextDark: { color: '#FFFFFF' },
   score: { flexDirection: 'row', alignItems: 'center', gap: 4 },

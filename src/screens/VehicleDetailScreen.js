@@ -4,7 +4,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import Svg, { Polyline, Circle } from 'react-native-svg';
-import Badge from '../components/Badge';
 import { useApp } from '../context/AppContext';
 import Button from '../components/Button';
 import { colors, radius, shadows, fonts } from '../theme';
@@ -305,9 +304,12 @@ export default function VehicleDetailScreen({ navigation, route }) {
               <Text style={styles.indicatorText}>{activeIdx + 1} / {imageList.length}</Text>
             </Pressable>
           )}
-          {tier && (
-            <Badge variant={tier.variant} icon="shield-checkmark" label={tier.label} style={styles.inspectBadge} />
-          )}
+          {car.inspectionScore ? (
+            <View style={styles.scorePill} accessibilityLabel={t('home.inspected', { score: car.inspectionScore })}>
+              <Ionicons name="shield-checkmark" size={13} color={colors.green} />
+              <Text style={styles.scorePillText}>{car.inspectionScore}/150</Text>
+            </View>
+          ) : null}
         </View>
 
         <View style={styles.body}>
@@ -730,8 +732,14 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     alignItems: 'center', justifyContent: 'center',
   },
-  circleBtnActive: { backgroundColor: colors.greenTint, borderWidth: 1.5, borderColor: colors.primary },
-  inspectBadge: { position: 'absolute', bottom: 34, left: 16 },
+  circleBtnActive: { backgroundColor: colors.surface, borderWidth: 1.5, borderColor: colors.textPrimary },
+  scorePill: {
+    position: 'absolute', bottom: 34, left: 16,
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: radius.pill,
+    paddingLeft: 8, paddingRight: 10, paddingVertical: 5,
+  },
+  scorePillText: { fontVariant: ['tabular-nums'], fontSize: 12.5, fontFamily: fonts.bold, color: '#14110F' },
   indicatorContainer: {
     position: 'absolute', bottom: 34, right: 16,
     flexDirection: 'row', alignItems: 'center', gap: 5,
@@ -747,15 +755,6 @@ const styles = StyleSheet.create({
   priceRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginTop: 12 },
   rateInfoBtn: { alignSelf: 'flex-start', marginTop: 8 },
   rateNote: { marginTop: 8 },
-  brandBar: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderSoft,
-    borderRadius: radius.xl, paddingVertical: 10, paddingLeft: 10, paddingRight: 12, marginTop: 18,
-  },
-  brandMark: { borderWidth: 1, borderColor: colors.borderSoft },
-  brandName: { fontSize: 15, fontFamily: fonts.extraBold, color: colors.textPrimary, letterSpacing: -0.2 },
-  brandSub: { fontSize: 12, color: colors.textSecondary, marginTop: 1 },
-  brandLink: { fontSize: 12, fontFamily: fonts.bold, color: colors.textSecondary, maxWidth: 120 },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6, flexWrap: 'wrap' },
   meta: { fontSize: 12, color: colors.textSecondary },
   metaDot: { fontSize: 12, color: colors.textMuted },
@@ -803,8 +802,6 @@ const styles = StyleSheet.create({
     borderRadius: radius.xl, paddingHorizontal: 16, paddingTop: 14, paddingBottom: 2,
     marginTop: 18, ...shadows.card,
   },
-  infoHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
-  infoHeaderText: { fontSize: 15, fontFamily: fonts.extraBold, color: colors.textPrimary },
   infoRow: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingVertical: 13, borderBottomWidth: 1, borderBottomColor: colors.borderSoft,
@@ -839,36 +836,8 @@ const styles = StyleSheet.create({
   },
   affiliateTitle: { fontSize: 12.5, fontFamily: fonts.bold, color: colors.textPrimary },
   affiliateText: { marginTop: 2, fontSize: 12, lineHeight: 17, color: colors.textSecondary },
-  inspectionRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderSoft,
-    borderRadius: radius.xl, padding: 14, marginTop: 12,
-  },
-  inspectionIcon: {
-    width: 40, height: 40, borderRadius: radius.md,
-    backgroundColor: colors.greenTint, alignItems: 'center', justifyContent: 'center',
-  },
-  inspectionTitle: { fontSize: 14, fontFamily: fonts.bold, color: colors.textPrimary },
-  inspectionSub: { fontSize: 12, color: colors.greenText, fontFamily: fonts.semiBold, marginTop: 2 },
-  trustChips: { flexDirection: 'row', gap: 8, marginTop: 14, flexWrap: 'wrap' },
   promiseLink: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 12 },
   promiseLinkText: { fontSize: 12.5, fontFamily: fonts.bold, color: colors.textSecondary },
-  financeStrip: {
-    flexDirection: 'row', alignItems: 'center', gap: 10,
-    backgroundColor: colors.greenTint,
-    borderWidth: 1, borderColor: colors.border,
-    borderRadius: radius.xl, padding: 12, marginTop: 14,
-  },
-  financeIcon: {
-    width: 36, height: 36, borderRadius: 18,
-    backgroundColor: colors.surface,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  financeTitle: { fontSize: 13, fontFamily: fonts.semiBold, color: colors.textPrimary },
-  financeAmount: { fontFamily: fonts.extraBold, color: colors.primary },
-  financeSub: { fontSize: 11, fontFamily: fonts.regular, color: colors.textMuted, marginTop: 2 },
-  financeCta: { flexDirection: 'row', alignItems: 'center', gap: 3 },
-  financeCtaText: { fontSize: 11, fontFamily: fonts.extraBold, color: colors.primary },
   inspectCard: {
     marginTop: 14, padding: 16, borderRadius: radius.lg, backgroundColor: colors.surface,
     borderWidth: 1, borderColor: colors.borderSoft,
@@ -883,8 +852,9 @@ const styles = StyleSheet.create({
   catLine: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },
   catName: { flex: 1, fontSize: 13.5, fontFamily: fonts.semiBold, color: colors.textPrimary },
   catPts: { fontVariant: ['tabular-nums'], fontSize: 12.5, fontFamily: fonts.semiBold, color: colors.textSecondary },
-  catTrack: { height: 4, borderRadius: 2, backgroundColor: colors.surfaceAlt, overflow: 'hidden' },
-  catFill: { height: 4, borderRadius: 2, backgroundColor: colors.textPrimary },
+  catTrack: { height: 3, borderRadius: 2, backgroundColor: colors.surfaceAlt, overflow: 'hidden' },
+  // Green is the pass colour, the one meaning it has in this app.
+  catFill: { height: 3, borderRadius: 2, backgroundColor: colors.green },
   catFillFlagged: { backgroundColor: colors.amber },
   catFlag: { fontSize: 12, fontFamily: fonts.semiBold, color: colors.amberText },
   inspectLink: {
@@ -911,19 +881,6 @@ const styles = StyleSheet.create({
   similarMore: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 32 },
   similarMoreText: { fontSize: 13, fontFamily: fonts.bold, color: colors.textPrimary },
   sectionTitle: { fontSize: 17, fontFamily: fonts.extraBold, color: colors.textPrimary, marginTop: 22, marginBottom: 10 },
-  desc: { fontSize: 14, lineHeight: 22, color: colors.textSecondary },
-  highlightGrid: { gap: 10 },
-  highlightCard: {
-    flexDirection: 'row', gap: 12,
-    backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderSoft,
-    borderRadius: radius.xl, padding: 14,
-  },
-  highlightIcon: {
-    width: 38, height: 38, borderRadius: radius.md,
-    backgroundColor: colors.blueTint, alignItems: 'center', justifyContent: 'center',
-  },
-  highlightTitle: { fontSize: 13, fontFamily: fonts.bold, color: colors.textPrimary },
-  highlightDesc: { fontSize: 11, color: colors.textSecondary, marginTop: 3, lineHeight: 16 },
   similarCard: {
     width: 140,
     backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderSoft,
@@ -933,19 +890,7 @@ const styles = StyleSheet.create({
   similarBody: { padding: 10, gap: 3 },
   similarTitle: { fontSize: 12.5, fontFamily: fonts.bold, color: colors.textPrimary, lineHeight: 17 },
   similarPrice: { fontVariant: ['tabular-nums'], fontSize: 14, fontFamily: fonts.extraBold, color: colors.primary },
-  similarCert: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   similarCertText: { fontSize: 11, fontFamily: fonts.semiBold, color: colors.greenText },
-  dutyLink: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: colors.greenTint, borderWidth: 1, borderColor: colors.border,
-    borderRadius: radius.xl, padding: 14, marginTop: 14,
-  },
-  dutyLinkIcon: {
-    width: 38, height: 38, borderRadius: radius.md,
-    backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center',
-  },
-  dutyLinkTitle: { fontSize: 14, fontFamily: fonts.bold, color: colors.textPrimary },
-  dutyLinkSub: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
   cta: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
     backgroundColor: colors.surface, borderTopWidth: 1, borderTopColor: colors.borderSoft,
@@ -958,7 +903,6 @@ const styles = StyleSheet.create({
   ctaPrice: { flexShrink: 1, minWidth: 96 },
   ctaPriceLabel: {
     fontSize: 10, lineHeight: 13, fontFamily: fonts.extraBold, color: colors.textMuted,
-    letterSpacing: 0.6, textTransform: 'uppercase',
   },
   ctaPriceValue: {
     fontVariant: ['tabular-nums'], fontSize: 19, lineHeight: 24,

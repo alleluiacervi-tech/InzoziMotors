@@ -1,19 +1,18 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, Text, Image, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { radius, shadows, spacing, typography, iconSize } from '../theme';
 import { useTheme } from '../theme/ThemeContext';
 import { useApp } from '../context/AppContext';
 import Badge from './Badge';
-import { getCertTier } from '../data/certification';
+import Svg, { Circle } from 'react-native-svg';
 import { formatPrice } from '../data/cars';
 import Price from './Price';
 import { PHOTO } from '../utils/photo';
 import Photo from './Photo';
 import Touchable from './Touchable';
 import AppText from './AppText';
-
-const getSawaYear = (car) => String(car.year);
+import BrandMark from './BrandMark';
 
 const getSawaMileage = (car) => `${(car.mileage ?? 0).toLocaleString('en-US')} km`;
 
@@ -30,13 +29,17 @@ const getSawaLocation = (car) => {
 const getSawaPrice = (car) => formatPrice(car.price ?? car.currentBid ?? 0);
 
 export default function CarCard({ car, onPress, hideOverlay = false, rank = null }) {
-  const { isCarSaved, toggleSaveCar, t } = useApp();
+  const { isCarSaved, toggleSaveCar, brandLogo, t } = useApp();
+  const [photoFailed, setPhotoFailed] = useState(false);
+  const hasPhoto = Boolean(car.image) && !photoFailed;
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const saved = isCarSaved(car.id);
   const isContract = car.type === 'auction';
   const isRental = car.listingType === 'rental';
-  const tier = getCertTier(car);
+  // One trust signal per card: the inspection score, on the photo. Sale cars
+  // only; a rental's evidence is the Rental Check, never a "certified" badge.
+  const score = !isRental && car.inspectionScore ? Number(car.inspectionScore) : null;
   // Future-dated and unparsed-safe: a bad or past value must never render.
   // Informational only — the provider set this, it never hides the car or
   // blocks an inquiry. See backend migration 0037.
@@ -55,14 +58,22 @@ export default function CarCard({ car, onPress, hideOverlay = false, rank = null
       accessibilityLabel={`${car.title}, ${getSawaPrice(car)}`}
     >
       <View style={styles.imageWrap}>
-        <Photo uri={car.image} width={PHOTO.CARD} style={styles.image} resizeMode="cover" />
+        {hasPhoto ? (
+          <Photo uri={car.image} width={PHOTO.CARD} style={styles.image} resizeMode="cover" onError={() => setPhotoFailed(true)} />
+        ) : (
+          // No photo yet: the make's mark and a plain word, never a blank box.
+          <View style={styles.noPhoto}>
+            <BrandMark name={car.make} logoUrl={brandLogo(car.make)} size={36} />
+            <Text style={styles.noPhotoText}>{t('home.photosComing')}</Text>
+          </View>
+        )}
 
         {!hideOverlay && (
           <>
-            {tier ? (
-              <View style={[styles.certBadge, tier.key === 'plus' && { backgroundColor: colors.primary }]}>
-                <Ionicons name="shield-checkmark" size={11} color={colors.white} />
-                <AppText style={styles.certBadgeText} maxFontSizeMultiplier={1.2}>{tier.short}</AppText>
+            {score ? (
+              <View style={styles.scorePill} accessibilityLabel={t('home.inspected', { score })}>
+                <ScoreDial score={score} colors={colors} />
+                <AppText style={styles.scorePillText} maxFontSizeMultiplier={1.2}>{score}/150</AppText>
               </View>
             ) : isContract ? (
               <Badge variant="contract" label="In Contract" style={styles.topLeft} />
@@ -112,9 +123,7 @@ export default function CarCard({ car, onPress, hideOverlay = false, rank = null
             <Text style={styles.meta} numberOfLines={1}>
               {car.seats} {t('home.seats')} · {car.transmission}
             </Text>
-            <Text style={styles.meta} numberOfLines={1}>
-              <Ionicons name="star" size={10} color={colors.amber} /> {car.rating} ({car.trips} {t('home.trips')}) · {getSawaLocation(car)}
-            </Text>
+            <Text style={styles.meta} numberOfLines={1}>{getSawaLocation(car)}</Text>
             <View style={styles.rentalPriceRow}>
               <Text style={styles.price}>{formatPrice(car.dailyRate || 0)}</Text>
               <Text style={styles.perDay}>{t('home.perDay')}</Text>
@@ -122,25 +131,32 @@ export default function CarCard({ car, onPress, hideOverlay = false, rank = null
           </>
         ) : (
           <>
-            <Text style={styles.meta} numberOfLines={1}>{getSawaYear(car)}</Text>
-            <Text style={styles.meta} numberOfLines={1}>{getSawaMileage(car)} · {getSawaLocation(car)}</Text>
-            {/* The 150-point score, at the size the price gets.
-                It was a 10px chip in the corner of the photograph, ranked below
-                a loan estimate Sawa does not underwrite — and it is the one
-                fact that separates a Sawa car from a WhatsApp-group car. A
-                buyer triaging a grid spends about a second per card; this is
-                what that second should be spent on. */}
-            {car.inspectionScore ? (
-              <View style={styles.scoreRow}>
-                <Ionicons name="shield-checkmark" size={12} color={colors.green} />
-                <Text style={styles.scoreText}>{t('home.inspected', { score: car.inspectionScore })}</Text>
-              </View>
-            ) : null}
+            {/* The year is in the title, so the meta line starts with what the
+                title does not say. The score lives on the photo. */}
+            <Text style={styles.meta} numberOfLines={1}>
+              {[getSawaMileage(car), getSawaLocation(car), car.fuel].filter(Boolean).join(' · ')}
+            </Text>
             <Price amountRwf={car.price ?? car.currentBid ?? 0} />
           </>
         )}
       </View>
     </Touchable>
+  );
+}
+
+/** A small ring filled to the share of 150 points the car scored. */
+function ScoreDial({ score, colors }) {
+  const r = 6.5;
+  const c = 2 * Math.PI * r;
+  const share = Math.max(0, Math.min(1, score / 150));
+  return (
+    <Svg width={16} height={16} viewBox="0 0 16 16">
+      <Circle cx={8} cy={8} r={r} stroke={colors.border} strokeWidth={2.5} fill="none" />
+      <Circle
+        cx={8} cy={8} r={r} stroke={colors.green} strokeWidth={2.5} fill="none"
+        strokeDasharray={`${c * share} ${c}`} strokeLinecap="round" transform="rotate(-90 8 8)"
+      />
+    </Svg>
   );
 }
 
@@ -168,14 +184,16 @@ function makeStyles(colors) {
     // Every overlay sits on the same inset. These were 6, 7 and 6 — one pixel
     // apart, which reads as misalignment rather than as a decision.
     topLeft: { position: 'absolute', top: spacing.sm, left: spacing.sm, paddingHorizontal: 6, paddingVertical: 2 },
-    certBadge: {
+    scorePill: {
       position: 'absolute', top: spacing.sm, left: spacing.sm,
-      flexDirection: 'row', alignItems: 'center', gap: 4,
-      backgroundColor: colors.scrim,
-      paddingHorizontal: spacing.sm, paddingVertical: 3,
-      borderRadius: radius.sm,
+      flexDirection: 'row', alignItems: 'center', gap: 5,
+      backgroundColor: 'rgba(255,255,255,0.95)',
+      paddingLeft: 5, paddingRight: 9, paddingVertical: 4,
+      borderRadius: radius.pill,
     },
-    certBadgeText: { ...typography.badge, color: colors.white },
+    scorePillText: { ...typography.badge, fontVariant: ['tabular-nums'], color: '#14110F' },
+    noPhoto: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8 },
+    noPhotoText: { ...typography.cardMeta, color: colors.textMuted },
     heart: {
       position: 'absolute', top: spacing.sm, right: spacing.sm,
       width: 36, height: 36, borderRadius: 18,
@@ -202,18 +220,9 @@ function makeStyles(colors) {
     // Was 9.5px. Nothing in this product should render under 11.
     unavailableBadgeText: { ...typography.badge, color: colors.white },
 
-    body: { paddingHorizontal: spacing.md, paddingVertical: spacing.md, flex: 1, gap: 2 },
+    body: { paddingHorizontal: spacing.md, paddingVertical: spacing.md, flex: 1, gap: 3 },
     title: { ...typography.cardTitle, color: colors.textPrimary },
     meta: { ...typography.cardMeta, color: colors.textMuted },
-    scoreRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 4,
-      marginTop: spacing.xs,
-    },
-    // The inspection score is the one fact separating a Sawa car from a
-    // WhatsApp-group car, so it sits at meta weight but in the pass colour.
-    scoreText: { ...typography.cardMeta, fontFamily: typography.bodyStrong.fontFamily, color: colors.greenText },
     price: { ...typography.cardPrice, color: colors.primary, marginTop: spacing.xs },
     rentalPriceRow: { flexDirection: 'row', alignItems: 'baseline', marginTop: spacing.xs },
     perDay: { ...typography.cardMeta, color: colors.textMuted, marginLeft: 3 },

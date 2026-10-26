@@ -301,8 +301,7 @@ const styles = StyleSheet.create({
 
   menuSection: { paddingHorizontal: 20, marginTop: 24 },
   menuSectionTitle: {
-    fontSize: 11, fontFamily: fonts.bold, color: colors.textMuted,
-    textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8,
+    fontSize: 11, fontFamily: fonts.bold, color: colors.textMuted, marginBottom: 8,
   },
   menu: {
     backgroundColor: colors.surface,

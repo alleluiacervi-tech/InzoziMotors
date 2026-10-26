@@ -561,7 +561,7 @@ const styles = StyleSheet.create({
   verifyBtnApproveText: { fontSize: 13, fontFamily: fonts.bold, color: '#fff' },
   verifyBtnRejectText: { fontSize: 13, fontFamily: fonts.bold, color: colors.statusRejected },
   // Inspection cards
-  subHeader: { fontSize: 13, fontFamily: fonts.bold, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 4 },
+  subHeader: { fontSize: 13, fontFamily: fonts.bold, color: colors.textMuted, marginBottom: 4 },
   inspCard: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
     backgroundColor: colors.surface,

@@ -215,14 +215,14 @@ const styles = StyleSheet.create({
   },
   addCircle: {
     width: 44, height: 44, borderRadius: 22,
-    backgroundColor: colors.greenTint,
+    backgroundColor: colors.surfaceAlt,
     alignItems: 'center', justifyContent: 'center',
   },
   addSlotText: { fontSize: 11, fontFamily: fonts.semiBold, color: colors.textMuted, textAlign: 'center' },
   legendRow: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
     paddingHorizontal: 16, paddingVertical: 10,
-    backgroundColor: colors.greenTint,
+    backgroundColor: colors.surfaceAlt,
   },
   legendDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.green },
   legendText: { fontSize: 12, fontFamily: fonts.semiBold, color: colors.greenText },

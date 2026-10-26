@@ -318,7 +318,7 @@ export default function CarSubmissionScreen({ navigation, route }) {
               {priceSuggestion && (
                 <View style={styles.aiSuggestCard}>
                   <View style={styles.aiSuggestHeader}>
-                    <Ionicons name="sparkles-outline" size={16} color={colors.primary} />
+                    <Ionicons name="stats-chart-outline" size={16} color={colors.textSecondary} />
                     <Text style={styles.aiSuggestTitle}>{t('submission.aiSuggestTitle')}</Text>
                     <View style={styles.aiSuggestBeta}>
                       <Text style={styles.aiSuggestBetaText}>{t('submission.aiSuggestBeta')}</Text>
@@ -548,7 +548,7 @@ const styles = StyleSheet.create({
   aiSuggestHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
   aiSuggestTitle: { fontSize: 13, fontFamily: fonts.extraBold, color: colors.textPrimary },
   aiSuggestBeta: { marginLeft: 'auto', backgroundColor: colors.primary, borderRadius: radius.pill, paddingHorizontal: 7, paddingVertical: 2 },
-  aiSuggestBetaText: { fontSize: 11, fontFamily: fonts.bold, color: '#fff', textTransform: 'uppercase' },
+  aiSuggestBetaText: { fontSize: 11, fontFamily: fonts.bold, color: '#fff', },
   aiSuggestRange: { fontSize: 22, fontFamily: fonts.black, color: colors.primary, letterSpacing: -0.5, marginBottom: 2 },
   aiSuggestSub: { fontSize: 12, color: colors.textSecondary },
   aiSuggestCheck: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: radius.lg, padding: 8, marginTop: 10 },

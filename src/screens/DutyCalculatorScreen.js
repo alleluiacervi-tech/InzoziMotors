@@ -279,7 +279,7 @@ const styles = StyleSheet.create({
     margin: 16, backgroundColor: colors.amberTint,
     borderRadius: radius.xl, padding: 16, alignItems: 'center', gap: 4,
   },
-  effectiveRateTitle: { fontSize: 12, fontFamily: fonts.bold, color: colors.amberText, textTransform: 'uppercase', letterSpacing: 0.4 },
+  effectiveRateTitle: { fontSize: 12, fontFamily: fonts.bold, color: colors.amberText, },
   effectiveRateValue: { fontSize: 36, fontFamily: fonts.black, color: colors.amberText },
   effectiveRateDesc: { fontSize: 12, color: colors.amberText, textAlign: 'center', lineHeight: 18 },
   rwfCard: {

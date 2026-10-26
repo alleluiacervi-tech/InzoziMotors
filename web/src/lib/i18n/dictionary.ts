@@ -9,7 +9,7 @@
 
 import { DEFAULT_LOCALE, normalizeLocale, type Locale } from './config'
 import { SECTIONS } from './messages'
-import { fill, lookup, mergeMessages, type TFunction } from './translate'
+import { fill, lookup, mergeMessages, pluralKey, type TFunction } from './translate'
 
 type Messages = Record<string, unknown>
 
@@ -497,7 +497,9 @@ export type { TFunction }
 export function getT(locale: unknown): TFunction {
   const code = normalizeLocale(locale)
   return (key, vars) => {
-    const value = lookup(DICTIONARY[code], key) ?? lookup(DICTIONARY[DEFAULT_LOCALE], key) ?? key
+    const one = pluralKey(code, key, vars)
+    const value = (one !== key ? lookup(DICTIONARY[code], one) ?? lookup(DICTIONARY[DEFAULT_LOCALE], one) : undefined)
+      ?? lookup(DICTIONARY[code], key) ?? lookup(DICTIONARY[DEFAULT_LOCALE], key) ?? key
     return fill(value, vars)
   }
 }

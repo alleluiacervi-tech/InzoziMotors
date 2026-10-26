@@ -41,6 +41,11 @@ router.get('/', async (_req, res) => {
               u.avatar_url,
               u.created_at AS member_since,
               u.sawa_affiliated,
+              -- Already public on the storefront (GET /sellers/:id); here so a
+              -- card can say "Open · Closes at 21:00" without a second request.
+              u.business_hours AS hours,
+              -- Whether cover_image is the showroom itself or only its newest car.
+              (u.business_cover_url IS NOT NULL) AS cover_is_showroom,
               (SELECT COUNT(*)::int FROM live l WHERE l.seller_id = u.id) AS live_count,
               -- The showroom's own photo when the team set one, else its newest car.
               COALESCE(u.business_cover_url,

@@ -186,6 +186,13 @@ test('a showroom sells under its business name, and GET /showrooms lists it with
   assert.equal(row.live_count, 3);
   assert.deepEqual(row.brands, [{ make: 'Toyota', count: 2 }, { make: 'Hyundai', count: 1 }]);
   assert.ok(row.cover_image);
+  // No cover set: the newest car stands in, and the row says so. No hours set: null.
+  assert.equal(row.cover_is_showroom, false);
+  assert.equal(row.hours, null);
+  const hours = { mon: { open: '08:00', close: '18:00' }, tue: null, wed: null, thu: null, fri: null, sat: null, sun: null };
+  await pool.query('UPDATE users SET business_hours = $2::jsonb WHERE id = $1', [showroom.id, JSON.stringify(hours)]);
+  const withHours = (await api().get('/showrooms').expect(200)).body.find((s) => s.id === showroom.id);
+  assert.deepEqual(withHours.hours, hours, 'the list carries the storefront hours so a card can say open or closed');
   const serialized = JSON.stringify(all.body);
   for (const secret of ['phone', 'whatsapp', 'email', showroom.email, '+250788000111']) {
     assert.ok(!serialized.includes(secret), `showrooms must not carry ${secret}`);

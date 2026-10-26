@@ -5,6 +5,7 @@ import { showrooms as showroomsApi } from '@/lib/api'
 import { getLogoLookup } from '@/lib/brands'
 import { getServerT } from '@/lib/i18n/server'
 import type { Showroom } from '@/lib/types'
+import { openStatusLabels } from '@/lib/showroom-hours'
 
 // Verified showrooms with cars in stock — the app's Home rail on the website.
 // A showroom is a business, not a brand: the marks on each card are the brands
@@ -49,6 +50,7 @@ export async function Showrooms() {
                 logoFor={logoFor}
                 verifiedLabel={t('home.showrooms.verified')}
                 carsLabel={t('home.showrooms.cars', { count: room.live_count })}
+                statusLabels={openStatusLabels(t)}
               />
             </li>
           ))}

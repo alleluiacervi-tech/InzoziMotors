@@ -44,3 +44,59 @@ export function openState(hours: BusinessHours, now: Date = new Date()): OpenSta
   }
   return { open: false, opensAt: null, opensDay: null, laterToday: false }
 }
+
+/** "Closes soon" for the last hour, so nobody sets off for a showroom about to shut. */
+export const CLOSING_SOON_MIN = 60
+
+export type OpenStatusKey =
+  | 'statusOpenUntil' | 'statusClosesSoon' | 'statusOpensToday' | 'statusOpensTomorrow'
+  | 'statusClosedTodayOpensTomorrow' | 'statusOpensDay' | 'statusClosedTodayOpensDay'
+
+export type OpenStatus = { tone: 'open' | 'soon' | 'closed'; key: OpenStatusKey; time: string; day?: BusinessDay }
+
+/**
+ * The one line a buyer needs: can I go now, and if not, when. Always names the
+ * day ("today", "tomorrow", "Monday"); null when there are no hours. Keys are
+ * under market.profile in the messages. Mirrors openStatus in the app.
+ */
+export function openStatus(hours: BusinessHours | null | undefined, now: Date = new Date()): OpenStatus | null {
+  if (!hours) return null
+  const { day, minutes } = kigaliClock(now)
+  const today = hours[day]
+  if (today && minutes >= toMinutes(today.open) && minutes < toMinutes(today.close)) {
+    return toMinutes(today.close) - minutes <= CLOSING_SOON_MIN
+      ? { tone: 'soon', key: 'statusClosesSoon', time: today.close }
+      : { tone: 'open', key: 'statusOpenUntil', time: today.close }
+  }
+  if (today && minutes < toMinutes(today.open)) return { tone: 'closed', key: 'statusOpensToday', time: today.open }
+  const index = WEEK.indexOf(day)
+  for (let step = 1; step <= 7; step += 1) {
+    const next = WEEK[(index + step) % 7]
+    const slot = hours[next]
+    if (!slot) continue
+    if (step === 1) {
+      return { tone: 'closed', key: today ? 'statusOpensTomorrow' : 'statusClosedTodayOpensTomorrow', time: slot.open }
+    }
+    return { tone: 'closed', key: today ? 'statusOpensDay' : 'statusClosedTodayOpensDay', time: slot.open, day: next }
+  }
+  return null
+}
+
+export type OpenStatusLabels = Record<OpenStatusKey, string> & { days: Record<BusinessDay, string> }
+
+/** The labels OpenStatusLine needs, read once on the server. */
+export function openStatusLabels(t: (key: string) => string): OpenStatusLabels {
+  const keys: OpenStatusKey[] = [
+    'statusOpenUntil', 'statusClosesSoon', 'statusOpensToday', 'statusOpensTomorrow',
+    'statusClosedTodayOpensTomorrow', 'statusOpensDay', 'statusClosedTodayOpensDay',
+  ]
+  const labels = Object.fromEntries(keys.map((k) => [k, t(`market.profile.${k}`)])) as Record<OpenStatusKey, string>
+  return {
+    ...labels,
+    days: {
+      mon: t('market.profile.dayMon'), tue: t('market.profile.dayTue'), wed: t('market.profile.dayWed'),
+      thu: t('market.profile.dayThu'), fri: t('market.profile.dayFri'), sat: t('market.profile.daySat'),
+      sun: t('market.profile.daySun'),
+    },
+  }
+}

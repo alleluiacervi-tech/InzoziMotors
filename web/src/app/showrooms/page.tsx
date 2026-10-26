@@ -9,6 +9,7 @@ import { getServerT } from '@/lib/i18n/server'
 import { breadcrumbNode, graph, itemListNode } from '@/lib/seo'
 import { SITE } from '@/lib/site'
 import type { Showroom } from '@/lib/types'
+import { openStatusLabels } from '@/lib/showroom-hours'
 
 // Every verified showroom with public stock. The headline renders outside the
 // data call so the page has an h1 even when the API does not answer, and an
@@ -64,6 +65,7 @@ export default async function ShowroomsPage() {
                     logoFor={logoFor}
                     verifiedLabel={t('home.showrooms.verified')}
                     carsLabel={t('home.showrooms.cars', { count: room.live_count })}
+                    statusLabels={openStatusLabels(t)}
                   />
                 </li>
               ))}

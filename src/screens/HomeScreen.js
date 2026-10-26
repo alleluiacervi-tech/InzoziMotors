@@ -22,6 +22,8 @@ import { PHOTO } from '../utils/photo';
 import { cars as carsApi } from '../api/cars';
 import Photo from '../components/Photo';
 import FeaturedCard from '../components/FeaturedCard';
+import ShowroomCard from '../components/ShowroomCard';
+import { BrandName } from '../components/Logo';
 import useReducedMotion from '../hooks/useReducedMotion';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -33,7 +35,10 @@ const FEATURED_GAP = 12;
 // eight — long enough to read a price without the card moving under a thumb.
 const FEATURED_INTERVAL_MS = 5000;
 const FEATURED_TOUCH_PAUSE_MS = 8000;
-const SHOWROOM_CARD_W = Math.min(SCREEN_WIDTH * 0.72, 270);
+// One or two showrooms: full-width cards. Three or more: a rail where the next
+// card peeks in at the edge.
+const SHOWROOM_RAIL_W = Math.round(SCREEN_WIDTH * 0.84);
+const SHOWROOM_GAP = 12;
 
 const TOOLS = [
   { labelKey: 'certifyCar', icon: 'car-outline', screen: 'CarSubmission' },
@@ -43,7 +48,7 @@ const TOOLS = [
 ];
 
 export default function HomeScreen({ navigation }) {
-  const { cars, homeMode, setHomeMode, rentalCars, notifications, rentalInquiries, recentlyViewedIds, savedCarIds, backendReachable, refreshCatalogue, refreshing, makes, t } = useApp();
+  const { cars, homeMode, setHomeMode, rentalCars, notifications, rentalInquiries, recentlyViewedIds, savedCarIds, backendReachable, refreshCatalogue, refreshing, makes, brandLogo, t } = useApp();
   const isFocused = useIsFocused();
 
   // Only worth saying when there is nothing to show; a cached catalogue with a
@@ -154,6 +159,14 @@ export default function HomeScreen({ navigation }) {
   // showroom is a business that sells whatever brands it stocks; the brands
   // on each card are read off its live cars by the server.
   const [showrooms, setShowrooms] = useState([]);
+  // Re-read every minute so a card's "Open · Closes at 21:00" turns over on time.
+  const [clock, setClock] = useState(() => Date.now());
+  React.useEffect(() => {
+    if (!isFocused) return undefined;
+    setClock(Date.now());
+    const timer = setInterval(() => setClock(Date.now()), 60000);
+    return () => clearInterval(timer);
+  }, [isFocused]);
   React.useEffect(() => {
     if (refreshing) return undefined; // fetch again once a pull-to-refresh lands
     let alive = true;
@@ -253,11 +266,10 @@ export default function HomeScreen({ navigation }) {
           <View style={styles.hamburgerLine} />
         </Pressable>
 
-        <View style={styles.locationContainer}>
-          <Text style={styles.locationLabel}>{t('home.location').toUpperCase()}</Text>
-          <View style={styles.locationValueRow}>
-            <Text style={styles.locationText}>{t('home.kigali')}</Text>
-          </View>
+        {/* The app's name where big apps put theirs. It used to say
+            "LOCATION Kigali, Rwanda", a setting nobody could change. */}
+        <View style={styles.brandContainer}>
+          <BrandName height={13} color={colors.textPrimary} />
         </View>
 
         <View style={styles.topBarRight}>
@@ -285,7 +297,7 @@ export default function HomeScreen({ navigation }) {
                 <Ionicons
                   name={m === 'buy' ? 'pricetag-outline' : 'key-outline'}
                   size={15}
-                  color={on ? '#fff' : colors.textSecondary}
+                  color={on ? colors.textPrimary : colors.textSecondary}
                 />
                 <Text style={[styles.modeBtnText, on && styles.modeBtnTextOn]}>
                   {m === 'buy' ? t('home.buy') : t('home.rent')}
@@ -489,150 +501,94 @@ export default function HomeScreen({ navigation }) {
           </View>
         ) : null}
 
-        {/* ── TOOLS ROW ── */}
-        <View style={styles.toolsRow}>
-          {TOOLS.map((item, idx) => (
-            <Pressable
-              key={idx}
-              style={styles.toolItem}
-              onPress={() => navigation.navigate(item.screen)}
-            >
-              <View style={styles.toolIconCircle}>
-                <Ionicons name={item.icon} size={22} color={colors.textSecondary} />
-              </View>
-              <Text style={styles.toolLabel}>{t(`home.${item.labelKey}`)}</Text>
-            </Pressable>
-          ))}
-        </View>
-
-        {/* ── IMPORT, ENTERED THROUGH THE BRAND ──────────────────────────
-            This was a horizontal strip of eight vehicles out of twenty-nine,
-            each captioned with a landed-cost figure computed from
-            `item.typicalFobUsd || 15000` — so any model without a price was
-            given an invented $15,000 and the duty maths dressed the guess up
-            as a calculation. Every card also drew one of seven recycled stock
-            photographs, which is why a Hilux and an Atto 3 looked identical.
-
-            Brands answer the question people actually arrive with ("what
-            Hyundais can I get?"), reach all 233 models instead of 8, and need
-            neither a price nor a photograph to be useful. ── */}
+        {/* ── FRESH THIS WEEK ── the stock people came for, straight after
+            Featured. The origin chips sit right above the cars they filter. */}
         <View style={styles.sectionContainer}>
           <SectionHeader
-            title={t('browse.importEntryTitle')}
-            actionLabel={t('browse.allBrands')}
-            onAction={() => navigation.navigate(korea.available ? 'KoreaCars' : 'ImportBrands')}
+            title={originTab === 'All'
+              ? t('home.fresh')
+              : t('home.carsCount', { label: t(`home.${originTab === 'EV·Hybrid' ? 'evHybrid' : originTab.toLowerCase()}`), count: originCars.length })}
+            actionLabel={t('home.more')}
+            onAction={() => navigation.navigate('SearchResults')}
           />
-          <FlatList
+          <ScrollView
             horizontal
-            data={importRail}
-            keyExtractor={(b) => b.make}
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.horizontalListPadding}
-            renderItem={({ item }) => (
-              <Pressable
-                style={styles.importBrandCard}
-                onPress={() => (item.korea
-                  ? navigation.navigate('KoreaCars', { make: item.make })
-                  : navigation.navigate('ImportBrandModels', { make: item.make }))}
-                accessibilityRole="button"
-                accessibilityLabel={item.korea ? `${item.make}, ${t('korea.carsCount', { count: item.count })}` : `${item.make}, ${item.modelCount} models`}
-              >
-                <BrandMark name={item.make} logoUrl={brandRow(item.make)?.logo_url} size={36} />
-                <Text style={styles.importBrandName} numberOfLines={1}>{item.make}</Text>
-                <Text style={styles.importBrandCount}>{item.korea ? t('korea.carsCount', { count: item.count.toLocaleString('en-US') }) : t('browse.modelsCount', { count: item.modelCount })}</Text>
-              </Pressable>
-            )}
-          />
-
-          {!korea.available && koreaMarket.available ? (
-            <Pressable
-              style={styles.importNoteStrip}
-              onPress={() => navigation.navigate('KoreaMarket')}
-              accessibilityRole="button"
-            >
-              <View style={styles.importNoteIcon}>
-                <Ionicons name="stats-chart-outline" size={16} color={colors.textSecondary} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.importNoteTitle}>{t('korea.market.homeTitle')}</Text>
-                <Text style={styles.importNoteSub}>{t('korea.market.homeBody', { count: koreaMarket.total.toLocaleString('en-US') })}</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
-            </Pressable>
-          ) : null}
-
-          <Pressable
-            style={styles.importNoteStrip}
-            onPress={() => navigation.navigate('DutyCalculator')}
+            contentContainerStyle={styles.originRow}
           >
-            <View style={styles.importNoteIcon}>
-              <Ionicons name="calculator-outline" size={16} color={colors.textSecondary} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.importNoteTitle}>{t('browse.dutyNoteTitle')}</Text>
-              <Text style={styles.importNoteSub}>{t('browse.dutyNoteBody')}</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
-          </Pressable>
+            {ORIGIN_TABS.map((tab) => {
+              const on = originTab === tab;
+              return (
+                <Pressable
+                  key={tab}
+                  style={[styles.originChip, on && styles.originChipOn]}
+                  onPress={() => setOriginTab(tab)}
+                  accessibilityRole="tab"
+                  accessibilityState={{ selected: on }}
+                >
+                  <Text style={[styles.originText, on && styles.originTextOn]}>{t(`home.${tab === 'EV·Hybrid' ? 'evHybrid' : tab.toLowerCase()}`)}</Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+          <View style={styles.twoColumnGrid}>
+            {loading
+              ? [0, 1, 2, 3].map((i) => (
+                  <View key={i} style={styles.gridCardWrapper}>
+                    <SkeletonCard />
+                  </View>
+                ))
+              : (originTab === 'All' ? freshCars : originCars).map((item, index) => (
+                  <View key={item.id} style={styles.gridCardWrapper}>
+                    <StaggerEntrance index={index}>
+                      <CarCard
+                        car={item}
+                        onPress={() => navigation.navigate('VehicleDetail', { car: item })}
+                      />
+                    </StaggerEntrance>
+                  </View>
+                ))}
+          </View>
         </View>
 
-        {/* ── SHOWROOMS — verified businesses and the brands they carry ── */}
+        {/* ── SHOWROOMS — verified businesses, open or closed right now ── */}
         {showrooms.length > 0 && (
           <View style={styles.sectionContainer}>
             <SectionHeader title={t('home.showrooms')} />
-            <FlatList
-              horizontal
-              data={showrooms}
-              keyExtractor={(w) => w.id}
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.horizontalListPadding}
-              snapToInterval={SHOWROOM_CARD_W + 12}
-              decelerationRate="fast"
-              renderItem={({ item }) => {
-                const brands = Array.isArray(item.brands) ? item.brands : [];
-                return (
-                  <Pressable
-                    style={({ pressed }) => [styles.showroomCard, pressed && { opacity: 0.94 }]}
+            {showrooms.length <= 2 ? (
+              <View style={styles.showroomStack}>
+                {showrooms.map((room) => (
+                  <ShowroomCard
+                    key={room.id}
+                    room={room}
+                    now={new Date(clock)}
+                    brandLogo={brandLogo}
+                    t={t}
+                    onPress={() => navigation.navigate('Showroom', { sellerId: room.id, name: room.name })}
+                  />
+                ))}
+              </View>
+            ) : (
+              <FlatList
+                horizontal
+                data={showrooms}
+                keyExtractor={(w) => w.id}
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.showroomRail}
+                snapToInterval={SHOWROOM_RAIL_W + SHOWROOM_GAP}
+                decelerationRate="fast"
+                renderItem={({ item }) => (
+                  <ShowroomCard
+                    room={item}
+                    width={SHOWROOM_RAIL_W}
+                    now={new Date(clock)}
+                    brandLogo={brandLogo}
+                    t={t}
                     onPress={() => navigation.navigate('Showroom', { sellerId: item.id, name: item.name })}
-                    accessibilityRole="button"
-                    accessibilityLabel={`${item.name}, ${t('browse.showroomCars', { count: item.live_count })}`}
-                  >
-                    <View style={styles.showroomThumb}>
-                      {item.cover_image ? (
-                        <Photo uri={item.cover_image} width={PHOTO.CARD} style={styles.showroomPhoto} resizeMode="cover" />
-                      ) : null}
-                      {item.avatar_url ? (
-                        <Image source={{ uri: item.avatar_url }} style={item.cover_image ? styles.showroomAvatarBadge : styles.showroomAvatarFill} />
-                      ) : (
-                        <View style={item.cover_image ? [styles.showroomAvatarBadge, styles.showroomAvatarEmpty] : [styles.showroomAvatarFill, styles.showroomAvatarEmpty]}>
-                          <Text style={item.cover_image ? styles.showroomAvatarTextSmall : styles.showroomAvatarText}>
-                            {String(item.name || '?').charAt(0).toUpperCase()}
-                          </Text>
-                        </View>
-                      )}
-                    </View>
-                    <View style={styles.showroomBody}>
-                      <Text style={styles.showroomName} numberOfLines={1}>{item.name}</Text>
-                      <View style={styles.showroomVerifiedRow}>
-                        <Ionicons name="shield-checkmark" size={12} color={colors.greenText} />
-                        <Text style={styles.showroomVerified} numberOfLines={1}>
-                          {t('browse.verifiedShowroom')}{item.location ? ` · ${item.location}` : ''}
-                        </Text>
-                      </View>
-                      <View style={styles.showroomFoot}>
-                        <View style={styles.showroomBrands}>
-                          {brands.slice(0, 3).map((b) => (
-                            <BrandMark key={b.make} name={b.make} logoUrl={brandRow(b.make)?.logo_url} size={18} style={styles.showroomBrandMark} />
-                          ))}
-                          {brands.length > 3 ? <Text style={styles.showroomMore}>+{brands.length - 3}</Text> : null}
-                        </View>
-                        <Text style={styles.showroomCount} numberOfLines={1}>{t('browse.showroomCars', { count: item.live_count })}</Text>
-                      </View>
-                    </View>
-                  </Pressable>
-                );
-              }}
-            />
+                  />
+                )}
+              />
+            )}
           </View>
         )}
 
@@ -662,44 +618,6 @@ export default function HomeScreen({ navigation }) {
           </View>
         )}
 
-        {/* ── BROWSE BY ORIGIN (Encar-style) ── */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.originRow}
-        >
-          {ORIGIN_TABS.map((tab) => {
-            const on = originTab === tab;
-            return (
-              <Pressable
-                key={tab}
-                style={[styles.originChip, on && styles.originChipOn]}
-                onPress={() => setOriginTab(tab)}
-              >
-                <Text style={[styles.originText, on && styles.originTextOn]}>{t(`home.${tab === 'EV·Hybrid' ? 'evHybrid' : tab.toLowerCase()}`)}</Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
-
-        {originTab !== 'All' ? (
-          <View style={styles.sectionContainer}>
-            <SectionHeader title={t('home.carsCount', { label: t(`home.${originTab === 'EV·Hybrid' ? 'evHybrid' : originTab.toLowerCase()}`), count: originCars.length })} />
-            <View style={styles.twoColumnGrid}>
-              {originCars.map((item, index) => (
-                <View key={item.id} style={styles.gridCardWrapper}>
-                  <StaggerEntrance index={index}>
-                    <CarCard
-                      car={item}
-                      onPress={() => navigation.navigate('VehicleDetail', { car: item })}
-                    />
-                  </StaggerEntrance>
-                </View>
-              ))}
-            </View>
-          </View>
-        ) : (
-        <>
         {/* ── RECENTLY VIEWED ── */}
         {recentlyViewed.length > 0 && (
           <View style={styles.sectionContainer}>
@@ -751,85 +669,112 @@ export default function HomeScreen({ navigation }) {
           </View>
         )}
 
-        {/* ── FRESH THIS WEEK ── */}
-        <View style={styles.sectionContainer}>
-          <SectionHeader
-            title={t('home.fresh')}
-            actionLabel={t('home.more')}
-            onAction={() => navigation.navigate('SearchResults')}
-          />
-          <View style={styles.twoColumnGrid}>
-            {loading
-              ? [0, 1, 2, 3].map((i) => (
-                  <View key={i} style={styles.gridCardWrapper}>
-                    <SkeletonCard />
-                  </View>
-                ))
-              : freshCars.map((item, index) => (
-                  <View key={item.id} style={styles.gridCardWrapper}>
-                    <StaggerEntrance index={index}>
-                      <CarCard
-                        car={item}
-                        onPress={() => navigation.navigate('VehicleDetail', { car: item })}
-                      />
-                    </StaggerEntrance>
-                  </View>
-                ))}
-          </View>
-        </View>
-
         {/* ── POPULAR IN KIGALI ── */}
         {popularCars.length ? (
+          <View style={styles.sectionContainer}>
+            <SectionHeader
+              title={t('home.popular')}
+              actionLabel={t('home.more')}
+              onAction={() => navigation.navigate('SearchResults')}
+            />
+            <FlatList
+              horizontal
+              data={popularCars}
+              keyExtractor={(item) => item.id}
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.horizontalListPadding}
+              renderItem={({ item, index }) => (
+                <View style={styles.horizontalCardWrapper}>
+                  <CarCard
+                    car={item}
+                    rank={index + 1}
+                    onPress={() => navigation.navigate('VehicleDetail', { car: item })}
+                  />
+                </View>
+              )}
+            />
+          </View>
+        ) : null}
+
+        {/* ── TOOLS ── shortcuts, after the stock rather than in front of it. */}
+        <View style={styles.toolsRow}>
+          {TOOLS.map((item) => (
+            <Pressable
+              key={item.labelKey}
+              style={styles.toolItem}
+              onPress={() => navigation.navigate(item.screen)}
+              accessibilityRole="button"
+            >
+              <View style={styles.toolIconCircle}>
+                <Ionicons name={item.icon} size={22} color={colors.textPrimary} />
+              </View>
+              <Text style={styles.toolLabel} numberOfLines={2}>{t(`home.${item.labelKey}`)}</Text>
+            </Pressable>
+          ))}
+        </View>
+
+        {/* ── IMPORT, ENTERED THROUGH THE BRAND ── brands answer the question
+            people arrive with ("what Hyundais can I get?") and need neither a
+            price nor a photograph. Korea and duty follow as two quiet rows. */}
         <View style={styles.sectionContainer}>
           <SectionHeader
-            title={t('home.popular')}
-            actionLabel={t('home.more')}
-            onAction={() => navigation.navigate('SearchResults')}
+            title={t('browse.importEntryTitle')}
+            actionLabel={t('browse.allBrands')}
+            onAction={() => navigation.navigate(korea.available ? 'KoreaCars' : 'ImportBrands')}
           />
           <FlatList
             horizontal
-            data={popularCars}
-            keyExtractor={(item) => item.id}
+            data={importRail}
+            keyExtractor={(b) => b.make}
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.horizontalListPadding}
-            renderItem={({ item, index }) => (
-              <View style={styles.horizontalCardWrapper}>
-                <CarCard
-                  car={item}
-                  rank={index + 1}
-                  onPress={() => navigation.navigate('VehicleDetail', { car: item })}
-                />
-              </View>
+            renderItem={({ item }) => (
+              <Pressable
+                style={styles.importBrandCard}
+                onPress={() => (item.korea
+                  ? navigation.navigate('KoreaCars', { make: item.make })
+                  : navigation.navigate('ImportBrandModels', { make: item.make }))}
+                accessibilityRole="button"
+                accessibilityLabel={item.korea ? `${item.make}, ${t('korea.carsCount', { count: item.count })}` : `${item.make}, ${t('browse.modelsCount', { count: item.modelCount })}`}
+              >
+                <BrandMark name={item.make} logoUrl={brandRow(item.make)?.logo_url} size={36} />
+                <Text style={styles.importBrandName} numberOfLines={1}>{item.make}</Text>
+                <Text style={styles.importBrandCount}>{item.korea ? t('korea.carsCount', { count: item.count.toLocaleString('en-US') }) : t('browse.modelsCount', { count: item.modelCount })}</Text>
+              </Pressable>
             )}
           />
-        </View>
-        ) : null}
-        </>
-        )}
-        </>
-        )}
 
-        {/* ── FOOTER ── */}
-        <View style={styles.footerContainer}>
-          <View style={styles.footerLinksRow}>
-            <Pressable onPress={() => navigation.navigate('SignIn')}>
-              <Text style={styles.footerLinkText}>{t('home.login')}</Text>
-            </Pressable>
-            <Text style={styles.footerDivider}>·</Text>
-            <Pressable onPress={() => navigation.navigate('SawaPromise')}>
-              <Text style={styles.footerLinkText}>{t('home.ourPromise')}</Text>
-            </Pressable>
-            <Text style={styles.footerDivider}>·</Text>
-            <Pressable onPress={() => navigation.navigate('SawaPromise')}>
-              <Text style={styles.footerLinkText}>{t('home.aboutUs')}</Text>
-            </Pressable>
-            <Text style={styles.footerDivider}>·</Text>
-            <Pressable onPress={() => navigation.navigate('Settings')}>
-              <Text style={styles.footerLinkText}>{t('common.settings')}</Text>
+          <View style={styles.importRows}>
+            {!korea.available && koreaMarket.available ? (
+              <Pressable
+                style={styles.importRow}
+                onPress={() => navigation.navigate('KoreaMarket')}
+                accessibilityRole="button"
+              >
+                <Ionicons name="stats-chart-outline" size={18} color={colors.textSecondary} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.importNoteTitle}>{t('korea.market.homeTitle')}</Text>
+                  <Text style={styles.importNoteSub} numberOfLines={1}>{t('korea.market.homeBody', { count: koreaMarket.total.toLocaleString('en-US') })}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+              </Pressable>
+            ) : null}
+            <Pressable
+              style={[styles.importRow, !korea.available && koreaMarket.available && styles.importRowDivided]}
+              onPress={() => navigation.navigate('DutyCalculator')}
+              accessibilityRole="button"
+            >
+              <Ionicons name="calculator-outline" size={18} color={colors.textSecondary} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.importNoteTitle}>{t('browse.dutyNoteTitle')}</Text>
+                <Text style={styles.importNoteSub} numberOfLines={2}>{t('browse.dutyNoteBody')}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
             </Pressable>
           </View>
-          <Text style={styles.copyrightText}>{t('home.copyright')}</Text>
         </View>
+        </>
+        )}
 
       </ScrollView>
     </Screen>
@@ -850,23 +795,12 @@ const styles = StyleSheet.create({
   },
   importBrandName: { ...typography.cardTitle, fontSize: 12.5, lineHeight: 16, color: colors.textPrimary, marginTop: 6 },
   importBrandCount: { ...typography.micro, color: colors.textSecondary, marginTop: 2 },
-  importNoteStrip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginHorizontal: 16,
-    marginTop: 12,
-    padding: 12,
-    borderRadius: radius.md,
-    backgroundColor: colors.surfaceAlt,
-    borderWidth: 1,
-    borderColor: colors.borderSoft,
+  importRows: {
+    marginHorizontal: 16, marginTop: 12,
+    borderRadius: radius.lg, borderWidth: 1, borderColor: colors.borderSoft, overflow: 'hidden',
   },
-  importNoteIcon: {
-    width: 32, height: 32, borderRadius: 16,
-    alignItems: 'center', justifyContent: 'center',
-    backgroundColor: colors.surface,
-  },
+  importRow: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 56, paddingHorizontal: 14, paddingVertical: 12 },
+  importRowDivided: { borderTopWidth: 1, borderTopColor: colors.borderSoft },
   importNoteTitle: { ...typography.bodyStrong, color: colors.textPrimary },
   importNoteSub: { ...typography.caption, color: colors.textSecondary, marginTop: 2, lineHeight: 16 },
 
@@ -894,22 +828,8 @@ const styles = StyleSheet.create({
     borderRadius: 1,
     backgroundColor: colors.textPrimary,
   },
-  locationContainer: { flex: 1, justifyContent: 'center' },
-  locationLabel: {
-    fontSize: 10,
-    fontFamily: fonts.semiBold,
-    color: colors.textMuted,
-    letterSpacing: 0.5,
-    marginBottom: 1,
-  },
-  locationValueRow: { flexDirection: 'row', alignItems: 'center', gap: 3 },
-  locationText: { fontSize: 14, fontFamily: fonts.extraBold, color: colors.textPrimary },
+  brandContainer: { flex: 1, justifyContent: 'center', paddingLeft: 2 },
   topBarRight: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  iconBtn: {
-    width: 44, height: 44, borderRadius: 22,
-    alignItems: 'center', justifyContent: 'center',
-    backgroundColor: colors.greenTint,
-  },
   bellBtn: {
     width: 44, height: 44,
     alignItems: 'center', justifyContent: 'center',
@@ -944,10 +864,15 @@ const styles = StyleSheet.create({
   offlineRetryText: { fontSize: 12, fontFamily: fonts.bold, color: '#fff' },
 
   // ── Buy/Rent mode switch ──
+  // Fixed above the scroll view: a solid band with a hairline, so the content
+  // never shows through or slides under a hard edge.
   modeSwitchWrap: {
     backgroundColor: colors.surface,
     paddingHorizontal: 16,
     paddingTop: 10,
+    paddingBottom: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
   },
   modeSwitch: {
     flexDirection: 'row',
@@ -965,18 +890,22 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: radius.pill,
   },
-  modeBtnOn: { backgroundColor: colors.primary },
-  modeBtnText: { fontFamily: fonts.semiBold, fontSize: 13, color: colors.textSecondary },
-  modeBtnTextOn: { color: '#fff' },
+  // Selected is ink on white, like iOS's segmented control: red stays for
+  // prices and the one main action on a screen.
+  modeBtnOn: {
+    backgroundColor: colors.surface,
+    shadowColor: '#14110F', shadowOpacity: 0.12, shadowRadius: 3, shadowOffset: { width: 0, height: 1 },
+    elevation: 1,
+  },
+  modeBtnText: { fontFamily: fonts.semiBold, fontSize: 14, color: colors.textSecondary },
+  modeBtnTextOn: { color: colors.textPrimary, fontFamily: fonts.bold },
 
   // ── Rent mode ──
   rentHero: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 14,
-    backgroundColor: colors.greenTint,
-    borderWidth: 1,
-    borderColor: colors.border,
+    backgroundColor: colors.surfaceAlt,
     borderRadius: radius.xl,
     marginHorizontal: 16,
     marginTop: 4,
@@ -1011,9 +940,9 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: colors.border,
     borderRadius: radius.pill,
   },
-  rentFilterChipOn: { backgroundColor: colors.primary, borderColor: colors.primary },
+  rentFilterChipOn: { backgroundColor: colors.textPrimary, borderColor: colors.textPrimary },
   rentFilterText: { fontFamily: fonts.semiBold, fontSize: 12, color: colors.textSecondary },
-  rentFilterTextOn: { color: '#fff' },
+  rentFilterTextOn: { color: colors.surface },
 
   // ── Search ──
   searchWrapper: {
@@ -1030,7 +959,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     gap: 8,
   },
-  searchPlaceholder: { fontSize: 13, fontFamily: fonts.regular, color: colors.textMuted },
+  searchPlaceholder: { fontSize: 15, fontFamily: fonts.regular, color: colors.textMuted },
 
   // ── Carousel ──
   // ── Featured rail ──
@@ -1050,50 +979,14 @@ const styles = StyleSheet.create({
   // ── Tools Row ──
   toolsRow: {
     flexDirection: 'row',
+    marginTop: 12,
     backgroundColor: colors.surface,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    paddingVertical: 16,
+    paddingHorizontal: 8,
   },
-  toolItem: { flex: 1, alignItems: 'center', gap: 6 },
-  showroomCard: {
-    width: SHOWROOM_CARD_W,
-    marginRight: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    padding: 8,
-    borderRadius: radius.lg,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.borderSoft,
-  },
-  showroomThumb: {
-    width: 56, height: 56, borderRadius: 12, overflow: 'hidden',
-    backgroundColor: colors.navyMid,
-  },
-  showroomPhoto: { width: '100%', height: '100%' },
-  showroomAvatarBadge: {
-    position: 'absolute', right: 4, bottom: 4,
-    width: 20, height: 20, borderRadius: 10,
-    borderWidth: 1.5, borderColor: '#FFFFFF', backgroundColor: '#FFFFFF',
-  },
-  showroomAvatarFill: { width: '100%', height: '100%', backgroundColor: '#FFFFFF' },
-  showroomAvatarEmpty: { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.navyMid },
-  showroomAvatarText: { fontSize: 20, fontFamily: fonts.extraBold, color: '#fff' },
-  showroomAvatarTextSmall: { fontSize: 9, fontFamily: fonts.extraBold, color: '#fff' },
-  showroomBody: { flex: 1, minWidth: 0, gap: 1 },
-  showroomName: { fontSize: 14, fontFamily: fonts.extraBold, color: colors.textPrimary, letterSpacing: -0.2 },
-  showroomVerifiedRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  showroomVerified: { flexShrink: 1, fontSize: 11, fontFamily: fonts.semiBold, color: colors.textSecondary },
-  showroomFoot: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    gap: 8, marginTop: 3,
-  },
-  showroomBrands: { flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 1 },
-  showroomBrandMark: { borderWidth: 1, borderColor: colors.borderSoft },
-  showroomMore: { fontSize: 11, fontFamily: fonts.bold, color: colors.textMuted },
-  showroomCount: { fontSize: 11, fontFamily: fonts.bold, color: colors.textPrimary },
+  toolItem: { flex: 1, alignItems: 'center', gap: 8, minHeight: 44 },
+  showroomStack: { paddingHorizontal: 16, gap: 12 },
+  showroomRail: { paddingHorizontal: 16, gap: SHOWROOM_GAP },
   brandTile: {
     width: 84,
     alignItems: 'center',
@@ -1107,22 +1000,23 @@ const styles = StyleSheet.create({
   },
   brandTileName: { ...typography.cardTitle, fontSize: 12.5, lineHeight: 16, color: colors.textPrimary, marginTop: 6 },
   brandTileCount: { ...typography.micro, color: colors.textSecondary, marginTop: 1 },
-  originRow: { paddingHorizontal: 16, gap: 8, marginTop: 4, marginBottom: 4 },
+  originRow: { paddingHorizontal: 16, gap: 8, paddingBottom: 8 },
   originChip: {
-    paddingHorizontal: 16, paddingVertical: 9,
+    minHeight: 36, justifyContent: 'center',
+    paddingHorizontal: 16,
     borderRadius: radius.pill,
     backgroundColor: colors.surface,
-    borderWidth: 1.5, borderColor: colors.border,
+    borderWidth: 1, borderColor: colors.border,
   },
-  originChipOn: { backgroundColor: colors.primary, borderColor: colors.primary },
+  originChipOn: { backgroundColor: colors.textPrimary, borderColor: colors.textPrimary },
   originText: { fontSize: 13, fontFamily: fonts.semiBold, color: colors.textSecondary },
-  originTextOn: { color: '#fff' },
+  originTextOn: { color: colors.surface },
   toolIconCircle: {
-    width: 46, height: 46, borderRadius: 23,
+    width: 48, height: 48, borderRadius: 14,
     alignItems: 'center', justifyContent: 'center',
-    backgroundColor: colors.greenTint,
+    backgroundColor: colors.surfaceAlt,
   },
-  toolLabel: { fontSize: 11, fontFamily: fonts.semiBold, color: colors.textPrimary },
+  toolLabel: { fontSize: 12, fontFamily: fonts.semiBold, color: colors.textPrimary, textAlign: 'center' },
 
   // ── Sections ──
   sectionContainer: { marginTop: 12, backgroundColor: colors.surface, paddingVertical: 12 },
@@ -1133,18 +1027,4 @@ const styles = StyleSheet.create({
 
   // ── Import Direct Showcase ──
 
-  // ── Footer ──
-  footerContainer: {
-    paddingVertical: 24, paddingHorizontal: 20,
-    marginTop: 20,
-    alignItems: 'center',
-  },
-  footerLinksRow: {
-    flexDirection: 'row', alignItems: 'center',
-    flexWrap: 'wrap', gap: 8,
-    marginBottom: 10,
-  },
-  footerLinkText: { fontSize: 12, fontFamily: fonts.semiBold, color: colors.textSecondary },
-  footerDivider: { fontSize: 12, color: colors.textDisabled },
-  copyrightText: { fontSize: 11, fontFamily: fonts.regular, color: colors.textMuted },
 });

@@ -3,7 +3,6 @@ import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { radius, spacing, typography, iconSize } from '../theme';
 import { useTheme } from '../theme/ThemeContext';
-import { getCertTier } from '../data/certification';
 import { useApp } from '../context/AppContext';
 import { getMarketDiff, getSavedCount, getNeighborhood } from '../data/marketData';
 import Price from './Price';
@@ -11,7 +10,6 @@ import BrandMark from './BrandMark';
 import { PHOTO } from '../utils/photo';
 import Photo from './Photo';
 import Touchable from './Touchable';
-import AppText from './AppText';
 
 // A search-results row: photo left, the facts a buyer triages on right.
 //
@@ -29,7 +27,6 @@ const PHOTO_W = 124;
 const ROW_H = 118;
 
 function CarListCard({ car, onPress }) {
-  const tier = getCertTier(car);
   const { isCarSaved, toggleSaveCar, brandLogo, t } = useApp();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -39,7 +36,8 @@ function CarListCard({ car, onPress }) {
   const belowMarket = typeof marketDiff === 'number' && marketDiff < 0;
   const highDemand = getSavedCount(car) >= 10;
   const km = `${Number(car.mileage ?? 0).toLocaleString('en-US')} km`;
-  const specs = [car.year, km, car.fuel].filter(Boolean).join(' · ');
+  // The year is already in the title.
+  const specs = [km, car.fuel, car.transmission].filter(Boolean).join(' · ');
 
   return (
     <Touchable
@@ -51,12 +49,6 @@ function CarListCard({ car, onPress }) {
     >
       <View style={styles.imageWrap}>
         <Photo uri={car.image} width={PHOTO.CARD} style={styles.image} resizeMode="cover" />
-        {tier && (
-          <View style={[styles.certBadge, tier.key === 'plus' && { backgroundColor: colors.primary }]}>
-            <Ionicons name="shield-checkmark" size={9} color="#fff" />
-            <AppText style={styles.certBadgeText} maxFontSizeMultiplier={1.2}>{tier.short}</AppText>
-          </View>
-        )}
       </View>
 
       <View style={styles.body}>
@@ -134,14 +126,6 @@ function makeStyles(colors) {
       backgroundColor: colors.surfaceAlt,
     },
     image: { width: '100%', height: '100%' },
-    certBadge: {
-      position: 'absolute', top: spacing.sm, left: spacing.sm,
-      flexDirection: 'row', alignItems: 'center', gap: 4,
-      backgroundColor: colors.scrim,
-      paddingHorizontal: 6, paddingVertical: 3,
-      borderRadius: radius.sm,
-    },
-    certBadgeText: { ...typography.badge, color: colors.white },
     body: { flex: 1, paddingLeft: spacing.md, paddingRight: 10, paddingVertical: 10, justifyContent: 'space-between' },
     titleRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 7 },
     brand: { marginTop: 0 },

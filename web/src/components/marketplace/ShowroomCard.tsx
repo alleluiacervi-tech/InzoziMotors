@@ -3,6 +3,8 @@ import { Icon } from '@/components/ui'
 import { BrandMark } from '@/components/marketplace/BrandMark'
 import type { LogoLookup } from '@/lib/brands'
 import type { Showroom } from '@/lib/types'
+import type { OpenStatusLabels } from '@/lib/showroom-hours'
+import { OpenStatusLine } from '@/components/market/OpenStatusLine'
 
 // One verified showroom, as a compact row: its newest car as the thumbnail
 // (the showroom's own photo badges it, or fills it when there is no car photo),
@@ -11,12 +13,14 @@ import type { Showroom } from '@/lib/types'
 // cannot drift apart. The marks are read off its live cars (GET /showrooms),
 // never chosen, and the card claims nothing about the business beyond that.
 export function ShowroomCard({
-  room, logoFor, verifiedLabel, carsLabel,
+  room, logoFor, verifiedLabel, carsLabel, statusLabels,
 }: {
   room: Showroom
   logoFor: LogoLookup
   verifiedLabel: string
   carsLabel: string
+  /** When given, the card says whether the showroom is open right now. */
+  statusLabels?: OpenStatusLabels
 }) {
   return (
     <Link
@@ -53,6 +57,9 @@ export function ShowroomCard({
           <span className="sr-only">{verifiedLabel}</span>
           <span className="truncate">{room.location || verifiedLabel}</span>
         </span>
+        {statusLabels && room.hours ? (
+          <OpenStatusLine hours={room.hours} labels={statusLabels} className="mt-0.5 text-micro font-medium text-content-secondary" />
+        ) : null}
         <span className="mt-1 flex items-center justify-between gap-2">
           <span className="flex min-w-0 items-center gap-1">
             {room.brands.slice(0, 3).map((b) => (

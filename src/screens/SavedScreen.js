@@ -300,7 +300,7 @@ const styles = StyleSheet.create({
   },
   searchIcon: {
     width: 36, height: 36, borderRadius: radius.md,
-    backgroundColor: colors.greenTint, alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+    backgroundColor: colors.surfaceAlt, alignItems: 'center', justifyContent: 'center', flexShrink: 0,
   },
   searchBody: { flex: 1 },
   searchLabel: { fontSize: 13, fontFamily: fonts.bold, color: colors.textPrimary },
@@ -312,7 +312,7 @@ const styles = StyleSheet.create({
   deleteBtn: { padding: 4, marginLeft: 4 },
   searchHint: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: colors.greenTint, borderRadius: radius.lg,
+    backgroundColor: colors.surfaceAlt, borderRadius: radius.lg,
     padding: 10, marginBottom: 12,
   },
   searchHintText: { fontSize: 12, fontFamily: fonts.regular, color: colors.primary, flex: 1 },

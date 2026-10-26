@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import Svg, { Path } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
-import { LogoStack } from '../components/Logo';
+import { LogoMark, BrandName } from '../components/Logo';
 import { colors, fonts, radius, shadows } from '../theme';
 import { useApp } from '../context/AppContext';
 
@@ -80,7 +80,11 @@ export default function WelcomeScreen({ navigation }) {
       </View>
 
       <View style={styles.brand}>
-        <LogoStack width={sp(118)} />
+        {/* The mark above the name: two pieces, the same pairing as the website. */}
+        <LogoMark size={sp(64)} />
+        <View style={{ marginTop: sp(16) }}>
+          <BrandName height={sp(16)} color={colors.textPrimary} />
+        </View>
       </View>
 
       <View style={styles.copy}>

@@ -189,8 +189,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 24, fontFamily: fonts.extraBold, color: colors.textPrimary, letterSpacing: -0.5 },
   sub: { fontSize: 14, color: colors.textSecondary, lineHeight: 21, marginTop: 8, marginBottom: 22 },
   label: {
-    fontSize: 12, fontFamily: fonts.bold, color: colors.textMuted,
-    textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8, marginTop: 14,
+    fontSize: 12, fontFamily: fonts.bold, color: colors.textMuted, marginBottom: 8, marginTop: 14,
   },
   input: {
     backgroundColor: colors.surface,
@@ -208,7 +207,6 @@ const styles = StyleSheet.create({
   },
   devLabel: {
     fontSize: 11, fontFamily: fonts.bold, color: colors.amberText,
-    textTransform: 'uppercase', letterSpacing: 1,
   },
   devCode: { fontSize: 24, fontFamily: fonts.extraBold, color: colors.amberText, letterSpacing: 6 },
   devHint: { fontSize: 11, color: colors.amberText, textAlign: 'center', lineHeight: 16 },

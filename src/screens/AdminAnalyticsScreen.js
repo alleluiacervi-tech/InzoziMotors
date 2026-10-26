@@ -303,7 +303,7 @@ export default function AdminAnalyticsScreen({ navigation }) {
 const styles = StyleSheet.create({
   loadingWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   hero: { margin: 16, borderRadius: radius.xxl, padding: 20 },
-  heroTitle: { fontSize: 12, fontFamily: fonts.bold, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 },
+  heroTitle: { fontSize: 12, fontFamily: fonts.bold, color: 'rgba(255,255,255,0.5)', marginBottom: 12 },
   heroStats: { flexDirection: 'row', alignItems: 'center', marginBottom: 14 },
   heroStatItem: { flex: 1, alignItems: 'center' },
   heroStatValue: { fontSize: 22, fontFamily: fonts.black, color: '#fff', letterSpacing: -0.5 },

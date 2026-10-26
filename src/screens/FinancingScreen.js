@@ -281,7 +281,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.amberTint, borderWidth: 1, borderColor: colors.amber + '55',
     borderRadius: radius.pill, paddingHorizontal: 8, paddingVertical: 2.5,
   },
-  bestChipText: { fontSize: 11, fontFamily: fonts.extraBold, color: colors.amberText, letterSpacing: 0.3, textTransform: 'uppercase' },
+  bestChipText: { fontSize: 11, fontFamily: fonts.extraBold, color: colors.amberText, },
   bankHeader: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   logoTile: {
     width: 48, height: 48, borderRadius: radius.lg,
@@ -328,7 +328,7 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
   },
   summaryLogo: { width: 24, height: 20 },
-  summaryTitle: { flex: 1, fontSize: 13, fontFamily: fonts.bold, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.4 },
+  summaryTitle: { flex: 1, fontSize: 13, fontFamily: fonts.bold, color: colors.textMuted, },
   summaryRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12 },
   summaryLabel: { fontSize: 13, color: colors.textSecondary },
   summaryValue: { fontSize: 14, fontFamily: fonts.bold, color: colors.textPrimary },

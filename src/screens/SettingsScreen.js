@@ -605,7 +605,7 @@ export default function SettingsScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  groupTitle: { fontSize: 13, fontFamily: fonts.bold, color: colors.textSecondary, letterSpacing: 0.3, marginBottom: 10, marginLeft: 4, textTransform: 'uppercase' },
+  groupTitle: { fontSize: 13, fontFamily: fonts.bold, color: colors.textSecondary, marginBottom: 10, marginLeft: 4, },
   group: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderSoft, borderRadius: radius.xl, overflow: 'hidden' },
   item: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 16, paddingVertical: 14 },
   itemBorder: { borderBottomWidth: 1, borderBottomColor: colors.borderSoft },

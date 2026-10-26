@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { Text, StyleSheet, Animated, Easing, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { LogoMark } from './Logo';
+import { LogoMark, BrandName } from './Logo';
 import Button from './Button';
 import { fonts } from '../theme';
 import { lightColors } from '../theme/colors';
@@ -76,7 +76,9 @@ export default function AnimatedSplash({ onFinish }) {
           <Animated.View
             style={{ opacity: wordFade, transform: [{ translateY: wordRise }], alignItems: 'center' }}
           >
-            <Text style={styles.word}>Sawa Cars</Text>
+            <View style={styles.word}>
+              <BrandName height={20} color={lightColors.textPrimary} />
+            </View>
             <Text style={styles.tag}>{t('drawer.tagline')}</Text>
           </Animated.View>
         </Animated.View>
@@ -92,7 +94,7 @@ const styles = StyleSheet.create({
   root: { backgroundColor: '#FFFFFF', zIndex: 100, elevation: 100 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   // Always the light palette: this screen continues the white native splash in both themes.
-  word: { marginTop: 26, fontSize: 24, fontFamily: fonts.black, color: lightColors.textPrimary, letterSpacing: -0.5 },
-  tag: { marginTop: 10, fontSize: 13, fontFamily: fonts.semiBold, color: lightColors.textMuted, letterSpacing: 0.4 },
+  word: { marginTop: 30 },
+  tag: { marginTop: 14, fontSize: 13, fontFamily: fonts.medium, color: lightColors.textMuted },
   footer: { paddingHorizontal: 24 },
 });

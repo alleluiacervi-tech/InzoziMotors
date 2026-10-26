@@ -494,7 +494,7 @@ const styles = StyleSheet.create({
   resultActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   layoutBtn: {
     width: 40, height: 40, borderRadius: radius.pill,
-    backgroundColor: colors.greenTint,
+    backgroundColor: colors.surfaceAlt,
     alignItems: 'center', justifyContent: 'center',
   },
   activeFiltersRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
