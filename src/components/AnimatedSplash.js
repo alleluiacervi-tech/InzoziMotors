@@ -6,6 +6,7 @@ import { LogoMark } from './Logo';
 import Button from './Button';
 import { fonts } from '../theme';
 import { lightColors } from '../theme/colors';
+import { useApp } from '../context/AppContext';
 
 // Branded landing — the Sawa identity holds on screen from launch until
 // the user taps through; no auto-dismiss.
@@ -17,6 +18,7 @@ import { lightColors } from '../theme/colors';
 // moment never costs the user time.
 export default function AnimatedSplash({ onFinish }) {
   const insets = useSafeAreaInsets();
+  const { t } = useApp();
   const fade = useRef(new Animated.Value(0)).current;
   const scale = useRef(new Animated.Value(0.7)).current;
   const turn = useRef(new Animated.Value(0)).current;
@@ -75,12 +77,12 @@ export default function AnimatedSplash({ onFinish }) {
             style={{ opacity: wordFade, transform: [{ translateY: wordRise }], alignItems: 'center' }}
           >
             <Text style={styles.word}>Sawa Cars</Text>
-            <Text style={styles.tag}>Certified · Inspected · Trusted</Text>
+            <Text style={styles.tag}>{t('drawer.tagline')}</Text>
           </Animated.View>
         </Animated.View>
       </View>
       <Animated.View style={[styles.footer, { opacity: btnFade, paddingBottom: insets.bottom + 24 }]}>
-        <Button title="Next" onPress={dismiss} />
+        <Button title={t('common.next')} onPress={dismiss} />
       </Animated.View>
     </Animated.View>
   );

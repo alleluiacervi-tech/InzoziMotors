@@ -14,7 +14,6 @@ import LoginModal from '../components/LoginModal';
 import PhotoViewer from '../components/PhotoViewer';
 import BrandMark from '../components/BrandMark';
 import { getCertTier } from '../data/certification';
-import { CarGlyph } from '../components/Logo';
 import {
   getMarketDiff, getMarketAvg, getPriceHistory, getPriceDrop, hasRealMarketData,
   getSavedCount, getListedDaysAgo, getNeighborhood, getDriveType, formatRWF,
@@ -24,6 +23,8 @@ import { isDealerSeller } from './DealerProfileScreen';
 import { Image as ExpoImage } from 'expo-image';
 import Photo from '../components/Photo';
 import { PHOTO, photoUrl } from '../utils/photo';
+import inspectionsApi from '../api/inspections';
+import { buildReportFromApi } from '../data/inspectionData';
 
 const SPECS = [
   { icon: 'speedometer-outline', label: 'Mileage', key: 'mileage' },
@@ -35,10 +36,11 @@ const SPECS = [
 function Sparkline({ data, width: w = 80, height: h = 30 }) {
   const min = Math.min(...data);
   const max = Math.max(...data);
-  const range = max - min || 1;
+  const range = max - min;
   const pts = data.map((v, i) => {
     const x = (i / (data.length - 1)) * w;
-    const y = h - ((v - min) / range) * (h - 4) - 2;
+    // An unchanged price is a flat line through the middle, never a slope.
+    const y = range === 0 ? h / 2 : h - ((v - min) / range) * (h - 4) - 2;
     return `${x.toFixed(1)},${y.toFixed(1)}`;
   }).join(' ');
   const lastX = w;
@@ -46,8 +48,8 @@ function Sparkline({ data, width: w = 80, height: h = 30 }) {
   const lastY = parseFloat(lastParts[1]);
   return (
     <Svg width={w} height={h}>
-      <Polyline points={pts} fill="none" stroke={colors.primary} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      <Circle cx={lastX} cy={lastY} r="3" fill={colors.primary} />
+      <Polyline points={pts} fill="none" stroke={colors.textPrimary} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <Circle cx={lastX} cy={lastY} r="3" fill={colors.textPrimary} />
     </Svg>
   );
 }
@@ -59,7 +61,7 @@ export default function VehicleDetailScreen({ navigation, route }) {
   // id — there is no car object to render from until the fetch lands.
   const carId = route.params?.carId || listCar?.id;
   const insets = useSafeAreaInsets();
-  const { isCarSaved, toggleSaveCar, isLoggedIn, currentUser, loginAsGuest, demoMode, addToComparison, comparisonCars, fetchCarDetail, brandLogo, t } = useApp();
+  const { isCarSaved, toggleSaveCar, isLoggedIn, currentUser, loginAsGuest, demoMode, addToComparison, comparisonCars, fetchCarDetail, brandLogo, locale, t } = useApp();
 
   // The browse payload is deliberately lean. The detail endpoint adds price
   // history, the seller's phone and the full market comparison — and counts the
@@ -95,6 +97,22 @@ export default function VehicleDetailScreen({ navigation, route }) {
   const [pendingAction, setPendingAction] = useState(null);
   const { cars, recordCarView } = useApp();
   React.useEffect(() => { if (car?.id) recordCarView(car.id); }, [car?.id, recordCarView]);
+
+  // This car's own inspection, by category. It replaced four paragraphs that
+  // were the same on every listing (one of them claimed RRA data Sawa does not
+  // have). Null while loading or when no report can be read; the row linking to
+  // the full report stays either way.
+  const [report, setReport] = useState(null);
+  const [showAllDetails, setShowAllDetails] = useState(false);
+  const reportCarId = car?.inspected && String(car?.id || '').includes('-') ? car.id : null;
+  React.useEffect(() => {
+    if (!reportCarId) return undefined;
+    let alive = true;
+    inspectionsApi.getReport(reportCarId)
+      .then((raw) => { if (alive) setReport(buildReportFromApi(raw)); })
+      .catch(() => { if (alive) setReport(null); });
+    return () => { alive = false; };
+  }, [reportCarId]);
 
   const imageList = React.useMemo(() => {
     if (!car) return [];
@@ -343,128 +361,23 @@ export default function VehicleDetailScreen({ navigation, route }) {
           {rateOpen ? <RateNote style={styles.rateNote} /> : null}
 
           {/* Social proof bar */}
-          <View style={styles.socialBar}>
-            {savedCount > 0 && (
+          {savedCount > 0 && (
+            <View style={styles.socialBar}>
               <View style={styles.socialItem}>
-                <Ionicons name="heart" size={13} color="#EF4444" />
+                <Ionicons name="heart" size={13} color={colors.textMuted} />
                 <Text style={styles.socialText}>{t('vehicleDetail.peopleSaved', { count: savedCount })}</Text>
               </View>
-            )}
-            {savedCount >= 10 && (
-              <View style={styles.highDemandBadge}>
-                <Text style={styles.highDemandText}>{t('vehicleDetail.highDemand')}</Text>
-              </View>
-            )}
-          </View>
-
-          {/* Financing strip — own it monthly */}
-          {monthly && !isAuction && (
-            <Pressable style={styles.financeStrip} onPress={() => navigation.navigate('Financing', { carPrice: car.price })}>
-              <View style={styles.financeIcon}>
-                <Ionicons name="card-outline" size={18} color={colors.textSecondary} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.financeTitle}>
-                  {t('vehicleDetail.bankFinancingFrom', { amount: formatPrice(monthly) })}
-                </Text>
-                <Text style={styles.financeSub}>{t('vehicleDetail.loanEstParams')}</Text>
-              </View>
-              <View style={styles.financeCta}>
-                <Text style={styles.financeCtaText}>{t('vehicleDetail.getPrequalified')}</Text>
-                <Ionicons name="arrow-forward" size={12} color={colors.primary} />
-              </View>
-            </Pressable>
-          )}
-
-          {/* Price history and market position.
-              The whole card is omitted unless at least one of the two is real.
-              A listing that has never changed price has no history, and a car
-              with fewer than three comparables has no market average — drawing
-              either from the asking price is how every car ended up "7% below
-              market". No data, no card. */}
-          {(hasPriceHistory || realMarket) && (
-            <View style={styles.sparklineCard}>
-              <View style={styles.sparklineLeft}>
-                <Text style={styles.sparklineTitle}>
-                  {hasPriceHistory ? t('vehicleDetail.priceHistory') : t('vehicleDetail.marketPosition')}
-                </Text>
-                {hasPriceHistory ? (
-                  priceDrop > 0 ? (
-                    <View style={styles.priceDropRow}>
-                      <Ionicons name="arrow-down" size={12} color={colors.green} />
-                      <Text style={styles.priceDropText}>{t('vehicleDetail.droppedSinceListed', { amount: formatPrice(priceDrop) })}</Text>
-                    </View>
-                  ) : (
-                    <Text style={styles.sparklineStable}>{t('vehicleDetail.stableSinceListing')}</Text>
-                  )
-                ) : null}
-                {realMarket && (
-                  <Text style={styles.marketAvgText}>
-                    {t('vehicleDetail.marketAvgStats', { avg: formatPrice(marketAvg), count: car.comparables })}
-                  </Text>
-                )}
-              </View>
-              {hasPriceHistory && (
-                <View style={styles.sparklineRight}>
-                  <Sparkline data={priceHistory} width={80} height={32} />
-                  <Text style={styles.sparklineNow}>{t('common.now')}</Text>
+              {savedCount >= 10 && (
+                <View style={styles.highDemandBadge}>
+                  <Text style={styles.highDemandText}>{t('vehicleDetail.highDemand')}</Text>
                 </View>
               )}
             </View>
           )}
 
-          {/* The marque, directly above the key specs: the logo when an
-              operator has uploaded one, its initials otherwise (BrandMark). */}
-          <Pressable
-            style={styles.brandBar}
-            onPress={() => navigation.navigate('SearchResults', { filters: { make: car.make } })}
-            accessibilityRole="button"
-            accessibilityLabel={t('browse.seeAllMake', { make: car.make })}
-          >
-            <BrandMark name={car.make} logoUrl={brandLogo(car.make)} size={44} style={styles.brandMark} />
-            <View style={{ flex: 1, minWidth: 0 }}>
-              <Text style={styles.brandName} numberOfLines={1}>{car.make}</Text>
-              <Text style={styles.brandSub} numberOfLines={1}>{brandSub}</Text>
-            </View>
-            <Text style={styles.brandLink} numberOfLines={1}>{t('browse.seeAllMake', { make: car.make })}</Text>
-            <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
-          </Pressable>
-
-          {/* Specs grid */}
-          <View style={styles.specs}>
-            {[
-              { icon: 'speedometer-outline', label: t('vehicleDetail.mileage'), key: 'mileage', val: formatMiles(car.mileage) },
-              { icon: 'flash-outline', label: t('vehicleDetail.fuel'), key: 'fuel', val: String(car.fuel || '') },
-              { icon: 'cog-outline', label: t('vehicleDetail.transmission'), key: 'transmission', val: String(car.transmission || '') },
-              { icon: 'calendar-outline', label: t('vehicleDetail.year'), key: 'year', val: String(car.year || '') },
-            ].map((s) => (
-              <View key={s.key} style={styles.specCard}>
-                <Ionicons name={s.icon} size={20} color={colors.textSecondary} />
-                <Text style={styles.specValue}>{s.val}</Text>
-                <Text style={styles.specLabel}>{s.label}</Text>
-              </View>
-            ))}
-          </View>
-
-          {/* Vehicle Information — full spec table */}
-          <View style={styles.infoCard}>
-            <View style={styles.infoHeader}>
-              <CarGlyph width={26} body={colors.primary} glass={colors.surface} />
-              <Text style={styles.infoHeaderText}>{t('vehicleDetail.keyDetails')}</Text>
-            </View>
-            {infoRows.map((row, i) => (
-              <View
-                key={row.label}
-                style={[styles.infoRow, i === infoRows.length - 1 && styles.infoRowLast]}
-              >
-                <Text style={styles.infoLabel}>{row.label}</Text>
-                <Text style={styles.infoValue}>{row.value}</Text>
-              </View>
-            ))}
-          </View>
-
-          {/* Seller. A showroom opens its storefront, an individual their
-              trust profile. The showroom's own photo when the team set one. */}
+          {/* Seller, straight after the price: who you would be dealing with
+              comes before the detail. A showroom opens its storefront, an
+              individual their profile. */}
           <Pressable
             style={styles.sellerCard}
             onPress={() => {
@@ -483,10 +396,7 @@ export default function VehicleDetailScreen({ navigation, route }) {
             )}
             <View style={{ flex: 1 }}>
               <Text style={styles.sellerName} numberOfLines={1}>{sellerName}</Text>
-              {/* What is actually verified about this seller, not a star.
-                  A rating claims other buyers had an experience; none has been
-                  recorded, so saying so plainly is both truer and — for a
-                  platform whose product is verification — more persuasive. */}
+              {/* What is actually verified about this seller, not a star. */}
               <View style={styles.ratingRow}>
                 <Ionicons
                   name={car.sellerIdVerified || isShowroom ? 'shield-checkmark' : 'shield-outline'}
@@ -515,90 +425,189 @@ export default function VehicleDetailScreen({ navigation, route }) {
             </View>
           ) : null}
 
-          {/* The direct-deal notice, in the page rather than the sticky bar,
-              where it took a fifth of the screen. It is repeated in full on
-              the contact step, before any contact detail is released. */}
+          {/* The direct-deal notice, in the page rather than the sticky bar.
+              It is repeated in full on the contact step. */}
           <View style={styles.directDealNote}>
             <Ionicons name="shield-checkmark-outline" size={14} color={colors.textMuted} />
             <Text style={styles.directDealText}>{t('vehicleDetail.directDealBody')}</Text>
           </View>
 
-          {/* Trust rows */}
+          {/* Inspection: the score, then this car's categories as recorded. */}
           {car.inspected && (
-            <Pressable style={styles.inspectionRow} onPress={() => navigation.navigate('InspectionReport', { car, score: car.inspectionScore })}>
-              <View style={styles.inspectionIcon}>
-                <Ionicons name="shield-checkmark" size={20} color={colors.green} />
+            <View style={styles.inspectCard}>
+              <View style={styles.inspectHead}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.inspectTitle}>{t('vehicleDetail.inspectionTitle')}</Text>
+                  {report?.completedAt ? (
+                    <Text style={styles.inspectSub}>
+                      {t('vehicleDetail.inspectedOn', { date: new Date(report.completedAt).toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' }) })}
+                    </Text>
+                  ) : null}
+                </View>
+                {car.inspectionScore ? (
+                  <Text style={styles.inspectScore}>
+                    {car.inspectionScore}<Text style={styles.inspectScoreMax}>/150</Text>
+                  </Text>
+                ) : null}
               </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.inspectionTitle}>{t('vehicleDetail.inspectionReport')}</Text>
-                <Text style={styles.inspectionSub}>
-                  {car.inspectionScore ? t('rentals.inspectionSub', { score: car.inspectionScore }) : t('vehicleDetail.viewReport')}
-                </Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-            </Pressable>
+
+              {report?.categories?.length ? (
+                <View style={styles.catList}>
+                  {report.categories.map((cat) => {
+                    const share = cat.maxPts > 0 ? Math.max(0, Math.min(1, cat.earned / cat.maxPts)) : 0;
+                    const flagged = cat.flags.length > 0;
+                    const label = t(`vehicleDetail.inspCat.${cat.id}`);
+                    return (
+                      <View key={cat.id} style={styles.catRow} accessible accessibilityLabel={`${label}, ${cat.earned} / ${cat.maxPts}`}>
+                        <View style={styles.catLine}>
+                          <Text style={styles.catName} numberOfLines={1}>
+                            {label.startsWith('vehicleDetail.') ? cat.name : label}
+                          </Text>
+                          <Text style={styles.catPts}>{cat.earned}/{cat.maxPts}</Text>
+                        </View>
+                        <View style={styles.catTrack}>
+                          <View style={[styles.catFill, { width: `${share * 100}%` }, flagged && styles.catFillFlagged]} />
+                        </View>
+                        {flagged ? (
+                          <Text style={styles.catFlag}>{t('vehicleDetail.itemsFlagged', { count: cat.flags.length })}</Text>
+                        ) : null}
+                      </View>
+                    );
+                  })}
+                </View>
+              ) : null}
+
+              <Pressable
+                style={styles.inspectLink}
+                onPress={() => navigation.navigate('InspectionReport', { car, score: car.inspectionScore })}
+                accessibilityRole="button"
+              >
+                <Text style={styles.inspectLinkText}>{t('vehicleDetail.fullReport')}</Text>
+                <Ionicons name="chevron-forward" size={16} color={colors.textPrimary} />
+              </Pressable>
+            </View>
           )}
 
-          <Pressable style={[styles.inspectionRow, { marginTop: 8 }]} onPress={() => navigation.navigate('VehicleHistory', { car })}>
-            <View style={[styles.inspectionIcon, { backgroundColor: colors.greenTint }]}>
-              <Ionicons name="document-text-outline" size={20} color={colors.textSecondary} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.inspectionTitle}>{t('vehicleDetail.vehicleRecord')}</Text>
-              <Text style={[styles.inspectionSub, { color: colors.textMuted }]}>{t('vehicleDetail.vehicleRecordSub')}</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-          </Pressable>
-
-          <View style={styles.trustChips}>
-            <Badge variant="tag" label={t('vehicleDetail.directDeal')} />
-            <Badge variant="tag" label={`${driveType} drive`} />
-            {tier && <Badge variant={tier.variant} label={tier.label} />}
-          </View>
-
-          <Pressable style={styles.promiseLink} onPress={() => navigation.navigate('SawaPromise')}>
-            <Ionicons name="shield-checkmark-outline" size={14} color={colors.primary} />
-            <Text style={styles.promiseLinkText}>{t('vehicleDetail.safetyNoticeLink')}</Text>
-            <Ionicons name="chevron-forward" size={13} color={colors.primary} />
-          </Pressable>
-
-          {/* Description — derived from this car's actual data */}
-          <Text style={styles.sectionTitle}>{t('vehicleDetail.overview')}</Text>
-          <Text style={styles.desc}>
-            {car.year} {car.make} {car.model} · {formatMiles(car.mileage)} · {car.fuel}, {car.transmission?.toLowerCase()} transmission.
-            {car.inspected
-              ? ' The published inspection records the checks completed by Sawa Cars on the inspection date.'
-              : ' Inspection scheduled — the report must be completed before the listing can be published.'}
-            {realMarket && typeof marketDiff === 'number' && marketDiff < 0
-              ? ` Priced ${Math.abs(marketDiff)}% below the average of ${car.comparables} comparable listings on Sawa Cars.`
-              : ''}
-          </Text>
-
-          {/* Inspection highlights — keyed off this car's data */}
-          <Text style={styles.sectionTitle}>{t('vehicleDetail.inspectionHighlights')}</Text>
-          <View style={styles.highlightGrid}>
+          {/* Key specs, once. The full table folds away under them. */}
+          <View style={styles.specs}>
             {[
-              { icon: 'cog-outline', title: t('vehicleDetail.engineMechanical'), desc: t('vehicleDetail.engineMechanicalDesc', { fuel: car.fuel || '' }) },
-              { icon: 'disc-outline', title: t('vehicleDetail.brakesTyres'), desc: t('vehicleDetail.brakesTyresDesc') },
-              { icon: 'color-palette-outline', title: t('vehicleDetail.bodyPaint'), desc: t('vehicleDetail.bodyPaintDesc') },
-              { icon: 'document-text-outline', title: t('vehicleDetail.documentation'), desc: t('vehicleDetail.documentationDesc') },
-            ].map((item, idx) => (
-              <View key={idx} style={styles.highlightCard}>
-                <View style={styles.highlightIcon}>
-                  <Ionicons name={item.icon} size={20} color={colors.textSecondary} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.highlightTitle}>{item.title}</Text>
-                  <Text style={styles.highlightDesc}>{item.desc}</Text>
-                </View>
+              { icon: 'speedometer-outline', label: t('vehicleDetail.mileage'), key: 'mileage', val: formatMiles(car.mileage) },
+              { icon: 'flash-outline', label: t('vehicleDetail.fuel'), key: 'fuel', val: String(car.fuel || '') },
+              { icon: 'cog-outline', label: t('vehicleDetail.transmission'), key: 'transmission', val: String(car.transmission || '') },
+              { icon: 'calendar-outline', label: t('vehicleDetail.year'), key: 'year', val: String(car.year || '') },
+            ].map((s) => (
+              <View key={s.key} style={styles.specCard}>
+                <Ionicons name={s.icon} size={20} color={colors.textSecondary} />
+                <Text style={styles.specValue} numberOfLines={1} adjustsFontSizeToFit>{s.val}</Text>
+                <Text style={styles.specLabel}>{s.label}</Text>
               </View>
             ))}
           </View>
 
-          {/* Similar Cars */}
+          <Pressable
+            style={styles.detailsToggle}
+            onPress={() => setShowAllDetails((open) => !open)}
+            accessibilityRole="button"
+            accessibilityState={{ expanded: showAllDetails }}
+          >
+            <Text style={styles.detailsToggleText}>
+              {showAllDetails ? t('vehicleDetail.fewerDetails') : t('vehicleDetail.allDetails')}
+            </Text>
+            <Ionicons name={showAllDetails ? 'chevron-up' : 'chevron-down'} size={16} color={colors.textPrimary} />
+          </Pressable>
+          {showAllDetails && (
+            <View style={styles.infoCard}>
+              {infoRows.map((row, i) => (
+                <View
+                  key={row.label}
+                  style={[styles.infoRow, i === infoRows.length - 1 && styles.infoRowLast]}
+                >
+                  <Text style={styles.infoLabel}>{row.label}</Text>
+                  <Text style={styles.infoValue}>{row.value}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+
+          {/* Financing, as a plain row: an estimate, not an offer. */}
+          {monthly && !isAuction && (
+            <Pressable style={styles.plainRow} onPress={() => navigation.navigate('Financing', { carPrice: car.price })} accessibilityRole="button">
+              <View style={styles.plainRowIcon}>
+                <Ionicons name="card-outline" size={18} color={colors.textSecondary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.plainRowTitle}>{t('vehicleDetail.financeFrom', { amount: formatPrice(monthly) })}</Text>
+                <Text style={styles.plainRowSub}>{t('vehicleDetail.loanEstParams')}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+            </Pressable>
+          )}
+
+          {/* Price history and market position, only when at least one is
+              real. One price is not a history, so it draws no chart. */}
+          {(hasPriceHistory || realMarket) && (
+            <View style={styles.sparklineCard}>
+              <View style={styles.sparklineLeft}>
+                <Text style={styles.sparklineTitle}>
+                  {hasPriceHistory ? t('vehicleDetail.priceHistory') : t('vehicleDetail.marketPosition')}
+                </Text>
+                {hasPriceHistory ? (
+                  priceDrop > 0 ? (
+                    <View style={styles.priceDropRow}>
+                      <Ionicons name="arrow-down" size={12} color={colors.green} />
+                      <Text style={styles.priceDropText}>{t('vehicleDetail.droppedSinceListed', { amount: formatPrice(priceDrop) })}</Text>
+                    </View>
+                  ) : priceHistory[priceHistory.length - 1] === priceHistory[0] ? (
+                    <Text style={styles.sparklineStable}>{t('vehicleDetail.stableSinceListing')}</Text>
+                  ) : null
+                ) : null}
+                {realMarket && (
+                  <Text style={styles.marketAvgText}>
+                    {t('vehicleDetail.marketAvgStats', { avg: formatPrice(marketAvg), count: car.comparables })}
+                  </Text>
+                )}
+              </View>
+              {hasPriceHistory && (
+                <View style={styles.sparklineRight}>
+                  <Sparkline data={priceHistory} width={80} height={32} />
+                  <Text style={styles.sparklineNow}>{t('common.now')}</Text>
+                </View>
+              )}
+            </View>
+          )}
+
+          <Pressable style={styles.plainRow} onPress={() => navigation.navigate('VehicleHistory', { car })} accessibilityRole="button">
+            <View style={styles.plainRowIcon}>
+              <Ionicons name="document-text-outline" size={18} color={colors.textSecondary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.plainRowTitle}>{t('vehicleDetail.vehicleRecord')}</Text>
+              <Text style={styles.plainRowSub}>{t('vehicleDetail.vehicleRecordSub')}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+          </Pressable>
+
+          <Pressable style={styles.promiseLink} onPress={() => navigation.navigate('SawaPromise')} accessibilityRole="link">
+            <Ionicons name="shield-checkmark-outline" size={14} color={colors.textSecondary} />
+            <Text style={styles.promiseLinkText}>{t('vehicleDetail.safetyNoticeLink')}</Text>
+            <Ionicons name="chevron-forward" size={13} color={colors.textSecondary} />
+          </Pressable>
+
+          {/* Similar cars, with the make's full list one tap away. */}
           {similarCars.length > 0 && (
             <>
-              <Text style={styles.sectionTitle}>{t('vehicleDetail.similarCars')}</Text>
+              <View style={styles.similarHead}>
+                <Text style={[styles.sectionTitle, { marginTop: 0, marginBottom: 0 }]}>{t('vehicleDetail.similarTitle')}</Text>
+                <Pressable
+                  onPress={() => navigation.navigate('SearchResults', { filters: { make: car.make } })}
+                  hitSlop={10}
+                  accessibilityRole="link"
+                  style={styles.similarMore}
+                >
+                  <BrandMark name={car.make} logoUrl={brandLogo(car.make)} size={20} />
+                  <Text style={styles.similarMoreText}>{t('vehicleDetail.seeMake', { make: car.make })}</Text>
+                </Pressable>
+              </View>
               <FlatList
                 horizontal
                 data={similarCars}
@@ -610,34 +619,19 @@ export default function VehicleDetailScreen({ navigation, route }) {
                     style={styles.similarCard}
                     onPress={() => navigation.navigate('VehicleDetail', { car: item })}
                   >
-                    <Photo uri={item.image} width={PHOTO.CARD} style={styles.similarThumb} resizeMode="contain" />
+                    <Photo uri={item.image} width={PHOTO.CARD} style={styles.similarThumb} resizeMode="cover" />
                     <View style={styles.similarBody}>
                       <Text style={styles.similarTitle} numberOfLines={2}>{item.title}</Text>
                       <Text style={styles.similarPrice}>{formatPrice(item.type === 'auction' ? item.currentBid : item.price)}</Text>
-                      {item.inspected && (
-                        <View style={styles.similarCert}>
-                          <Ionicons name="shield-checkmark" size={10} color={colors.green} />
-                          <Text style={styles.similarCertText}>{t('common.verified')}</Text>
-                        </View>
-                      )}
+                      {item.inspected && item.inspectionScore ? (
+                        <Text style={styles.similarCertText}>{t('home.inspected', { score: item.inspectionScore })}</Text>
+                      ) : null}
                     </View>
                   </Pressable>
                 )}
               />
             </>
           )}
-
-          {/* Duty calculator link */}
-          <Pressable style={styles.dutyLink} onPress={() => navigation.navigate('DutyCalculator')}>
-            <View style={styles.dutyLinkIcon}>
-              <Ionicons name="calculator-outline" size={18} color={colors.textSecondary} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.dutyLinkTitle}>{t('tools.dutyTitle')}</Text>
-              <Text style={styles.dutyLinkSub}>{t('tools.dutySub')}</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
-          </Pressable>
         </View>
       </ScrollView>
 
@@ -858,7 +852,7 @@ const styles = StyleSheet.create({
   inspectionSub: { fontSize: 12, color: colors.greenText, fontFamily: fonts.semiBold, marginTop: 2 },
   trustChips: { flexDirection: 'row', gap: 8, marginTop: 14, flexWrap: 'wrap' },
   promiseLink: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 12 },
-  promiseLinkText: { fontSize: 12, fontFamily: fonts.extraBold, color: colors.primary },
+  promiseLinkText: { fontSize: 12.5, fontFamily: fonts.bold, color: colors.textSecondary },
   financeStrip: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
     backgroundColor: colors.greenTint,
@@ -875,6 +869,47 @@ const styles = StyleSheet.create({
   financeSub: { fontSize: 11, fontFamily: fonts.regular, color: colors.textMuted, marginTop: 2 },
   financeCta: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   financeCtaText: { fontSize: 11, fontFamily: fonts.extraBold, color: colors.primary },
+  inspectCard: {
+    marginTop: 14, padding: 16, borderRadius: radius.lg, backgroundColor: colors.surface,
+    borderWidth: 1, borderColor: colors.borderSoft,
+  },
+  inspectHead: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+  inspectTitle: { fontSize: 17, fontFamily: fonts.extraBold, color: colors.textPrimary, letterSpacing: -0.2 },
+  inspectSub: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
+  inspectScore: { fontVariant: ['tabular-nums'], fontSize: 22, fontFamily: fonts.extraBold, color: colors.textPrimary, letterSpacing: -0.4 },
+  inspectScoreMax: { fontSize: 13, fontFamily: fonts.semiBold, color: colors.textMuted },
+  catList: { marginTop: 14, gap: 12 },
+  catRow: { gap: 6 },
+  catLine: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },
+  catName: { flex: 1, fontSize: 13.5, fontFamily: fonts.semiBold, color: colors.textPrimary },
+  catPts: { fontVariant: ['tabular-nums'], fontSize: 12.5, fontFamily: fonts.semiBold, color: colors.textSecondary },
+  catTrack: { height: 4, borderRadius: 2, backgroundColor: colors.surfaceAlt, overflow: 'hidden' },
+  catFill: { height: 4, borderRadius: 2, backgroundColor: colors.textPrimary },
+  catFillFlagged: { backgroundColor: colors.amber },
+  catFlag: { fontSize: 12, fontFamily: fonts.semiBold, color: colors.amberText },
+  inspectLink: {
+    marginTop: 14, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.borderSoft,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 44,
+  },
+  inspectLinkText: { fontSize: 14, fontFamily: fonts.bold, color: colors.textPrimary },
+  detailsToggle: {
+    marginTop: 10, minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+    borderRadius: radius.md, borderWidth: 1, borderColor: colors.borderSoft, backgroundColor: colors.surface,
+  },
+  detailsToggleText: { fontSize: 14, fontFamily: fonts.bold, color: colors.textPrimary },
+  plainRow: {
+    marginTop: 10, minHeight: 60, paddingHorizontal: 14, paddingVertical: 12, borderRadius: radius.lg,
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderSoft,
+  },
+  plainRowIcon: {
+    width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surfaceAlt,
+  },
+  plainRowTitle: { fontSize: 14, fontFamily: fonts.bold, color: colors.textPrimary },
+  plainRowSub: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
+  similarHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 24, marginBottom: 10 },
+  similarMore: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 32 },
+  similarMoreText: { fontSize: 13, fontFamily: fonts.bold, color: colors.textPrimary },
   sectionTitle: { fontSize: 17, fontFamily: fonts.extraBold, color: colors.textPrimary, marginTop: 22, marginBottom: 10 },
   desc: { fontSize: 14, lineHeight: 22, color: colors.textSecondary },
   highlightGrid: { gap: 10 },
@@ -894,12 +929,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderSoft,
     borderRadius: radius.xl, overflow: 'hidden',
   },
-  similarThumb: { width: '100%', height: 90, backgroundColor: colors.border },
+  similarThumb: { width: '100%', height: 96, backgroundColor: colors.surfaceAlt },
   similarBody: { padding: 10, gap: 3 },
-  similarTitle: { fontSize: 11, fontFamily: fonts.bold, color: colors.textPrimary, lineHeight: 15 },
-  similarPrice: { fontVariant: ['tabular-nums'], fontSize: 13, fontFamily: fonts.extraBold, color: colors.primary },
+  similarTitle: { fontSize: 12.5, fontFamily: fonts.bold, color: colors.textPrimary, lineHeight: 17 },
+  similarPrice: { fontVariant: ['tabular-nums'], fontSize: 14, fontFamily: fonts.extraBold, color: colors.primary },
   similarCert: { flexDirection: 'row', alignItems: 'center', gap: 3 },
-  similarCertText: { fontSize: 10, fontFamily: fonts.bold, color: colors.greenText },
+  similarCertText: { fontSize: 11, fontFamily: fonts.semiBold, color: colors.greenText },
   dutyLink: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
     backgroundColor: colors.greenTint, borderWidth: 1, borderColor: colors.border,

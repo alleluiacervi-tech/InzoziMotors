@@ -6,6 +6,7 @@ const { requireAuth, requireAdmin, verifyLiveSession, verifySessionToken } = req
 const { requireUuid, paginate, isUuid } = require('../middleware/validate');
 const { withTransaction } = require('../lib/tx');
 const { matchSavedSearches, notifyPriceDrop } = require('../lib/alerts');
+const { publicPriceHistory } = require('../lib/price-history');
 const { featuredLabel, rotateSponsored } = require('../lib/featured');
 const { recordAdminAction } = require('../lib/admin-audit');
 const {
@@ -257,6 +258,9 @@ const PRICE_DROP_IS_REAL = `(
   AND last_change.prior_price > c.price
   AND (last_change.prior_price - c.price) * 100 >= last_change.prior_price
   AND last_change.changed_at > NOW() - INTERVAL '30 days'
+  -- An edit in the first hour after going live is a correction, not a drop
+  -- (lib/price-history.js).
+  AND last_change.changed_at > COALESCE(c.first_live_at, c.listed_at, c.created_at) + INTERVAL '1 hour'
 )`;
 
 // GET /cars/featured — the home-screen banner.
@@ -414,7 +418,7 @@ router.get('/:id/history', requireUuid('id'), async (req, res) => {
   try {
     const carRes = await pool.query(
       `SELECT c.id, c.vin, c.make, c.model, c.year, c.mileage, c.drive_side,
-              c.fuel_type, c.created_at, c.listed_at, c.inspection_score, c.inspected,
+              c.fuel_type, c.created_at, c.listed_at, c.first_live_at, c.inspection_score, c.inspected,
               ${sellerDisplayName('u')} AS seller_name, u.completed_sales AS seller_sales,
               u.id_verified AS seller_id_verified
        FROM cars c
@@ -519,12 +523,17 @@ async function sawaRecordFor(car) {
     if (!reading.this_listing) events.push({ type: 'earlier_inspection', on: reading.on, km: reading.km });
   }
   if (car.listed_at) events.push({ type: 'listed', on: car.listed_at });
-  // price_history's first row is the listing price itself, not a change.
-  prices.rows.forEach((row, index) => {
+  // The history's first row is the opening price itself, not a change, and
+  // edits in the first hour after going live are corrections (lib/price-history.js).
+  const shownPrices = publicPriceHistory(
+    prices.rows.map((row) => ({ price: row.price, at: row.changed_at })),
+    car.first_live_at || car.listed_at
+  );
+  shownPrices.forEach((row, index) => {
     if (index === 0) return;
-    const previous = Number(prices.rows[index - 1].price);
+    const previous = Number(shownPrices[index - 1].price);
     const price = Number(row.price);
-    if (price !== previous) events.push({ type: 'price_changed', on: row.changed_at, price, previous_price: previous });
+    if (price !== previous) events.push({ type: 'price_changed', on: row.at, price, previous_price: previous });
   });
   events.sort((a, b) => new Date(a.on) - new Date(b.on));
 
@@ -725,6 +734,7 @@ ${MARKET_LATERALS}
     );
     if (!rows.length) return res.status(404).json({ error: 'Car not found' });
     const car = rows[0];
+    car.price_history = publicPriceHistory(car.price_history, car.first_live_at || car.listed_at);
 
     // Statuses a car reaches only by having been published. Anything else
     // (under_review, scheduled, inspecting, archived) describes a car that was

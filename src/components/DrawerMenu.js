@@ -6,6 +6,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { LogoMark } from './Logo';
+import Constants from 'expo-constants';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, fonts, radius, shadows } from '../theme';
 import { useApp } from '../context/AppContext';
@@ -145,7 +146,7 @@ export default function DrawerMenu({ visible, onClose, navigation }) {
               <LogoMark size={34} />
               <View>
                 <Text style={styles.headerBrand}>SAWA</Text>
-                <Text style={styles.headerSub}>{t('drawer.certifiedMarketplace')}</Text>
+                <Text style={styles.headerSub}>{t('drawer.tagline')}</Text>
               </View>
             </View>
             <Pressable style={styles.closeBtn} onPress={onClose} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('common.close')}>
@@ -239,7 +240,7 @@ export default function DrawerMenu({ visible, onClose, navigation }) {
               <Text style={styles.footerLink}>{t('common.settings')}</Text>
             </Pressable>
           </View>
-          <Text style={styles.version}>{t('drawer.version')}</Text>
+          <Text style={styles.version}>{t('drawer.version', { version: Constants.expoConfig?.version || '' })}</Text>
         </ScrollView>
       </Animated.View>
     </View>
