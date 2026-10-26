@@ -224,8 +224,7 @@ export function Header({
 
           {/* ONE primary action. Buying is the nav's first word, so the
               button is the other side of the market: getting a car listed.
-              The app link lives in the menu and footer until the stores are
-              live (APP.storesLive in lib/site.ts). */}
+              The app link lives in the menu and footer. */}
           {/* Visible at every width: on a phone, the device most visitors
               use, this used to live only inside the menu. Below 400px the
               label shortens so the bar never wraps. */}

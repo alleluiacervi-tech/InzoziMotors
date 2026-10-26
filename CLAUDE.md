@@ -530,8 +530,9 @@ a lettermark until then.
 `ota_paused`, the stop switch `mobile-update.yml` reads before publishing.
 `min_supported_version` locks people out and is rail-guarded three ways.
 
-Honesty gates already in the code, keep them: `APP.storesLive: false` hides
-store badges until real store IDs exist; `CONTACT.whatsappVerified` gates the
+Honesty gates already in the code, keep them: `APP.iosLive` / `APP.androidLive`
+(`web/src/lib/site.ts`, both true since 26 Oct 2026) decide which store badges
+are links; `CONTACT.whatsappVerified` gates the
 phone number; `SOCIAL` (`web/src/lib/site.ts`) drives both the footer's social
 row and `sameAs` in the structured data, so a profile is claimed to Google only
 once it is shown to a human — store those URLs canonical, never with the
