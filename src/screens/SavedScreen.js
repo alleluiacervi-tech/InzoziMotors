@@ -108,6 +108,7 @@ function EmptyState({ icon, title, sub, features, btnLabel, onPress }) {
       </View>
       <Text style={styles.emptyTitle}>{title}</Text>
       <Text style={styles.emptySub}>{sub}</Text>
+      {features?.length ? (
       <View style={styles.emptyFeatures}>
         {features.map((f) => (
           <View key={f} style={styles.emptyFeature}>
@@ -116,6 +117,7 @@ function EmptyState({ icon, title, sub, features, btnLabel, onPress }) {
           </View>
         ))}
       </View>
+      ) : null}
       <Pressable style={styles.browseBtn} onPress={onPress}>
         <Text style={styles.browseBtnText}>{btnLabel}</Text>
       </Pressable>
@@ -158,7 +160,6 @@ export default function SavedScreen({ navigation }) {
     }).then((ok) => { if (ok) deleteSavedSearch(id); });
   };
 
-  const savedFeatures = [t('vehicleDetail.priceDrop'), t('drawer.compareCars'), t('vehicleDetail.highDemand')];
   const searchFeatures = [t('saved.searchAlerts'), t('common.filters'), t('drawer.browseAll')];
 
   return (
@@ -204,7 +205,6 @@ export default function SavedScreen({ navigation }) {
               icon="heart-outline"
               title={t('saved.emptyTitle')}
               sub={t('saved.emptySub')}
-              features={savedFeatures}
               btnLabel={t('saved.browseCars')}
               onPress={() => navigation.navigate('Main', { screen: 'Home' })}
             />

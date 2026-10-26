@@ -28,7 +28,7 @@ function buildVariants(colors) {
   return {
     inspected: { bg: colors.jeondanPlus, fg: '#FFFFFF' },
     auction: { bg: colors.jeondanPlusPlus, fg: '#FFFFFF' },
-    tag: { bg: colors.blueTint, fg: colors.primary },
+    tag: { bg: colors.surfaceAlt, fg: colors.textPrimary },
     live: { bg: colors.amberTint, fg: colors.amberText, dotColor: colors.amber },
     neutral: { bg: colors.surfaceAlt, fg: colors.slate600 },
     success: { bg: colors.greenTint, fg: colors.green },

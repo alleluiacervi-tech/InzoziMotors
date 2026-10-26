@@ -58,9 +58,9 @@ function filterLocally(list, { query, filters, sort }) {
 }
 
 const SCOPES = [
-  { id: 'all', label: 'All', icon: 'apps-outline' },
-  { id: 'local', label: 'In Rwanda', icon: 'location-outline' },
-  { id: 'import', label: 'Import Direct', icon: 'globe-outline' },
+  { id: 'all', labelKey: 'searchResults.scopeAll', icon: 'apps-outline' },
+  { id: 'local', labelKey: 'searchResults.scopeLocal', icon: 'location-outline' },
+  { id: 'import', labelKey: 'searchResults.scopeImport', icon: 'globe-outline' },
 ];
 
 export default function SearchResultsScreen({ navigation, route }) {
@@ -188,7 +188,7 @@ export default function SearchResultsScreen({ navigation, route }) {
           style={styles.filterBtn}
           onPress={() => navigation.navigate('Filters', { filters: activeFilters })} accessibilityRole="button" accessibilityLabel={t('searchResults.filterButton')}
         >
-          <Ionicons name="options-outline" size={20} color="#fff" />
+          <Ionicons name="options-outline" size={20} color={colors.surface} />
         </Pressable>
       </View>
 
@@ -203,9 +203,10 @@ export default function SearchResultsScreen({ navigation, route }) {
                 style={[styles.scopeTab, on && styles.scopeTabOn]}
                 onPress={() => setScope(s.id)}
                 accessibilityRole="tab"
+                accessibilityState={{ selected: on }}
               >
-                <Ionicons name={s.icon} size={14} color={on ? '#FFFFFF' : colors.textSecondary} />
-                <Text style={[styles.scopeText, on && styles.scopeTextOn]}>{s.label}</Text>
+                <Ionicons name={s.icon} size={14} color={on ? colors.surface : colors.textSecondary} />
+                <Text style={[styles.scopeText, on && styles.scopeTextOn]}>{t(s.labelKey)}</Text>
               </Pressable>
             );
           })}
@@ -227,7 +228,13 @@ export default function SearchResultsScreen({ navigation, route }) {
               <Text style={styles.resultCount}>
                 {isRentMode
                   ? t('searchResults.rentalsFound', { count: filteredCars.length })
-                  : `${(showLocal ? filteredCars.length : 0) + (showImport ? filteredImportCars.length : 0)} vehicles found`}
+                  // Cars in Rwanda and models to import are different things, so
+                  // they are counted apart rather than added into one number.
+                  : showLocal && showImport
+                    ? t('searchResults.countBoth', { local: filteredCars.length, import: filteredImportCars.length })
+                    : showImport
+                      ? t('searchResults.countImport', { count: filteredImportCars.length })
+                      : t('searchResults.countLocal', { count: filteredCars.length })}
               </Text>
               <View style={styles.resultActions}>
                 {/* Cars for sale save any filter; cars for hire save the search words
@@ -319,7 +326,7 @@ export default function SearchResultsScreen({ navigation, route }) {
                 const on = item === sort;
                 return (
                   <Pressable style={[styles.sortChip, on && styles.sortChipOn]} onPress={() => setSort(item)}>
-                    <Text style={[styles.sortText, { color: on ? '#fff' : colors.slate600 }]}>{t(`searchResults.${SORT_LABEL_KEYS[item]}`)}</Text>
+                    <Text style={[styles.sortText, { color: on ? colors.surface : colors.slate600 }]}>{t(`searchResults.${SORT_LABEL_KEYS[item]}`)}</Text>
                   </Pressable>
                 );
               }}
@@ -330,10 +337,8 @@ export default function SearchResultsScreen({ navigation, route }) {
               <View style={styles.noLocalNotice}>
                 <Ionicons name="information-circle-outline" size={20} color={colors.infoText} />
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.noLocalTitle}>0 in Rwanda stock · {filteredImportCars.length} available to import</Text>
-                  <Text style={styles.noLocalSub}>
-                    You can import these models on-demand directly from South Korea, Dubai & China — get a formal landed-price quotation before you pay anything.
-                  </Text>
+                  <Text style={styles.noLocalTitle}>{t('searchResults.noLocalTitle', { count: filteredImportCars.length })}</Text>
+                  <Text style={styles.noLocalSub}>{t('searchResults.noLocalSub')}</Text>
                 </View>
               </View>
             )}
@@ -341,8 +346,8 @@ export default function SearchResultsScreen({ navigation, route }) {
             {/* Local Section Header in 'all' mode */}
             {!isRentMode && scope === 'all' && filteredCars.length > 0 && (
               <View style={styles.sectionHeader}>
-                <Ionicons name="location" size={16} color={colors.primary} />
-                <Text style={styles.sectionTitle}>In Rwanda Physical Stock ({filteredCars.length})</Text>
+                <Ionicons name="location-outline" size={16} color={colors.textSecondary} />
+                <Text style={styles.sectionTitle}>{t('searchResults.inRwandaTitle', { count: filteredCars.length })}</Text>
               </View>
             )}
           </View>
@@ -374,10 +379,10 @@ export default function SearchResultsScreen({ navigation, route }) {
                     <Ionicons name="boat" size={18} color={colors.infoText} />
                     <View>
                       <Text style={styles.importSectionTitle}>
-                        Import Direct from Korea, Dubai & China ({filteredImportCars.length})
+                        {t('searchResults.importTitle', { count: filteredImportCars.length })}
                       </Text>
                       <Text style={styles.importSectionSub}>
-                        Verified sourcing, transparent landed pricing, 50/50 payment schedule
+                        {t('searchResults.importSub')}
                       </Text>
                     </View>
                   </View>
@@ -458,7 +463,7 @@ const styles = StyleSheet.create({
     height: 46,
   },
   searchInput: { flex: 1, fontSize: 14, fontFamily: fonts.medium, color: colors.textPrimary, padding: 0 },
-  filterBtn: { width: 46, height: 46, borderRadius: radius.md, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
+  filterBtn: { width: 46, height: 46, borderRadius: radius.md, backgroundColor: colors.textPrimary, alignItems: 'center', justifyContent: 'center' },
   scopeRow: {
     flexDirection: 'row',
     gap: 8,
@@ -478,8 +483,8 @@ const styles = StyleSheet.create({
     borderColor: colors.borderSoft,
   },
   scopeTabOn: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
+    backgroundColor: colors.textPrimary,
+    borderColor: colors.textPrimary,
   },
   scopeText: {
     fontFamily: fonts.bold,
@@ -487,7 +492,7 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   scopeTextOn: {
-    color: '#FFFFFF',
+    color: colors.surface,
   },
   resultRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, marginTop: 4 },
   resultCount: { fontSize: 15, fontFamily: fonts.extraBold, color: colors.textPrimary },
@@ -505,7 +510,7 @@ const styles = StyleSheet.create({
   },
   filterChipText: { fontSize: 12, fontFamily: fonts.bold, color: colors.primary },
   sortChip: { minHeight: 40, justifyContent: 'center', backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, paddingVertical: 6, paddingHorizontal: 14, borderRadius: radius.pill },
-  sortChipOn: { backgroundColor: colors.primary, borderColor: colors.primary },
+  sortChipOn: { backgroundColor: colors.textPrimary, borderColor: colors.textPrimary },
   sortText: { fontSize: 13, fontFamily: fonts.semiBold },
   sectionHeader: {
     flexDirection: 'row',
