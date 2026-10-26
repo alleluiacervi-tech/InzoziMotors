@@ -147,6 +147,7 @@ export function buildReportFromApi(report) {
     // `passed` is the server's verdict (score at the threshold AND no critical
     // failure). A report is served either way — a car with defects is still
     // listed, with the defects shown — so the screen reads this, not the score.
+    completedAt: report.completed_at || null,
     certified: report.passed === true,
     criticalFailures: (report.critical_failures || []).map((f) => ({ label: f.label, category: f.category })),
     categories,

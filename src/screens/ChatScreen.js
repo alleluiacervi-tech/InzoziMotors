@@ -330,7 +330,7 @@ const styles = StyleSheet.create({
     padding: 12, marginBottom: 4,
   },
   pinnedLabel: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 8 },
-  pinnedLabelText: { fontSize: 11, fontFamily: fonts.bold, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.4 },
+  pinnedLabelText: { fontSize: 11, fontFamily: fonts.bold, color: colors.textMuted, },
   pinnedContent: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   pinnedThumb: { width: 56, height: 42, borderRadius: radius.md, backgroundColor: colors.border },
   pinnedTitle: { fontSize: 13, fontFamily: fonts.bold, color: colors.textPrimary },

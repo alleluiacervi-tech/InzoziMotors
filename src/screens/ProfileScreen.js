@@ -145,11 +145,6 @@ export default function ProfileScreen({ navigation }) {
     );
   }
 
-  const STATS = [
-    { label: t('drawer.submissions'), value: String(submissions.length) },
-    { label: t('sellerDashboard.live'), value: String(liveCount) },
-  ];
-
   return (
     <Screen background={colors.bg}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
@@ -182,7 +177,7 @@ export default function ProfileScreen({ navigation }) {
                         ? t('settings.underReview')
                         : idVerificationStatus === 'rejected'
                         ? t('settings.actionNeeded')
-                        : t('profile.identityVerification')
+                        : t('settings.notVerified')
                     }
                   />
                 </Pressable>
@@ -194,20 +189,10 @@ export default function ProfileScreen({ navigation }) {
           </Pressable>
         </View>
 
-        {/* Stats */}
-        <View style={styles.stats}>
-          {STATS.map((s, i) => (
-            <View key={s.label} style={[styles.stat, i < STATS.length - 1 && styles.statBorder]}>
-              <Text style={styles.statValue}>{s.value}</Text>
-              <Text style={styles.statLabel}>{s.label}</Text>
-            </View>
-          ))}
-        </View>
-
         {/* Seller dashboard quick-link */}
         <Pressable style={styles.dashBanner} onPress={() => navigation.navigate('SellerDashboard')}>
           <View style={styles.dashBannerIcon}>
-            <Ionicons name="trending-up" size={22} color="#fff" />
+            <Ionicons name="trending-up" size={20} color={colors.textPrimary} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.dashBannerTitle}>{t('profile.sellerDashboard')}</Text>
@@ -215,7 +200,7 @@ export default function ProfileScreen({ navigation }) {
               {submissions.length} {t('drawer.submissions').toLowerCase()} · {liveCount} {t('sellerDashboard.live').toLowerCase()}
             </Text>
           </View>
-          <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.8)" />
+          <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
         </Pressable>
 
         <MenuSection title={t('profile.sellerSection')} items={menuSeller} navigation={navigation} />
@@ -286,23 +271,24 @@ const styles = StyleSheet.create({
 
   dashBanner: {
     flexDirection: 'row', alignItems: 'center', gap: 14,
-    backgroundColor: colors.primary,
+    // A normal first row, not a red block: red is for the one main action.
+    backgroundColor: colors.surface,
+    borderWidth: 1, borderColor: colors.borderSoft,
     borderRadius: radius.xl,
     marginHorizontal: 20, marginTop: 16,
-    padding: 16,
+    padding: 16, minHeight: 72,
   },
   dashBannerIcon: {
     width: 44, height: 44, borderRadius: radius.md,
-    backgroundColor: 'rgba(255,255,255,0.18)',
+    backgroundColor: colors.surfaceAlt,
     alignItems: 'center', justifyContent: 'center',
   },
-  dashBannerTitle: { color: '#fff', fontSize: 16, fontFamily: fonts.extraBold },
-  dashBannerSub: { color: 'rgba(255,255,255,0.8)', fontSize: 13, fontFamily: fonts.regular, marginTop: 2 },
+  dashBannerTitle: { color: colors.textPrimary, fontSize: 16, fontFamily: fonts.bold },
+  dashBannerSub: { color: colors.textMuted, fontSize: 13, fontFamily: fonts.regular, marginTop: 2 },
 
   menuSection: { paddingHorizontal: 20, marginTop: 24 },
   menuSectionTitle: {
-    fontSize: 11, fontFamily: fonts.bold, color: colors.textMuted,
-    textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8,
+    fontSize: 11, fontFamily: fonts.bold, color: colors.textMuted, marginBottom: 8,
   },
   menu: {
     backgroundColor: colors.surface,

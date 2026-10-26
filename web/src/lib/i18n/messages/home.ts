@@ -67,6 +67,7 @@ export const home: Record<Locale, Record<string, unknown>> = {
       title: 'Showrooms',
       description: 'Verified dealerships and the brands they have in stock right now.',
       cars: '{{count}} cars',
+      cars_one: '{{count}} car',
       verified: 'Verified showroom',
       viewAll: 'View all showrooms',
     },
@@ -133,7 +134,7 @@ export const home: Record<Locale, Record<string, unknown>> = {
         guessing: {
           claim: 'Evidence without guessing',
           proof:
-            'Ownership, mileage and RRA duty status are checked — unknowns are labelled unknown, never guessed.',
+            'The inspector records the documents they see and the odometer reading. Anything unknown is labelled unknown, never guessed.',
         },
         publication: {
           claim: 'Controlled publication',
@@ -316,6 +317,7 @@ export const home: Record<Locale, Record<string, unknown>> = {
       title: 'Amaduka y’imodoka',
       description: 'Amaduka yemejwe n’ibirango by’imodoka afite ubu.',
       cars: 'Imodoka {{count}}',
+      cars_one: 'Imodoka {{count}}',
       verified: 'Iduka ryemejwe',
       viewAll: 'Reba amaduka yose',
     },
@@ -384,7 +386,7 @@ export const home: Record<Locale, Record<string, unknown>> = {
         guessing: {
           claim: 'Ibimenyetso bidakekwa',
           proof:
-            'Nyir’imodoka, ibirometero na sitati y’umusoro wa RRA birasuzumwa — ibitazwi bishyirwaho ko bitazwi, ntibikekwa.',
+            'Umugenzuzi yandika ibyangombwa abona n’ibirometero biri ku modoka. Ibitazwi byandikwa ko bitazwi, ntibikekwa.',
         },
         publication: {
           claim: 'Gutangaza kugenzuwe',
@@ -567,6 +569,7 @@ export const home: Record<Locale, Record<string, unknown>> = {
       title: 'Showrooms',
       description: 'Des concessionnaires vérifiés et les marques qu’ils ont en stock aujourd’hui.',
       cars: '{{count}} voitures',
+      cars_one: '{{count}} voiture',
       verified: 'Showroom vérifié',
       viewAll: 'Voir tous les showrooms',
     },
@@ -635,7 +638,7 @@ export const home: Record<Locale, Record<string, unknown>> = {
         guessing: {
           claim: 'Des preuves sans suppositions',
           proof:
-            'La propriété, le kilométrage et le statut des droits RRA sont vérifiés — les inconnues sont indiquées comme inconnues, jamais devinées.',
+            'L’inspecteur consigne les documents qu’il voit et le relevé du compteur. Ce qui est inconnu est indiqué comme inconnu, jamais deviné.',
         },
         publication: {
           claim: 'Publication contrôlée',
@@ -818,6 +821,7 @@ export const home: Record<Locale, Record<string, unknown>> = {
       title: 'Vyumba vya maonyesho',
       description: 'Wauzaji waliothibitishwa na chapa walizo nazo sasa.',
       cars: 'Magari {{count}}',
+      cars_one: 'Gari {{count}}',
       verified: 'Chumba cha maonyesho kilichothibitishwa',
       viewAll: 'Tazama maonyesho yote',
     },
@@ -886,7 +890,7 @@ export const home: Record<Locale, Record<string, unknown>> = {
         guessing: {
           claim: 'Ushahidi bila kubahatisha',
           proof:
-            'Umiliki, umbali na hali ya ushuru wa RRA vinakaguliwa — yasiyojulikana yanaandikwa kuwa hayajulikani, hayabahatishwi.',
+            'Mkaguzi anarekodi nyaraka anazoziona na usomaji wa odomita. Kisichojulikana kinaandikwa kuwa hakijulikani, hakibahatishwi.',
         },
         publication: {
           claim: 'Uchapishaji unaodhibitiwa',
@@ -1136,7 +1140,7 @@ export const home: Record<Locale, Record<string, unknown>> = {
         guessing: {
           claim: '추측 없는 증빙',
           proof:
-            '소유권, 주행거리, RRA 관세 상태를 확인합니다 — 알 수 없는 항목은 알 수 없음으로 표시하며 결코 추측하지 않습니다.',
+            '점검원은 직접 확인한 서류와 주행거리계 수치를 기록합니다. 알 수 없는 항목은 알 수 없음으로 표시하며 추측하지 않습니다.',
         },
         publication: {
           claim: '통제된 게시',
@@ -1386,7 +1390,7 @@ export const home: Record<Locale, Record<string, unknown>> = {
         guessing: {
           claim: '有据可查，绝不臆测',
           proof:
-            '车辆归属、里程及RRA关税状态均经过核查——未知信息标注为未知，绝不臆测。',
+            '检测员记录亲眼所见的文件和里程表读数。未知信息标注为未知，绝不臆测。',
         },
         publication: {
           claim: '受控发布',

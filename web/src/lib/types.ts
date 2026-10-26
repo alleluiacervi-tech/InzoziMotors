@@ -567,6 +567,10 @@ export interface Showroom {
   location: string | null
   brands: { make: string; count: number }[]
   business_verified: true
+  /** Storefront opening hours (Kigali time), or null when none are set. */
+  hours?: BusinessHours | null
+  /** True when cover_image is the showroom itself, false when it is its newest car. */
+  cover_is_showroom?: boolean
 }
 
 /** GET /makes — one brand, with the operator-uploaded mark when there is one. */

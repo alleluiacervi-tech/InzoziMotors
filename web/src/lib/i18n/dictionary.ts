@@ -9,7 +9,7 @@
 
 import { DEFAULT_LOCALE, normalizeLocale, type Locale } from './config'
 import { SECTIONS } from './messages'
-import { fill, lookup, mergeMessages, type TFunction } from './translate'
+import { fill, lookup, mergeMessages, pluralKey, type TFunction } from './translate'
 
 type Messages = Record<string, unknown>
 
@@ -351,7 +351,7 @@ const ko = {
   },
   footer: {
     tagline:
-      '르완다의 인증 차량 마켓플레이스입니다. 매물 근거와 판매자 책임성을 강화한 뒤, 이용자가 직접 소통하고 합의하도록 합니다.',
+      '르완다의 검증된 차량 마켓플레이스입니다. 매물 근거와 판매자 책임성을 강화한 뒤, 이용자가 직접 소통하고 합의하도록 합니다.',
     getApp: '앱 다운로드',
     contactUs: '문의하기',
     call: '전화하기',
@@ -427,7 +427,7 @@ const zh = {
   },
   footer: {
     tagline:
-      '卢旺达的认证车辆市场。我们强化信息依据和卖家责任，让用户可以直接沟通并自行达成协议。',
+      '卢旺达经过核实的车辆市场。我们强化信息依据和卖家责任，让用户可以直接沟通并自行达成协议。',
     getApp: '下载应用',
     contactUs: '联系我们',
     call: '致电我们',
@@ -497,7 +497,9 @@ export type { TFunction }
 export function getT(locale: unknown): TFunction {
   const code = normalizeLocale(locale)
   return (key, vars) => {
-    const value = lookup(DICTIONARY[code], key) ?? lookup(DICTIONARY[DEFAULT_LOCALE], key) ?? key
+    const one = pluralKey(code, key, vars)
+    const value = (one !== key ? lookup(DICTIONARY[code], one) ?? lookup(DICTIONARY[DEFAULT_LOCALE], one) : undefined)
+      ?? lookup(DICTIONARY[code], key) ?? lookup(DICTIONARY[DEFAULT_LOCALE], key) ?? key
     return fill(value, vars)
   }
 }

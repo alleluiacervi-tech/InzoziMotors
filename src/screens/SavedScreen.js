@@ -108,6 +108,7 @@ function EmptyState({ icon, title, sub, features, btnLabel, onPress }) {
       </View>
       <Text style={styles.emptyTitle}>{title}</Text>
       <Text style={styles.emptySub}>{sub}</Text>
+      {features?.length ? (
       <View style={styles.emptyFeatures}>
         {features.map((f) => (
           <View key={f} style={styles.emptyFeature}>
@@ -116,6 +117,7 @@ function EmptyState({ icon, title, sub, features, btnLabel, onPress }) {
           </View>
         ))}
       </View>
+      ) : null}
       <Pressable style={styles.browseBtn} onPress={onPress}>
         <Text style={styles.browseBtnText}>{btnLabel}</Text>
       </Pressable>
@@ -158,7 +160,6 @@ export default function SavedScreen({ navigation }) {
     }).then((ok) => { if (ok) deleteSavedSearch(id); });
   };
 
-  const savedFeatures = [t('vehicleDetail.priceDrop'), t('drawer.compareCars'), t('vehicleDetail.highDemand')];
   const searchFeatures = [t('saved.searchAlerts'), t('common.filters'), t('drawer.browseAll')];
 
   return (
@@ -204,7 +205,6 @@ export default function SavedScreen({ navigation }) {
               icon="heart-outline"
               title={t('saved.emptyTitle')}
               sub={t('saved.emptySub')}
-              features={savedFeatures}
               btnLabel={t('saved.browseCars')}
               onPress={() => navigation.navigate('Main', { screen: 'Home' })}
             />
@@ -300,7 +300,7 @@ const styles = StyleSheet.create({
   },
   searchIcon: {
     width: 36, height: 36, borderRadius: radius.md,
-    backgroundColor: colors.greenTint, alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+    backgroundColor: colors.surfaceAlt, alignItems: 'center', justifyContent: 'center', flexShrink: 0,
   },
   searchBody: { flex: 1 },
   searchLabel: { fontSize: 13, fontFamily: fonts.bold, color: colors.textPrimary },
@@ -312,7 +312,7 @@ const styles = StyleSheet.create({
   deleteBtn: { padding: 4, marginLeft: 4 },
   searchHint: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: colors.greenTint, borderRadius: radius.lg,
+    backgroundColor: colors.surfaceAlt, borderRadius: radius.lg,
     padding: 10, marginBottom: 12,
   },
   searchHintText: { fontSize: 12, fontFamily: fonts.regular, color: colors.primary, flex: 1 },

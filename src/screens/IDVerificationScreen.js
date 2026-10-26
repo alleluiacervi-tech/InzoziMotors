@@ -250,8 +250,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: fonts.bold,
     color: colors.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
     marginBottom: 12,
   },
   uploadList: { gap: 10 },

@@ -34,3 +34,22 @@ export function mergeMessages(base: unknown, over: unknown): unknown {
   }
   return out
 }
+
+/**
+ * Whether a count takes a key's singular form ("1 car", not "1 cars"). A key
+ * with a `_one` sibling uses it; French also for zero, Korean and Chinese never
+ * inflect. Mirrors takesSingular in the app's src/i18n/index.js.
+ */
+export function takesSingular(locale: string, count: unknown): boolean {
+  if (count == null) return false
+  const n = Number(String(count).replace(/[^\d.-]/g, ''))
+  if (!Number.isFinite(n)) return false
+  if (locale === 'ko' || locale === 'zh') return false
+  if (locale === 'fr') return n >= 0 && n < 2
+  return n === 1
+}
+
+/** The key to read for these vars: `${key}_one` when the count is singular. */
+export function pluralKey(locale: string, key: string, vars?: Record<string, string | number>): string {
+  return vars && takesSingular(locale, vars.count) ? `${key}_one` : key
+}

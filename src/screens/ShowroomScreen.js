@@ -12,7 +12,7 @@ import { colors, radius, fonts, shadows } from '../theme';
 import { PHOTO } from '../utils/photo';
 import carsApi from '../api/cars';
 import { useApp } from '../context/AppContext';
-import { WEEK, DAY_KEYS, kigaliClock, openState } from '../utils/showroomHours';
+import { WEEK, DAY_KEYS, kigaliClock, openStatus, openStatusText } from '../utils/showroomHours';
 
 // How quickly the showroom replies, measured by the server (null until it can say).
 const REPLY_KEYS = {
@@ -46,6 +46,8 @@ export default function ShowroomScreen({ navigation, route }) {
   const [state, setState] = useState(sellerId ? 'loading' : 'gone'); // loading | ready | gone | error
   const [brand, setBrand] = useState(null);
   const [attempt, setAttempt] = useState(0);
+  // The week's hours stay folded away: the status line answers the question.
+  const [showHours, setShowHours] = useState(false);
   // Re-read the clock every minute so "Open now" turns into "Closed now" on time.
   const [clock, setClock] = useState(() => Date.now());
   useEffect(() => {
@@ -91,8 +93,9 @@ export default function ShowroomScreen({ navigation, route }) {
     [cars, brand]
   );
 
-  // The showroom itself when the team set a cover photo, otherwise its newest car.
-  const cover = profile?.cover_url || cars?.find((c) => c.image)?.image || null;
+  // Only a photo of the showroom itself. A car photo here made the storefront
+  // look like a listing; without one the header is a quiet band.
+  const cover = profile?.cover_url || null;
   const avgScore = useMemo(() => {
     const scores = (cars || []).map((c) => Number(c.inspectionScore)).filter((s) => Number.isFinite(s) && s > 0);
     return scores.length ? Math.round(scores.reduce((sum, s) => sum + s, 0) / scores.length) : null;
@@ -140,14 +143,10 @@ export default function ShowroomScreen({ navigation, route }) {
 
   // Opening hours, read in Kigali time whatever zone the phone is in.
   const hours = profile.hours || null;
-  const hoursState = hours ? openState(hours, new Date(clock)) : null;
+  const status = openStatus(hours, new Date(clock));
+  const statusText = openStatusText(status, t);
   const today = kigaliClock(new Date(clock)).day;
-  let hoursDetail = null;
-  if (hoursState?.open) hoursDetail = t('browse.closesAt', { time: hoursState.closesAt });
-  else if (hoursState?.opensAt && hoursState.laterToday) hoursDetail = t('browse.opensTodayAt', { time: hoursState.opensAt });
-  else if (hoursState?.opensAt && hoursState.opensDay) {
-    hoursDetail = t('browse.opensAt', { day: t(DAY_KEYS[hoursState.opensDay]), time: hoursState.opensAt });
-  }
+  const TONE_DOT = { open: colors.green, soon: colors.amber, closed: colors.textMuted };
   const openMaps = () => {
     const query = encodeURIComponent(`${profile.address}, Rwanda`);
     const url = Platform.OS === 'ios'
@@ -158,20 +157,61 @@ export default function ShowroomScreen({ navigation, route }) {
 
   const header = (
     <View>
-      <View style={styles.cover}>
-        {cover ? <Photo uri={cover} width={PHOTO.WIDE} style={StyleSheet.absoluteFill} resizeMode="cover" /> : null}
-        <LinearGradient colors={['rgba(12,10,10,0.35)', 'rgba(12,10,10,0.1)', 'rgba(12,10,10,0.55)']} style={StyleSheet.absoluteFill} />
+      <View style={[styles.cover, !cover && styles.coverPlain]}>
+        {cover ? (
+          <>
+            <Photo uri={cover} width={PHOTO.WIDE} style={StyleSheet.absoluteFill} resizeMode="cover" />
+            <LinearGradient colors={['rgba(12,10,10,0.35)', 'rgba(12,10,10,0.1)', 'rgba(12,10,10,0.45)']} style={StyleSheet.absoluteFill} />
+          </>
+        ) : null}
       </View>
 
       <View style={styles.identity}>
-        {profile.avatar_url ? (
-          <Image source={{ uri: profile.avatar_url }} style={styles.avatar} accessibilityIgnoresInvertColors />
-        ) : (
-          <View style={[styles.avatar, styles.avatarEmpty]}>
+        {/* The logo fitted inside a white square: cropping it into a circle
+            cut a word-mark logo down to a few letters. */}
+        <View style={[styles.avatar, !profile.avatar_url && styles.avatarEmpty]}>
+          {profile.avatar_url ? (
+            <Image source={{ uri: profile.avatar_url }} style={styles.avatarImage} resizeMode="contain" accessibilityIgnoresInvertColors />
+          ) : (
             <Text style={styles.avatarText}>{name.charAt(0).toUpperCase()}</Text>
-          </View>
-        )}
+          )}
+        </View>
         <Text style={styles.name} accessibilityRole="header">{name}</Text>
+
+        {/* Can I go now, and if not, when. The week is one tap away. */}
+        {statusText ? (
+          <Pressable
+            style={styles.statusRow}
+            onPress={() => setShowHours((open) => !open)}
+            accessibilityRole="button"
+            accessibilityState={{ expanded: showHours }}
+            accessibilityHint={t('browse.seeAllHours')}
+          >
+            <View style={[styles.statusDot, { backgroundColor: TONE_DOT[status.tone] }]} />
+            <Text style={styles.statusText}>{statusText}</Text>
+            <Text style={styles.statusLink}>{t('browse.seeAllHours')}</Text>
+            <Ionicons name={showHours ? 'chevron-up' : 'chevron-down'} size={14} color={colors.textSecondary} />
+          </Pressable>
+        ) : null}
+        {hours && showHours ? (
+          <View style={styles.hoursList}>
+            {WEEK.map((day) => {
+              const slot = hours[day];
+              const isToday = today === day;
+              return (
+                <View key={day} style={styles.hoursRow}>
+                  <Text style={[styles.hoursDay, isToday && styles.hoursToday]}>
+                    {t(DAY_KEYS[day])}{isToday ? ` · ${t('browse.todayLabel')}` : ''}
+                  </Text>
+                  <Text style={[styles.hoursTime, isToday && styles.hoursToday]}>
+                    {slot ? `${slot.open} – ${slot.close}` : t('browse.closedDay')}
+                  </Text>
+                </View>
+              );
+            })}
+            <Text style={styles.hoursNote}>{t('browse.kigaliTime')}</Text>
+          </View>
+        ) : null}
         <View style={styles.badgeRow}>
           {profile.business_verified ? (
             <View style={styles.verified}>
@@ -240,52 +280,22 @@ export default function ShowroomScreen({ navigation, route }) {
         </View>
       ) : null}
 
-      {profile.address || hours ? (
+      {profile.address ? (
         <View style={styles.infoCard}>
           <Text style={styles.infoTitle}>{t('browse.visitShowroomTitle')}</Text>
-          {profile.address ? (
-            <Pressable
-              style={styles.addressRow}
-              onPress={openMaps}
-              accessibilityRole="link"
-              accessibilityLabel={`${profile.address}. ${t('browse.openInMaps')}`}
-            >
-              <Ionicons name="location-outline" size={17} color={colors.textMuted} />
-              <View style={styles.addressBody}>
-                <Text style={styles.addressText}>{profile.address}</Text>
-                <Text style={styles.mapsLink}>{t('browse.openInMaps')}</Text>
-              </View>
-              <Ionicons name="open-outline" size={16} color={colors.textMuted} />
-            </Pressable>
-          ) : null}
-          {hours ? (
-            <View style={profile.address ? styles.hoursBlock : null}>
-              <View style={styles.openRow}>
-                <View style={[styles.openPill, hoursState.open && styles.openPillOn]}>
-                  <View style={[styles.openDot, hoursState.open && styles.openDotOn]} />
-                  <Text style={[styles.openPillText, hoursState.open && styles.openPillTextOn]}>
-                    {hoursState.open ? t('browse.openNow') : t('browse.closedNow')}
-                  </Text>
-                </View>
-                {hoursDetail ? <Text style={styles.openDetail}>{hoursDetail}</Text> : null}
-              </View>
-              {WEEK.map((day) => {
-                const slot = hours[day];
-                const isToday = today === day;
-                return (
-                  <View key={day} style={styles.hoursRow}>
-                    <Text style={[styles.hoursDay, isToday && styles.hoursToday]}>
-                      {t(DAY_KEYS[day])}{isToday ? ` · ${t('browse.todayLabel')}` : ''}
-                    </Text>
-                    <Text style={[styles.hoursTime, isToday && styles.hoursToday]}>
-                      {slot ? `${slot.open} – ${slot.close}` : t('browse.closedDay')}
-                    </Text>
-                  </View>
-                );
-              })}
-              <Text style={styles.hoursNote}>{t('browse.kigaliTime')}</Text>
+          <Pressable
+            style={styles.addressRow}
+            onPress={openMaps}
+            accessibilityRole="link"
+            accessibilityLabel={`${profile.address}. ${t('browse.openInMaps')}`}
+          >
+            <Ionicons name="location-outline" size={17} color={colors.textMuted} />
+            <View style={styles.addressBody}>
+              <Text style={styles.addressText}>{profile.address}</Text>
+              <Text style={styles.mapsLink}>{t('browse.openInMaps')}</Text>
             </View>
-          ) : null}
+            <Ionicons name="open-outline" size={16} color={colors.textMuted} />
+          </Pressable>
         </View>
       ) : null}
 
@@ -311,7 +321,7 @@ export default function ShowroomScreen({ navigation, route }) {
                   {item.make ? (
                     <BrandMark name={item.make} logoUrl={brandLogo(item.make)} size={24} />
                   ) : (
-                    <Ionicons name="apps-outline" size={16} color={on ? colors.primary : colors.textSecondary} />
+                    <Ionicons name="apps-outline" size={16} color={on ? colors.textPrimary : colors.textSecondary} />
                   )}
                   <Text style={[styles.brandChipText, on && styles.brandChipTextOn]} numberOfLines={1}>
                     {item.make || t('browse.allBrandsChip')}
@@ -370,6 +380,7 @@ const styles = StyleSheet.create({
     ...shadows.card,
   },
   cover: { height: 170, backgroundColor: '#1C1A1A' },
+  coverPlain: { height: 112, backgroundColor: colors.surfaceAlt },
   identity: {
     marginTop: -40,
     marginHorizontal: 16,
@@ -382,13 +393,20 @@ const styles = StyleSheet.create({
     ...shadows.card,
   },
   avatar: {
-    width: 76, height: 76, borderRadius: 38,
-    marginTop: -38,
-    borderWidth: 3, borderColor: colors.surface,
-    backgroundColor: colors.surface,
+    width: 76, height: 76, borderRadius: 18,
+    marginTop: -38, padding: 4,
+    borderWidth: 1, borderColor: colors.borderSoft,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center', justifyContent: 'center',
   },
-  avatarEmpty: { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.navyMid },
-  avatarText: { fontSize: 28, fontFamily: fonts.extraBold, color: '#fff' },
+  avatarImage: { width: '100%', height: '100%' },
+  avatarEmpty: { backgroundColor: '#FFFFFF' },
+  avatarText: { fontSize: 28, fontFamily: fonts.extraBold, color: '#14110F' },
+  statusRow: { marginTop: 10, flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6, minHeight: 32 },
+  statusDot: { width: 8, height: 8, borderRadius: 4 },
+  statusText: { fontSize: 14, fontFamily: fonts.semiBold, color: colors.textPrimary },
+  statusLink: { marginLeft: 4, fontSize: 13, fontFamily: fonts.semiBold, color: colors.textSecondary, textDecorationLine: 'underline' },
+  hoursList: { marginTop: 8, marginBottom: 6, paddingTop: 8, borderTopWidth: 1, borderTopColor: colors.borderSoft },
   name: { marginTop: 10, fontSize: 22, lineHeight: 28, fontFamily: fonts.extraBold, color: colors.textPrimary, letterSpacing: -0.4 },
   badgeRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 10, marginTop: 8 },
   verified: {
@@ -425,19 +443,6 @@ const styles = StyleSheet.create({
   addressBody: { flex: 1 },
   addressText: { fontSize: 13.5, lineHeight: 19, fontFamily: fonts.semiBold, color: colors.textPrimary },
   mapsLink: { marginTop: 2, fontSize: 12.5, fontFamily: fonts.bold, color: colors.primary },
-  hoursBlock: { marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.borderSoft },
-  openRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginBottom: 8 },
-  openPill: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    paddingHorizontal: 10, paddingVertical: 4, borderRadius: radius.pill,
-    backgroundColor: colors.bg,
-  },
-  openPillOn: { backgroundColor: colors.greenTint },
-  openDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.textMuted },
-  openDotOn: { backgroundColor: colors.green },
-  openPillText: { fontSize: 12, fontFamily: fonts.bold, color: colors.textSecondary },
-  openPillTextOn: { color: colors.greenText },
-  openDetail: { fontSize: 12, fontFamily: fonts.medium, color: colors.textSecondary },
   hoursRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5 },
   hoursDay: { fontSize: 13, fontFamily: fonts.medium, color: colors.textSecondary },
   hoursTime: { fontSize: 13, fontFamily: fonts.medium, color: colors.textSecondary, fontVariant: ['tabular-nums'] },
@@ -453,9 +458,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderWidth: 1, borderColor: colors.border,
   },
-  brandChipOn: { borderColor: colors.primary, backgroundColor: colors.primaryTint },
+  brandChipOn: { borderColor: colors.textPrimary, backgroundColor: colors.surface },
   brandChipText: { fontSize: 13, fontFamily: fonts.semiBold, color: colors.textPrimary, maxWidth: 120 },
-  brandChipTextOn: { color: colors.primary },
+  brandChipTextOn: { color: colors.textPrimary },
   brandChipCount: { fontSize: 12, fontFamily: fonts.bold, color: colors.textMuted },
   gridRow: { paddingHorizontal: 8 },
   gridCell: { width: '50%' },

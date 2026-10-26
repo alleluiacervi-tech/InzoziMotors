@@ -226,7 +226,7 @@ export default function ImportOrderDetailScreen({ navigation, route }) {
 const styles = StyleSheet.create({
   scroll: { padding: 20, paddingBottom: 48 },
   loading: { padding: 30, fontFamily: fonts.medium, color: colors.textMuted },
-  eyebrow: { fontFamily: fonts.extraBold, fontSize: 11, textTransform: 'uppercase', color: colors.primary },
+  eyebrow: { fontFamily: fonts.extraBold, fontSize: 11, color: colors.primary },
   title: { marginTop: 7, fontFamily: fonts.extraBold, fontSize: 24, color: colors.textPrimary },
   meta: { marginTop: 3, fontFamily: fonts.regular, fontSize: 11, color: colors.textMuted },
   amount: { marginTop: 14, fontFamily: fonts.extraBold, fontSize: 24, color: colors.textPrimary },
@@ -240,7 +240,7 @@ const styles = StyleSheet.create({
   paymentAmount: { position: 'absolute', right: 0, top: 13, fontFamily: fonts.extraBold, fontSize: 14, color: colors.textPrimary },
   rejection: { marginTop: 10, fontFamily: fonts.medium, fontSize: 12, lineHeight: 17, color: colors.primary },
   payNowCard: { marginTop: 12, padding: 13, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.primary, backgroundColor: colors.statusScheduledBg },
-  payNowTitle: { fontFamily: fonts.extraBold, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.4, color: colors.primary },
+  payNowTitle: { fontFamily: fonts.extraBold, fontSize: 11, color: colors.primary },
   payNowRow: { marginTop: 7, flexDirection: 'row', justifyContent: 'space-between', gap: 8 },
   payNowLabel: { fontFamily: fonts.regular, fontSize: 12, color: colors.textMuted },
   payNowValue: { fontFamily: fonts.bold, fontSize: 12, color: colors.textPrimary },

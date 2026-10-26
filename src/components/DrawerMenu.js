@@ -4,8 +4,8 @@ import {
   Dimensions, ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import { LogoMark } from './Logo';
+import { LogoMark, BrandName } from './Logo';
+import Constants from 'expo-constants';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, fonts, radius, shadows } from '../theme';
 import { useApp } from '../context/AppContext';
@@ -136,20 +136,18 @@ export default function DrawerMenu({ visible, onClose, navigation }) {
         ]}
       >
         {/* Header */}
-        <LinearGradient
-          colors={[colors.navyLight, colors.navyMid]}
-          style={[styles.header, { paddingTop: insets.top + 16 }]}
-        >
+        <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
           <View style={styles.headerRow}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-              <LogoMark size={34} />
-              <View>
-                <Text style={styles.headerBrand}>SAWA</Text>
-                <Text style={styles.headerSub}>{t('drawer.certifiedMarketplace')}</Text>
+            {/* The mark and the name, side by side and separate. */}
+            <View style={{ flex: 1 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <LogoMark size={34} />
+                <BrandName height={12} color={colors.textPrimary} />
               </View>
+              <Text style={styles.headerSub}>{t('drawer.tagline')}</Text>
             </View>
             <Pressable style={styles.closeBtn} onPress={onClose} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('common.close')}>
-              <Ionicons name="close" size={20} color="rgba(255,255,255,0.8)" />
+              <Ionicons name="close" size={20} color={colors.textPrimary} />
             </Pressable>
           </View>
 
@@ -181,7 +179,7 @@ export default function DrawerMenu({ visible, onClose, navigation }) {
                 style={styles.accountBtn}
                 onPress={() => navigate('SignIn')}
               >
-                <Ionicons name="person-outline" size={15} color={colors.greenLight} />
+                <Ionicons name="person-outline" size={15} color={colors.textPrimary} />
                 <Text style={styles.accountBtnText}>{t('common.signIn')}</Text>
               </Pressable>
               <Pressable
@@ -192,7 +190,7 @@ export default function DrawerMenu({ visible, onClose, navigation }) {
               </Pressable>
             </View>
           )}
-        </LinearGradient>
+        </View>
 
         {/* Menu items */}
         <ScrollView
@@ -215,7 +213,7 @@ export default function DrawerMenu({ visible, onClose, navigation }) {
                   <Text style={styles.menuLabel}>{t(item.labelKey)}</Text>
                   {item.isNew && (
                     <View style={styles.newBadge}>
-                      <Text style={styles.newBadgeText}>NEW</Text>
+                      <Text style={styles.newBadgeText}>{t('common.new')}</Text>
                     </View>
                   )}
                   <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
@@ -239,7 +237,7 @@ export default function DrawerMenu({ visible, onClose, navigation }) {
               <Text style={styles.footerLink}>{t('common.settings')}</Text>
             </Pressable>
           </View>
-          <Text style={styles.version}>{t('drawer.version')}</Text>
+          <Text style={styles.version}>{t('drawer.version', { version: Constants.expoConfig?.version || '' })}</Text>
         </ScrollView>
       </Animated.View>
     </View>
@@ -277,6 +275,9 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 20,
     paddingBottom: 18,
+    backgroundColor: colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderSoft,
   },
   headerRow: {
     flexDirection: 'row',
@@ -284,23 +285,17 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: 16,
   },
-  headerBrand: {
-    fontFamily: fonts.black,
-    fontSize: 22,
-    letterSpacing: 2,
-    color: '#fff',
-  },
   headerSub: {
     fontFamily: fonts.regular,
-    fontSize: 11,
-    color: 'rgba(255,255,255,0.6)',
-    marginTop: 2,
+    fontSize: 12.5,
+    color: colors.textMuted,
+    marginTop: 10,
   },
   closeBtn: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: colors.surfaceAlt,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -317,26 +312,24 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: 'rgba(255,255,255,0.14)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: colors.textPrimary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   profileAvatarText: {
     fontFamily: fonts.extraBold,
-    color: '#fff',
+    color: colors.surface,
     fontSize: 14,
   },
   profileName: {
     fontFamily: fonts.bold,
-    color: '#fff',
+    color: colors.textPrimary,
     fontSize: 14,
   },
   profileEmail: {
     fontFamily: fonts.regular,
-    color: 'rgba(255,255,255,0.6)',
-    fontSize: 11,
+    color: colors.textMuted,
+    fontSize: 12,
     marginTop: 1,
   },
   accountBtn: {
@@ -347,14 +340,14 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
     borderRadius: radius.pill,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
     minHeight: 44,
   },
   accountBtnText: {
     fontFamily: fonts.semiBold,
-    color: '#fff',
-    fontSize: 13,
+    color: colors.textPrimary,
+    fontSize: 14,
   },
   accountBtnPrimary: {
     backgroundColor: colors.primary,
@@ -363,7 +356,7 @@ const styles = StyleSheet.create({
   accountBtnPrimaryText: {
     fontFamily: fonts.bold,
     color: '#fff',
-    fontSize: 13,
+    fontSize: 14,
   },
 
   // Menu
@@ -373,15 +366,14 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.borderSoft,
   },
+  // Normal case, small and quiet: a group label, not a heading that shouts.
   sectionTitle: {
-    fontFamily: fonts.bold,
-    fontSize: 11,
-    letterSpacing: 1,
+    fontFamily: fonts.semiBold,
+    fontSize: 13,
     color: colors.textMuted,
     paddingHorizontal: 20,
     paddingTop: 14,
     paddingBottom: 4,
-    textTransform: 'uppercase',
   },
   menuItem: {
     flexDirection: 'row',
@@ -395,28 +387,27 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 10,
-    backgroundColor: colors.greenTint,
+    backgroundColor: colors.surfaceAlt,
     alignItems: 'center',
     justifyContent: 'center',
   },
   menuLabel: {
     flex: 1,
     fontFamily: fonts.medium,
-    fontSize: 14,
+    fontSize: 15,
     color: colors.textPrimary,
   },
   newBadge: {
-    backgroundColor: '#EF4444',
+    backgroundColor: colors.textPrimary,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
     marginRight: 2,
   },
   newBadgeText: {
-    fontFamily: fonts.black,
+    fontFamily: fonts.bold,
     fontSize: 11,
-    color: '#fff',
-    letterSpacing: 0.5,
+    color: colors.surface,
   },
 
   // Footer

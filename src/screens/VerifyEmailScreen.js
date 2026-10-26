@@ -140,8 +140,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 24, fontFamily: fonts.extraBold, color: colors.textPrimary, letterSpacing: -0.5 },
   sub: { fontSize: 14, color: colors.textSecondary, lineHeight: 21, marginTop: 8, marginBottom: 22 },
   label: {
-    fontSize: 12, fontFamily: fonts.bold, color: colors.textMuted,
-    textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8,
+    fontSize: 12, fontFamily: fonts.bold, color: colors.textMuted, marginBottom: 8,
   },
   input: {
     backgroundColor: colors.surface,

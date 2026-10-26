@@ -25,6 +25,10 @@ name: Mobile Over-The-Air Update
 # If you widen the predicate in one file, widen it in the other in the same
 # commit, or a commit will satisfy neither and quietly reach nobody.
 #
+# "Changed" means changed since what installs of THIS runtime run (see "Find
+# what installed apps of this version are running"), so a version bump does not
+# hold updates back once its store builds exist.
+#
 # ── The stop switch ──────────────────────────────────────────────────────────
 # Before publishing, this workflow asks the API whether over-the-air updates are
 # paused (`ota_paused` on the `app_release` setting). An operator can therefore
@@ -156,16 +160,31 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # ── What is actually on the channel? ─────────────────────────────────────
+      # ── What are installed apps of THIS version actually running? ────────────
       #
       # The bundle's message carries the commit it was built from — put there
       # for exactly this question. Reading it back turns "what changed in this
       # commit" into "what changed since the code people are actually running",
       # which is the question that matters and the one this workflow got wrong.
       #
-      # Never fails the run: if EAS cannot be reached or the message cannot be
-      # parsed, the next step falls back to the commit diff and says so.
-      - name: Find the commit currently published
+      # Asked per runtime. An update only ever reaches installs of its own
+      # runtimeVersion (= `version`), so the baseline must be of that runtime
+      # too. Asking for "the latest update on the branch" instead compared every
+      # 2.0.1 commit against a 2.0.0 bundle, saw the `version` bump in
+      # app.config.js as a native change, and declined to publish from
+      # 20 to 25 Oct 2026 while 2.0.1 phones got nothing.
+      #
+      # When this runtime has no update yet (the first publish after a bump),
+      # the baselines are the commits its finished store builds were made from,
+      # every one of them: some phone may run each. A native file that changed
+      # since ANY of them still blocks (a later splash tweak included, as it
+      # always has; tick allow_native_changes once that build is out).
+      # No finished build yet means no install can receive an update; the run
+      # declines and the first merge after the builds finish publishes.
+      #
+      # Never fails the run: if EAS cannot be reached, the next step falls back
+      # to the commit's own diff and says so.
+      - name: Find what installed apps of this version are running
         id: published
         continue-on-error: true
         env:
@@ -173,34 +192,77 @@ jobs:
         run: |
           set -uo pipefail
           branch="${{ github.event.inputs.branch || 'production' }}"
-          raw="$(npx eas-cli update:list --branch "$branch" --limit 1 --json --non-interactive 2>/dev/null || echo '')"
-          sha="$(printf '%s' "$raw" | node -e '
+          # Exactly one source= line per run: update | build | none | unknown.
+          unknown() { echo "::notice::$1; falling back to this commit's own diff."; echo "source=unknown" >> "$GITHUB_OUTPUT"; exit 0; }
+
+          # runtimeVersion policy is appVersion (release:check insists), so the
+          # runtime is the `version` app.config.js resolves to.
+          runtime="$(npx expo config --json --type public 2>/dev/null | node -e '
             let s = "";
             process.stdin.on("data", (d) => (s += d)).on("end", () => {
               try {
-                // The shape has moved between eas-cli versions, so hunt for a
-                // message rather than trusting one path through the object.
-                const seen = [];
-                const walk = (node) => {
-                  if (!node || typeof node !== "object" || seen.includes(node)) return;
-                  seen.push(node);
-                  if (typeof node.message === "string") {
-                    const m = node.message.match(/\b([0-9a-f]{7,40})\b/);
-                    if (m) { process.stdout.write(m[1]); process.exit(0); }
-                  }
-                  for (const v of Object.values(node)) walk(v);
-                };
-                walk(JSON.parse(s));
-              } catch {}
-              process.stdout.write("");
+                const j = JSON.parse(s);
+                const rv = typeof j.runtimeVersion === "string" ? j.runtimeVersion : j.version;
+                process.stdout.write(String(rv || ""));
+              } catch { process.stdout.write(""); }
             });
           ' 2>/dev/null || echo '')"
-          if [ -n "${sha}" ] && git cat-file -e "${sha}^{commit}" 2>/dev/null; then
-            echo "Published bundle was built from ${sha}."
-            echo "sha=${sha}" >> "$GITHUB_OUTPUT"
+          [ -n "${runtime}" ] || unknown "Could not resolve the runtime version"
+          echo "runtime=${runtime}" >> "$GITHUB_OUTPUT"
+          echo "Runtime version: ${runtime}"
+
+          # Commits named in an eas-cli JSON answer, one per line. The shape has
+          # moved between eas-cli versions, so hunt for the fields rather than
+          # trusting one path through the object. mode=update reads the commit
+          # from the newest update's message; mode=build takes gitCommitHash from
+          # every build listed.
+          shas_from() {
+            node -e '
+              const mode = process.argv[1];
+              let s = "";
+              process.stdin.on("data", (d) => (s += d)).on("end", () => {
+                const out = [];
+                try {
+                  const seen = new Set();
+                  const walk = (node) => {
+                    if (!node || typeof node !== "object" || seen.has(node)) return;
+                    seen.add(node);
+                    if (mode === "update" && typeof node.message === "string") {
+                      const m = node.message.match(/\b([0-9a-f]{7,40})\b/);
+                      if (m && out.length === 0) out.push(m[1]);
+                    }
+                    if (mode === "build" && typeof node.gitCommitHash === "string" && node.platform) {
+                      out.push(node.gitCommitHash);
+                    }
+                    for (const v of Object.values(node)) walk(v);
+                  };
+                  walk(JSON.parse(s));
+                } catch {}
+                process.stdout.write([...new Set(out)].join("\n"));
+              });
+            ' "$1" 2>/dev/null || true
+          }
+          known() { while read -r c || [ -n "$c" ]; do [ -n "$c" ] && git cat-file -e "${c}^{commit}" 2>/dev/null && echo "$c"; done; }
+
+          raw="$(npx eas-cli update:list --branch "$branch" --runtime-version "$runtime" --limit 1 --json --non-interactive 2>/dev/null)" \
+            || unknown "EAS did not answer update:list"
+          sha="$(printf '%s' "$raw" | shas_from update | known | head -n 1)"
+          if [ -n "${sha}" ]; then
+            echo "Runtime ${runtime}'s published bundle was built from ${sha}."
+            { echo "source=update"; echo "shas=${sha}"; } >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "Runtime ${runtime} has no update on '${branch}' yet; looking for its store builds."
+          raw="$(npx eas-cli build:list --runtime-version "$runtime" --channel "$branch" --status finished --platform all --limit 20 --json --non-interactive 2>/dev/null)" \
+            || unknown "EAS did not answer build:list"
+          shas="$(printf '%s' "$raw" | shas_from build | known | tr '\n' ' ' | sed 's/ *$//')"
+          if [ -n "${shas}" ]; then
+            echo "Store builds of ${runtime} were made from: ${shas}"
+            { echo "source=build"; echo "shas=${shas}"; } >> "$GITHUB_OUTPUT"
           else
-            echo "::notice::Could not determine the published commit; falling back to this commit's own diff."
-            echo "sha=" >> "$GITHUB_OUTPUT"
+            echo "No finished '${branch}' build of ${runtime} (from a commit on main) yet."
+            echo "source=none" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Decide whether this commit should be published
@@ -208,10 +270,12 @@ jobs:
         run: |
           set -euo pipefail
           sha="${{ github.event.workflow_run.head_sha || github.sha }}"
-          published="${{ steps.published.outputs.sha }}"
+          source="${{ steps.published.outputs.source }}"
+          runtime="${{ steps.published.outputs.runtime }}"
+          bases="${{ steps.published.outputs.shas }}"
 
-          # Diff against WHAT IS RUNNING ON PHONES, not against the previous
-          # commit.
+          # Diff against WHAT IS RUNNING ON PHONES of this runtime, not against
+          # the previous commit.
           #
           # The old range was ${sha}^..${sha} — "did this commit change the
           # app?". That is a proxy for "is there anything to ship", and the two
@@ -223,15 +287,37 @@ jobs:
           #
           # Comparing against the published commit makes a lost publish heal
           # itself on the next commit instead of needing somebody to notice.
-          if [ -n "${published}" ]; then
-            changed="$(git diff --name-only "${published}" "${sha}")"
-            echo "Comparing against the published bundle (${published:0:8})."
-          elif git rev-parse --verify -q "${sha}^" >/dev/null; then
-            changed="$(git diff --name-only "${sha}^" "${sha}")"
-            echo "Comparing against the previous commit."
-          else
-            changed="$(git ls-tree -r --name-only "${sha}")"
-          fi
+          # Against store builds (first publish of a runtime) the range is the
+          # union over every build, so a native change since any of them blocks.
+          no_build=false
+          case "${source}" in
+            update|build)
+              changed=""
+              for base in ${bases}; do
+                changed="$(printf '%s\n%s' "${changed}" "$(git diff --name-only "${base}" "${sha}")")"
+              done
+              changed="$(printf '%s\n' "${changed}" | sed '/^$/d' | sort -u)"
+              if [ "${source}" = "update" ]; then
+                echo "Comparing against runtime ${runtime}'s published bundle (${bases:0:8})."
+              else
+                echo "First update for runtime ${runtime}: comparing against its store builds (${bases})."
+              fi
+              ;;
+            none)
+              # Nothing installed can receive an update of this runtime yet.
+              no_build=true
+              changed="$(git diff --name-only "${sha}^" "${sha}" 2>/dev/null || git ls-tree -r --name-only "${sha}")"
+              echo "No finished store build of runtime ${runtime} yet."
+              ;;
+            *)
+              if git rev-parse --verify -q "${sha}^" >/dev/null; then
+                changed="$(git diff --name-only "${sha}^" "${sha}")"
+                echo "Comparing against the previous commit."
+              else
+                changed="$(git ls-tree -r --name-only "${sha}")"
+              fi
+              ;;
+          esac
           echo "Changed files:"; echo "${changed}" | sed 's/^/  /'
 
           # Does anything in the mobile bundle change? If a commit only touched
@@ -275,11 +361,17 @@ jobs:
           # they cannot disagree about what this commit is.
           allow="${{ github.event.inputs.allow_native_changes }}"
           publish=false
-          if [ "${mobile}" = "true" ] && { [ "${native}" = "false" ] || [ "${allow}" = "true" ]; }; then
+          if [ "${mobile}" = "true" ] && [ "${no_build}" = "false" ] && { [ "${native}" = "false" ] || [ "${allow}" = "true" ]; }; then
             publish=true
           fi
+          # allow_native_changes is the override for "no store build yet" too:
+          # an update nothing can receive does no harm.
+          if [ "${mobile}" = "true" ] && [ "${no_build}" = "true" ] && [ "${allow}" = "true" ]; then
+            publish=true
+          fi
+          echo "no_build=${no_build}" >> "$GITHUB_OUTPUT"
           echo "publish=${publish}" >> "$GITHUB_OUTPUT"
-          echo "mobile=${mobile} native=${native} allow=${allow:-false} -> publish=${publish}"
+          echo "mobile=${mobile} native=${native} no_build=${no_build} allow=${allow:-false} -> publish=${publish}"
 
       # Exits 0, deliberately.
       #
@@ -288,9 +380,31 @@ jobs:
       # genuine ones. A workflow that goes red when it is working teaches
       # everybody to stop reading red, and the next real failure is the one
       # nobody looks at. This is a decision, and it is reported as one.
+      # Also exits 0: the first merge after the store builds finish publishes.
+      - name: Wait for a store build of this version
+        if: >-
+          steps.scope.outputs.mobile == 'true' &&
+          steps.scope.outputs.no_build == 'true' &&
+          steps.scope.outputs.publish != 'true'
+        env:
+          RUNTIME: ${{ steps.published.outputs.runtime }}
+        run: |
+          {
+            echo "### Not published over the air — no store build of ${RUNTIME} yet"
+            echo
+            echo "An update only reaches installs of its own version, and EAS has no finished"
+            echo "build of ${RUNTIME} on this channel, so nothing could receive one."
+            echo
+            echo "Once \`mobile-build.yml\`'s builds finish, the next merge to main publishes"
+            echo "automatically, compared against what those builds contain. Or re-run this"
+            echo "workflow from the Actions tab once they have finished; no box needs ticking."
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "::notice title=No OTA update::No finished store build of ${RUNTIME} yet."
+
       - name: Decline to publish a native-sensitive change
         if: >-
           steps.scope.outputs.mobile == 'true' &&
+          steps.scope.outputs.no_build != 'true' &&
           steps.scope.outputs.publish != 'true'
         run: |
           {

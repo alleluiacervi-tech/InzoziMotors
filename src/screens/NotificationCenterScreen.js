@@ -220,7 +220,6 @@ const styles = StyleSheet.create({
   dateSection: { paddingHorizontal: 16, marginBottom: 8 },
   dateLabel: {
     fontSize: 11, fontFamily: fonts.extraBold, color: colors.textMuted,
-    textTransform: 'uppercase', letterSpacing: 0.5,
     marginBottom: 8,
   },
   notifList: { gap: 8 },
@@ -245,7 +244,7 @@ const styles = StyleSheet.create({
   typePill: {
     paddingHorizontal: 7, paddingVertical: 2, borderRadius: radius.pill,
   },
-  typePillText: { fontSize: 11, fontFamily: fonts.extraBold, textTransform: 'uppercase', letterSpacing: 0.3 },
+  typePillText: { fontSize: 11, fontFamily: fonts.extraBold, },
   notifTime: { fontSize: 11, color: colors.textMuted },
   notifTitle: { fontSize: 13, fontFamily: fonts.semiBold, color: colors.textPrimary },
   notifTitleUnread: { fontFamily: fonts.extraBold },

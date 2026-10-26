@@ -230,8 +230,6 @@ const styles = StyleSheet.create({
   sectionHeader: {
     ...typography.label,
     color: colors.textSecondary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
   },
   row: {
     flexDirection: 'row',

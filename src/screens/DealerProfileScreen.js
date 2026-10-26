@@ -273,7 +273,7 @@ const styles = StyleSheet.create({
   filterText: { fontSize: 13, fontFamily: fonts.bold, color: colors.textSecondary },
   filterTextActive: { color: '#fff' },
   listingsSection: { paddingHorizontal: 16 },
-  sectionTitle: { fontSize: 13, fontFamily: fonts.bold, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 12 },
+  sectionTitle: { fontSize: 13, fontFamily: fonts.bold, color: colors.textMuted, marginBottom: 12 },
   listingCard: {
     flex: 1, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderSoft,
     borderRadius: radius.xl, overflow: 'hidden', ...shadows.card, position: 'relative',

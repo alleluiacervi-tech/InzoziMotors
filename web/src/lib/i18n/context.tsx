@@ -18,7 +18,7 @@
 // as the key itself and warns in development, so a missing scope is loud.
 import { createContext, useCallback, useContext, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { fill, lookup, mergeMessages, type Messages, type TFunction } from './translate'
+import { fill, lookup, mergeMessages, pluralKey, type Messages, type TFunction } from './translate'
 import {
   DEFAULT_LOCALE,
   LOCALE_COOKIE,
@@ -36,9 +36,10 @@ interface LocaleContextValue {
 
 const LocaleContext = createContext<LocaleContextValue | null>(null)
 
-function makeT(messages: Messages): TFunction {
+function makeT(messages: Messages, locale: string): TFunction {
   return (key, vars) => {
-    const value = lookup(messages, key)
+    const one = pluralKey(locale, key, vars)
+    const value = (one !== key ? lookup(messages, one) : undefined) ?? lookup(messages, key)
     if (value == null) {
       if (process.env.NODE_ENV !== 'production') {
         console.warn(`[i18n] "${key}" is not in this subtree's messages — add its namespace to an <I18nScope/>.`)
@@ -81,7 +82,7 @@ export function LanguageProvider({
   )
 
   const value = useMemo<LocaleContextValue>(
-    () => ({ locale, setLocale, messages, t: makeT(messages) }),
+    () => ({ locale, setLocale, messages, t: makeT(messages, locale) }),
     [locale, setLocale, messages],
   )
 
@@ -99,7 +100,7 @@ export function MessagesScope({ messages, children }: { messages: Messages; chil
     // Deep, so a narrow scope ('home.front') adds to a wider one instead of
     // replacing it.
     const merged = mergeMessages(parent.messages, messages) as Messages
-    return { ...parent, messages: merged, t: makeT(merged) }
+    return { ...parent, messages: merged, t: makeT(merged, parent.locale) }
   }, [parent, messages])
   if (!value) return <>{children}</>
   return <LocaleContext.Provider value={value}>{children}</LocaleContext.Provider>
@@ -109,7 +110,7 @@ function useLocaleContext(): LocaleContextValue {
   const ctx = useContext(LocaleContext)
   // Fail open: a client component rendered outside the provider shows keys
   // rather than throwing.
-  return ctx ?? { locale: DEFAULT_LOCALE, setLocale: () => {}, messages: {}, t: makeT({}) }
+  return ctx ?? { locale: DEFAULT_LOCALE, setLocale: () => {}, messages: {}, t: makeT({}, DEFAULT_LOCALE) }
 }
 
 /** Translator hook for Client Components: `const t = useT()`. */

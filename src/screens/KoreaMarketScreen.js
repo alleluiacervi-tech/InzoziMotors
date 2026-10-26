@@ -261,7 +261,7 @@ const styles = StyleSheet.create({
   spinner: { marginTop: 48 },
   head: { marginBottom: 14 },
   makeHead: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  eyebrow: { fontFamily: fonts.bold, fontSize: 12, letterSpacing: 0.6, textTransform: 'uppercase', color: colors.primary },
+  eyebrow: { fontFamily: fonts.bold, fontSize: 12, color: colors.primary },
   lede: { marginTop: 6, fontFamily: fonts.regular, fontSize: 14, lineHeight: 20, color: colors.textSecondary },
   total: { marginTop: 10, fontFamily: fonts.extraBold, fontSize: 22, letterSpacing: -0.4, color: colors.textPrimary },
   pending: { margin: 16, padding: 16, borderRadius: radius.xl, backgroundColor: colors.surfaceAlt, fontFamily: fonts.regular, fontSize: 14, lineHeight: 20, color: colors.textSecondary },

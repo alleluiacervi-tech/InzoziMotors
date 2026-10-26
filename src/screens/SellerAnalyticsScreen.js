@@ -280,13 +280,13 @@ export default function SellerAnalyticsScreen({ navigation, route }) {
 
 const styles = StyleSheet.create({
   hero: { margin: 16, borderRadius: radius.xxl, padding: 20 },
-  heroLabel: { fontSize: 11, fontFamily: fonts.bold, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 },
+  heroLabel: { fontSize: 11, fontFamily: fonts.bold, color: 'rgba(255,255,255,0.5)', marginBottom: 12 },
   heroStats: { flexDirection: 'row', alignItems: 'center' },
   heroStatItem: { flex: 1, alignItems: 'center' },
   heroStatValue: { fontSize: 24, fontFamily: fonts.black, color: '#fff', letterSpacing: -0.5 },
   heroStatLabel: { fontSize: 11, color: 'rgba(255,255,255,0.6)', marginTop: 2 },
   heroStatDivider: { width: 1, height: 34, backgroundColor: 'rgba(255,255,255,0.15)' },
-  sectionTitle: { fontSize: 14, fontFamily: fonts.bold, color: colors.textMuted, paddingHorizontal: 16, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.4 },
+  sectionTitle: { fontSize: 14, fontFamily: fonts.bold, color: colors.textMuted, paddingHorizontal: 16, marginBottom: 8, },
   selectorRow: { paddingHorizontal: 16, gap: 8, marginBottom: 12 },
   selectorChip: {
     paddingHorizontal: 14, paddingVertical: 8, borderRadius: radius.pill,

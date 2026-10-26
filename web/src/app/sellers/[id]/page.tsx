@@ -104,8 +104,9 @@ export default async function SellerProfilePage({ params, searchParams }: Props)
   const shown = activeBrand
     ? listings.filter((car) => String(car.make || '').trim().toLowerCase() === activeBrand.make.toLowerCase())
     : listings
-  const newestPhoto = listings.find((car) => car.images?.length)?.images?.[0] ?? null
-  const cover = profile.is_showroom ? (profile.cover_url || newestPhoto) : null
+  // Only a photo of the showroom itself: a car photo here made the storefront
+  // read like a listing.
+  const cover = profile.is_showroom ? profile.cover_url || null : null
 
   const scores = listings
     .map((car) => Number(car.inspection_score))
@@ -164,7 +165,7 @@ export default async function SellerProfilePage({ params, searchParams }: Props)
 
       {cover ? (
         <div className="relative -mt-2 mb-6 h-40 overflow-hidden rounded-3xl bg-surface-alt sm:h-64">
-          {/* eslint-disable-next-line @next/next/no-img-element -- decorative: the showroom itself, or its newest car */}
+          {/* eslint-disable-next-line @next/next/no-img-element -- decorative: the showroom itself */}
           <img src={cover} alt="" className="h-full w-full object-cover" />
           <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/5 to-transparent" />
         </div>
@@ -176,7 +177,12 @@ export default async function SellerProfilePage({ params, searchParams }: Props)
           <img
             src={profile.avatar_url}
             alt=""
-            className="h-20 w-20 shrink-0 rounded-full bg-surface object-cover ring-4 ring-surface sm:h-24 sm:w-24"
+            // A showroom's logo is fitted in a white square, never cropped
+            // into a circle (a word-mark logo lost half its letters). A
+            // person's photo stays round.
+            className={profile.is_showroom
+              ? 'h-20 w-20 shrink-0 rounded-2xl bg-white object-contain p-1.5 ring-1 ring-line-soft sm:h-24 sm:w-24'
+              : 'h-20 w-20 shrink-0 rounded-full bg-surface object-cover ring-4 ring-surface sm:h-24 sm:w-24'}
           />
         ) : (
           <span
