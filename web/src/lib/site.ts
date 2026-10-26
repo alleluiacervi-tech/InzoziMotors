@@ -25,13 +25,12 @@ export const APP = {
    * the app is actually published on — a button to a 404 store page is exactly
    * the scam signal Sawa exists to kill.
    *
-   * iOS went live on the App Store on 28 Aug 2026 (id 6803097569). Android is
-   * not published yet, so its Play URL still 404s and its badge stays hidden.
-   * Flip androidLive to true the moment the Play listing is live, and not
-   * before.
+   * iOS went live on the App Store on 28 Aug 2026 (id 6803097569) and Android
+   * on Google Play in Oct 2026 (com.sawacars.app, public listing confirmed 26
+   * Oct 2026). If a listing is ever pulled, set its flag back to false.
    */
   iosLive: true,
-  androidLive: false,
+  androidLive: true,
 } as const
 
 /** True when the app is installable on at least one store — the site may then
