@@ -86,7 +86,7 @@ export function Gallery({ images, title }: { images: string[]; title: string }) 
     // photograph, which is what a car is bought on.
     <div className="-mx-5 sm:mx-0">
       <div
-        className="relative aspect-[4/3] touch-pan-y overflow-hidden bg-surface-alt sm:aspect-[16/10] sm:rounded-2xl"
+        className="relative aspect-[4/3] touch-pan-y overflow-hidden rounded-2xl border border-line bg-surface-alt sm:aspect-[16/10]"
         tabIndex={count > 1 ? 0 : undefined}
         role={count > 1 ? 'region' : undefined}
         aria-label={count > 1 ? t('cars.gallery.galleryAria', { title }) : undefined}

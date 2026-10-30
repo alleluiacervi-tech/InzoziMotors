@@ -52,7 +52,7 @@ export function PhotoSlot({
   }
 
   return (
-    <div className="rounded-2xl border border-line-soft bg-surface p-4">
+    <div className="rounded-2xl border border-line bg-surface p-5">
       <div className="flex items-start gap-4">
         <div className="relative flex h-20 w-28 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-surface-alt text-content-muted">
           {value ? (

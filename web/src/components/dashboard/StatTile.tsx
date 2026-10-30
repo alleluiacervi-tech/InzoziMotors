@@ -48,7 +48,7 @@ export function StatTile({
   return (
     <Link
       href={href}
-      className="group relative flex flex-col overflow-hidden rounded-2xl border border-line-soft bg-surface p-4 shadow-card transition-all duration-300 ease-brand hover:-translate-y-0.5 hover:border-line hover:shadow-card-lg sm:p-5"
+      className="group relative flex flex-col overflow-hidden rounded-2xl border border-line bg-surface p-4 transition-[border-color,box-shadow] duration-200 ease-brand hover:border-content-muted/50 hover:shadow-card sm:p-5"
     >
       <span className="flex items-start gap-2.5">
         <span
@@ -66,7 +66,7 @@ export function StatTile({
             that is already offset has nowhere to go when you point at it. */}
         <span
           aria-hidden="true"
-          className="ml-auto mt-1.5 shrink-0 text-content-muted opacity-0 transition-all duration-300 ease-brand group-hover:translate-x-0.5 group-hover:opacity-100 motion-reduce:transition-none"
+          className="ml-auto mt-1.5 shrink-0 text-content-muted opacity-60 transition-[opacity,transform] duration-300 ease-brand group-hover:translate-x-0.5 group-hover:opacity-100 motion-reduce:transition-none"
         >
           <Icon name="arrow-right" size={16} />
         </span>

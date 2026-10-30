@@ -28,26 +28,38 @@ export async function Specimen({ car, report }: { car: Car | null; report: Inspe
 
   if (!car) {
     return (
-      <article className="rounded-3xl bg-surface p-6 shadow-float ring-1 ring-line sm:p-8">
-        <p className="text-caption font-bold text-content-muted">{t('home.inspection.eyebrow')}</p>
-        <p className="mt-2 text-title font-extrabold text-content">{t('home.land.standardTitle')}</p>
-        {/* No car to show: the standard as its three numbers. The ruler is
-            drawn only at full width (the homepage band), never squeezed. */}
-        <dl className="mt-8 grid grid-cols-3 gap-4">
-          {[
-            { figure: SCORE_MAX, key: 'statItems' },
-            { figure: PASS_THRESHOLD, key: 'statPass' },
-            { figure: CRITICAL_ITEMS, key: 'statCritical' },
-          ].map((s) => (
-            <div key={s.key} className="min-w-0 border-t border-line pt-3">
-              <dt className="sr-only">{t(`home.land.${s.key}`)}</dt>
-              <dd>
-                <span className="tnum block text-headline font-black leading-none text-content">{s.figure}</span>
-                <span className="mt-1.5 block text-micro leading-snug text-content-muted">{t(`home.land.${s.key}`)}</span>
-              </dd>
-            </div>
-          ))}
-        </dl>
+      <article className="overflow-hidden rounded-3xl border border-line bg-surface">
+        <div className="relative aspect-[16/10] overflow-hidden bg-surface-alt">
+          <Image
+            src="/img/inspector-wheel-arch.jpg"
+            alt={t('home.land.photoInspectorAlt')}
+            fill
+            priority
+            sizes="(min-width: 1024px) 520px, 100vw"
+            className="object-cover"
+          />
+        </div>
+        <div className="p-5 sm:p-7">
+          <p className="text-caption font-bold text-content-muted">{t('home.inspection.eyebrow')}</p>
+          <p className="mt-2 text-title font-extrabold text-content">{t('home.land.standardTitle')}</p>
+          {/* No car to show: the standard as its three numbers. The ruler is
+              drawn only at full width (the homepage band), never squeezed. */}
+          <dl className="mt-8 grid grid-cols-3 gap-4">
+            {[
+              { figure: SCORE_MAX, key: 'statItems' },
+              { figure: PASS_THRESHOLD, key: 'statPass' },
+              { figure: CRITICAL_ITEMS, key: 'statCritical' },
+            ].map((s) => (
+              <div key={s.key} className="min-w-0 border-t border-line pt-3">
+                <dt className="sr-only">{t(`home.land.${s.key}`)}</dt>
+                <dd>
+                  <span className="tnum block text-headline font-black leading-none text-content">{s.figure}</span>
+                  <span className="mt-1.5 block text-micro leading-snug text-content-muted">{t(`home.land.${s.key}`)}</span>
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </div>
       </article>
     )
   }
@@ -67,7 +79,7 @@ export async function Specimen({ car, report }: { car: Car | null; report: Inspe
     : null
 
   return (
-    <article className="overflow-hidden rounded-3xl bg-surface shadow-float ring-1 ring-line">
+    <article className="overflow-hidden rounded-3xl border border-line bg-surface shadow-card">
       <Link
         href={`/cars/${car.id}`}
         tabIndex={-1}

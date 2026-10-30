@@ -12,6 +12,7 @@ import { fmtDate } from '@/lib/format'
 import { RowMenu } from '@/components/RowMenu'
 import { NetworkDrawer } from '@/components/NetworkDrawer'
 import { reasonLabel } from '@/lib/account-protection'
+import { idDocumentHref } from '@/lib/id-document'
 
 type UserRow = {
   id: string
@@ -1020,8 +1021,14 @@ export default function UsersPage() {
                   <p className="text-label text-content-muted">{u.email}{u.phone ? ` · ${u.phone}` : ''}</p>
                   <p className="mt-1 text-caption text-content-muted">Submitted {fmtDate(u.id_submitted_at || u.created_at)}</p>
                   <div className="mt-3 flex flex-wrap gap-3">
-                    {[['ID front', u.id_front_url], ['ID back', u.id_back_url], ['Selfie', u.selfie_url]].map(([label, url]) => url ?
-                      <a key={label} href={url} target="_blank" rel="noreferrer" className="text-caption font-bold text-content underline decoration-line underline-offset-4 hover:decoration-content">{label}</a> : null)}
+                    {[['ID front', u.id_front_url], ['ID back', u.id_back_url], ['Selfie', u.selfie_url]].map(([label, url]) => {
+                      const href = url ? idDocumentHref(url) : null
+                      return href ? (
+                        <a key={label} href={href} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-line bg-surface px-4 text-caption font-bold text-content transition-colors hover:border-content-muted hover:bg-surface-alt">
+                          <Icon name="eye" size={16} />{label}
+                        </a>
+                      ) : null
+                    })}
                   </div>
                 </div>
               </div>

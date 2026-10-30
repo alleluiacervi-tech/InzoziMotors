@@ -57,7 +57,7 @@ export async function CarCard({
   return (
     <Link
       href={`/cars/${car.id}`}
-      className={`group flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-line-soft bg-surface shadow-card transition-[border-color,box-shadow] duration-300 ease-brand hover:border-line hover:shadow-card-lg${isRow ? ' sm:flex-row' : ''}`}
+      className={`group flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-line bg-surface transition-[border-color,box-shadow] duration-200 ease-brand hover:border-content-muted/60 hover:shadow-card-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-4${isRow ? ' sm:flex-row' : ''}`}
     >
       <div
         // 4/3 rather than 16/10: the photograph is what a car is bought on, and
@@ -146,12 +146,12 @@ export async function CarCard({
         ) : null}
       </div>
 
-      <div className="flex min-w-0 flex-1 flex-col p-4">
+      <div className="flex min-w-0 flex-1 flex-col p-5">
         {/* The name gets the full width and up to two lines. It used to share
             a row with the price, which never shrinks, so at three columns the
             grid read "2021 Le…" — the one fact a buyer needs to tell two
             cards apart was the one the layout gave up. */}
-        <h3 className="line-clamp-2 text-title-sm font-extrabold tracking-[-0.01em] text-content transition-colors group-hover:text-brand">
+        <h3 className="line-clamp-2 min-h-[2.875rem] text-title-sm font-extrabold tracking-[-0.01em] text-content transition-colors group-hover:text-brand">
           {car.title}
         </h3>
 

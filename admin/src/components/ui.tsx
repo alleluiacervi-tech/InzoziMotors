@@ -98,7 +98,7 @@ export function PageHeader({
   const shellIcon = usePageIcon()
   const glyph = icon === null ? undefined : icon ?? shellIcon
   return (
-    <div className="mb-6 border-b border-line-soft pb-5 sm:mb-8">
+    <div className="mb-7 border-b border-line pb-6 sm:mb-9">
       <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
         <div className="flex min-w-0 items-start gap-3.5 sm:gap-4">
           {/* Ink, like the rail it was chosen from: the one dark mark on the
@@ -106,7 +106,7 @@ export function PageHeader({
           {glyph ? <IconTile icon={glyph} size="lg" tone="ink" className="mt-0.5 hidden sm:flex" /> : null}
           <div className="min-w-0">
           {eyebrow ? (
-            <p className="mb-1.5 text-micro font-bold uppercase tracking-[0.14em] text-content-muted">
+            <p className="mb-1.5 text-caption font-semibold text-content-muted">
               {eyebrow}
             </p>
           ) : null}
@@ -194,7 +194,7 @@ export function kindIcon(kind: string | null | undefined): IconName {
 
 export function Card({ children, className = '', id }: { children: ReactNode; className?: string; id?: string }) {
   return (
-    <div id={id} className={`rounded-2xl border border-line-soft bg-surface shadow-card ${className}`}>
+    <div id={id} className={`rounded-2xl border border-line bg-surface shadow-card ${className}`}>
       {children}
     </div>
   )
@@ -385,7 +385,7 @@ export function StatCard({
     </div>
   )
   const cls =
-    'group block h-full rounded-2xl border border-line-soft bg-surface shadow-card transition-all duration-200 ' +
+    'group block h-full rounded-2xl border border-line bg-surface shadow-card transition-[border-color,box-shadow,background-color] duration-200 ' +
     (href ? 'hover:-translate-y-0.5 hover:border-line hover:shadow-card-lg' : '')
   return href ? <a href={href} className={cls}>{body}</a> : <div className={cls}>{body}</div>
 }

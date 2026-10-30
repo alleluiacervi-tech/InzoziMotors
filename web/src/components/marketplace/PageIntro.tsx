@@ -32,10 +32,10 @@ export async function PageIntro({
 }) {
   return (
     <div className="border-b border-line-soft bg-surface-page">
-      <Container className="pb-6 pt-6 sm:pb-8 sm:pt-10">
+      <Container className="pb-7 pt-7 sm:pb-9 sm:pt-12">
         <div className="flex flex-wrap items-end justify-between gap-x-10 gap-y-5">
           <div className="min-w-0 max-w-3xl">
-            <h1 className="text-headline font-extrabold text-content sm:text-display">{title}</h1>
+            <h1 className="text-headline font-extrabold tracking-[-0.035em] text-content sm:text-display">{title}</h1>
             {description ? (
               <p className="mt-2 max-w-2xl text-body leading-relaxed text-content-secondary sm:mt-3 sm:text-title-sm">
                 {description}

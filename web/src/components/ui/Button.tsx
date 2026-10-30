@@ -48,7 +48,7 @@ const SIZES: Record<Size, string> = {
 
 const BASE =
   'inline-flex items-center justify-center font-bold tracking-[-0.01em] whitespace-nowrap ' +
-  'transition-all duration-200 ease-brand select-none touch-manipulation ' +
+  'transition-[background-color,border-color,color,box-shadow,transform] duration-200 ease-brand select-none touch-manipulation ' +
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 ' +
   'motion-reduce:transform-none motion-reduce:transition-none ' +
   'disabled:cursor-not-allowed disabled:opacity-50 disabled:pointer-events-none'

@@ -104,7 +104,7 @@ export function DashboardNav({
     <nav aria-label={t('dashboard.nav.label')}>
       {groups.map((group, groupIndex) => (
         <div key={group.titleKey} className={groupIndex > 0 ? 'mt-6' : ''}>
-          <h2 className="mb-1.5 px-3 text-micro font-bold uppercase tracking-wide text-content-muted">
+          <h2 className="mb-2 px-3 text-micro font-semibold text-content-muted">
             {t(group.titleKey)}
           </h2>
           <ul className="space-y-0.5">
@@ -117,7 +117,7 @@ export function DashboardNav({
                     href={item.href}
                     onClick={onNavigate}
                     aria-current={active ? 'page' : undefined}
-                    className={`relative flex h-10 items-center gap-3 rounded-xl pl-3.5 pr-3 text-caption font-bold transition-colors ${
+                    className={`relative flex min-h-11 items-center gap-3 rounded-xl pl-3.5 pr-3 text-caption font-bold transition-colors ${
                       active
                         ? 'bg-brand/10 text-brand'
                         : 'text-content-secondary hover:bg-surface-alt hover:text-content'

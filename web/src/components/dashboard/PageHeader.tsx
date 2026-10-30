@@ -14,9 +14,9 @@ export function PageHeader({
   action?: ReactNode
 }) {
   return (
-    <header className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-end sm:justify-between">
+    <header className="mb-7 flex flex-col gap-4 border-b border-line pb-6 sm:mb-9 sm:flex-row sm:items-end sm:justify-between">
       <div className="max-w-prose">
-        <h1 className="text-title font-extrabold text-content">{title}</h1>
+        <h1 className="text-headline font-extrabold tracking-[-0.035em] text-content">{title}</h1>
         {description ? (
           <p className="mt-2 text-body leading-relaxed text-content-secondary">{description}</p>
         ) : null}
