@@ -31,7 +31,7 @@ export async function InspectionReportCard({ report }: { report: InspectionRepor
 
   return (
     <Card className="overflow-hidden">
-      <div className="border-b border-line-soft p-5 sm:p-6">
+      <div className="border-b border-line bg-surface-alt/50 p-5 sm:p-7">
         <p className="text-caption font-bold text-content-muted">{t('cars.report.eyebrow')}</p>
         <h2 className="mt-2 text-title font-extrabold text-content">
           {t('cars.report.title')}
@@ -54,7 +54,7 @@ export async function InspectionReportCard({ report }: { report: InspectionRepor
         </div>
 
 
-        <p className="mt-4 flex flex-wrap gap-x-5 gap-y-1 text-caption font-semibold">
+        <p className="mt-5 flex flex-wrap gap-x-5 gap-y-2 border-t border-line pt-4 text-caption font-semibold">
           <span className="inline-flex items-center gap-1.5 text-success-text">
             <Icon name="check-circle" size={14} />
             {t('cars.report.passed', { count: summary.pass })}

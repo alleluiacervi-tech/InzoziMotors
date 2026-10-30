@@ -34,9 +34,9 @@ export async function RentalCard({ car, priority = false }: { car: RentalCar; pr
   return (
     <Link
       href={`/rentals/${car.id}`}
-      className="group flex h-full min-w-0 flex-col overflow-hidden rounded-3xl border border-line-soft bg-surface shadow-card transition-all duration-500 ease-brand hover:-translate-y-1.5 hover:border-line hover:shadow-float"
+      className="group flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-line bg-surface transition-[border-color,box-shadow] duration-200 ease-brand hover:border-content-muted/60 hover:shadow-card-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-4"
     >
-      <div className="relative aspect-[16/10] overflow-hidden bg-surface-alt">
+      <div className="relative aspect-[4/3] overflow-hidden bg-surface-alt">
         <Image
           src={image}
           alt={t('rentals.card.alt', { title: car.title })}
@@ -73,7 +73,7 @@ export async function RentalCard({ car, priority = false }: { car: RentalCar; pr
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col p-5">
-        <h3 className="truncate text-title-sm font-extrabold tracking-[-0.015em] text-content transition-colors group-hover:text-brand">
+        <h3 className="line-clamp-2 min-h-[2.875rem] text-title-sm font-extrabold tracking-[-0.015em] text-content transition-colors group-hover:text-brand">
           {car.title}
         </h3>
 
@@ -139,7 +139,7 @@ export async function RentalCard({ car, priority = false }: { car: RentalCar; pr
 export function RentalCardSkeleton() {
   return (
     <div className="flex h-full min-w-0 flex-col overflow-hidden rounded-3xl border border-line-soft bg-surface">
-      <div className="skeleton aspect-[16/10]" />
+      <div className="skeleton aspect-[4/3]" />
       <div className="flex flex-1 flex-col space-y-3 p-5">
         <div className="skeleton h-4 w-3/4 rounded" />
         <div className="skeleton h-3 w-1/2 rounded" />

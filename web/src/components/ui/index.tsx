@@ -167,9 +167,9 @@ export function Card({
 }: HTMLAttributes<HTMLDivElement> & { interactive?: boolean }) {
   return (
     <div
-      className={`rounded-2xl border border-line-soft bg-surface shadow-card ${
+      className={`rounded-2xl border border-line bg-surface shadow-card ${
         interactive
-          ? 'transition-all duration-300 ease-brand hover:-translate-y-0.5 hover:shadow-card-lg hover:border-line'
+          ? 'transition-[border-color,box-shadow] duration-200 ease-brand hover:shadow-card-lg hover:border-content-muted/50'
           : ''
       } ${className}`}
       {...rest}
@@ -238,7 +238,7 @@ export function StatusPill({ status, label }: { status: string; label?: string }
 
 const FIELD_BASE =
   'w-full rounded-xl border bg-surface px-4 text-field sm:text-body text-content placeholder:text-content-muted ' +
-  'transition-colors duration-200 disabled:opacity-60'
+  'transition-[border-color,box-shadow] duration-200 hover:border-content-muted/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/30 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60'
 
 export function Field({
   label, htmlFor, hint, error, required, children, className = '',
@@ -257,7 +257,7 @@ export function Field({
     <div className={className}>
       <label
         htmlFor={htmlFor}
-        className="mb-2 block text-caption font-bold text-content-muted"
+        className="mb-2 block text-caption font-bold text-content-secondary"
       >
         {label}
         {required ? <span className="ml-1 text-brand">*</span> : null}

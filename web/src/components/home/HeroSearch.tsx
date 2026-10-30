@@ -58,11 +58,9 @@ export function HeroSearch({
   }
 
   return (
-    <div className="mt-8 w-full max-w-2xl rounded-3xl border border-line-soft bg-surface p-2 shadow-float">
-      {/* On a phone the hero is a car search and nothing else: the tab bar
-          (and with it Import and Rent, both one tap away in the menu) starts
-          at sm, so the form and the first car fit on one screen. */}
-      <div role="tablist" aria-label={t('home.front.tabsLabel')} className={`hidden sm:grid ${modes.length === 3 ? 'sm:grid-cols-3' : 'sm:grid-cols-2'} gap-1 rounded-2xl bg-surface-alt p-1`}>
+    <div className="mt-7 w-full max-w-2xl rounded-2xl border border-line bg-surface p-2 shadow-card">
+      {/* The same search modes stay available at every screen width. */}
+      <div role="tablist" aria-label={t('home.front.tabsLabel')} className={`grid ${modes.length === 3 ? 'grid-cols-3' : 'grid-cols-2'} gap-1 border-b border-line-soft px-1 pb-2`}>
         {modes.map((m, i) => (
           <button
             key={m}
@@ -75,9 +73,9 @@ export function HeroSearch({
             tabIndex={mode === m ? 0 : -1}
             onClick={() => setMode(m)}
             onKeyDown={(e) => onKey(e, i)}
-            className={`h-10 rounded-xl text-caption font-bold transition-[background-color,color,box-shadow] duration-200 ease-brand ${
+            className={`h-11 rounded-lg text-caption font-bold transition-[background-color,color,box-shadow] duration-200 ease-brand ${
               mode === m
-                ? 'bg-surface text-content shadow-card'
+                ? 'bg-surface-alt text-content ring-1 ring-inset ring-line'
                 : 'text-content-secondary hover:text-content'
             }`}
           >

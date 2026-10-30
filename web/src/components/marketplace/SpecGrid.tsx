@@ -19,14 +19,14 @@ export function SpecGrid({ specs, className = '' }: { specs: Spec[]; className?:
   if (!present.length) return null
 
   return (
-    <dl className={`grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-line-soft bg-line-soft sm:grid-cols-3 ${className}`}>
+    <dl className={`grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-line bg-line sm:grid-cols-3 ${className}`}>
       {present.map((spec) => (
-        <div key={spec.label} className="bg-surface p-4">
-          <dt className="flex items-center gap-1.5 text-micro font-bold text-content-muted">
+        <div key={spec.label} className="bg-surface p-4 sm:p-5">
+          <dt className="flex items-center gap-1.5 text-caption text-content-muted">
             {spec.icon ? <Icon name={spec.icon} size={13} /> : null}
             {spec.label}
           </dt>
-          <dd className="mt-1.5 text-body font-bold text-content">{spec.value}</dd>
+          <dd className="mt-2 break-words text-body font-bold text-content">{spec.value}</dd>
           {spec.hint ? (
             <dd className="mt-0.5 text-micro leading-relaxed text-content-muted">{spec.hint}</dd>
           ) : null}

@@ -20,7 +20,9 @@ const { publicApiOrigin } = require('../lib/public-origin');
 
 const router = express.Router();
 
-const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(__dirname, '../../uploads');
+// The documented local .env uses ./uploads; Express sendFile requires an
+// absolute path even though the upload middleware accepts a relative one.
+const UPLOAD_DIR = path.resolve(process.env.UPLOAD_DIR || path.join(__dirname, '../../uploads'));
 
 // ─── Scoped, short-lived links to KYC files ───────────────────────────────────
 // Browser navigation cannot set an Authorization header, so an <a href> or
@@ -78,7 +80,14 @@ router.get('/doc/:filename', async (req, res) => {
       // A session, still live: a signed admin token alone used to be enough,
       // so a revoked or demoted admin's token kept opening ID documents.
       const user = verifySessionToken(header.slice(7));
-      authorised = user.role === 'admin' && (await verifyLiveSession(user)).ok;
+      if (user.role === 'admin') {
+        const live = await verifyLiveSession(user);
+        if (live.ok && !live.held) {
+          // A role in an older JWT is not proof of current reviewer access.
+          const { rows } = await pool.query('SELECT role FROM users WHERE id = $1', [user.id]);
+          authorised = rows[0]?.role === 'admin';
+        }
+      }
     } catch { /* fall through to the view token */ }
   } else if (req.query.sig) {
     try {

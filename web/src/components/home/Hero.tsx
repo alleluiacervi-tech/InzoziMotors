@@ -59,15 +59,15 @@ export async function Hero({
 
   return (
     <section className="relative isolate overflow-hidden bg-surface-page">
-      <div className="mx-auto grid w-full max-w-content gap-12 px-5 pb-6 pt-10 sm:px-8 sm:pb-8 sm:pt-14 lg:grid-cols-12 lg:items-center lg:gap-10 lg:px-12 lg:pb-10 lg:pt-16 xl:gap-16">
+      <div className="mx-auto grid w-full max-w-content gap-8 px-5 pb-10 pt-8 sm:px-8 sm:pb-12 sm:pt-12 lg:grid-cols-12 lg:items-center lg:gap-12 lg:px-12 lg:pb-16 lg:pt-14 xl:gap-16">
         {/* min-w-0 is load-bearing: a grid child defaults to min-width:auto,
             so a long word would widen the track and push the headline off a
             390px screen. That bug shipped once. */}
         <div className="min-w-0 lg:col-span-7">
-          <h1 className="max-w-[12ch] text-mega font-black text-balance text-content">
+          <h1 className="max-w-[13ch] text-display-xl font-black text-balance text-content">
             {t('home.land.headline')}
           </h1>
-          <p className="mt-6 max-w-[34rem] text-title-sm leading-relaxed text-pretty text-content-secondary">
+          <p className="mt-5 max-w-[31rem] text-body sm:text-title-sm leading-relaxed text-pretty text-content-secondary">
             {t('home.land.lede')}
           </p>
 

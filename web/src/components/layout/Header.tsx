@@ -27,37 +27,9 @@ import type { User } from '@/lib/types'
  * cookie) and handed down as a prop. That keeps the JWT out of the browser
  * entirely while still letting this be a client component for the menu state.
  */
-/**
- * A nav label whose letters roll up one after another on hover or keyboard
- * focus: each glyph slides out of a one-line window as its copy slides in from
- * below, 22 ms apart, so the word turns over like a split-flap board. The
- * visible letters are decorative; the label itself is read from the sr-only
- * copy. No motion for people who ask for less.
- */
+// Keep navigation labels stable during scanning and keyboard navigation.
 function RollLabel({ text }: { text: string }) {
-  const chars = Array.from(text)
-  return (
-    <>
-      <span className="sr-only">{text}</span>
-      <span aria-hidden="true" className="relative flex overflow-hidden leading-4">
-        {chars.map((ch, i) =>
-          ch === ' ' ? (
-            <span key={i} className="w-[0.35em]" />
-          ) : (
-            <span key={i} className="block h-4 overflow-hidden">
-              <span
-                className="flex flex-col transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:-translate-y-1/2 group-focus-visible:-translate-y-1/2 motion-reduce:transition-none motion-reduce:group-hover:translate-y-0 motion-reduce:group-focus-visible:translate-y-0"
-                style={{ transitionDelay: `${i * 22}ms` }}
-              >
-                <span className="block h-4">{ch}</span>
-                <span className="block h-4">{ch}</span>
-              </span>
-            </span>
-          ),
-        )}
-      </span>
-    </>
-  )
+  return <span>{text}</span>
 }
 
 // Nav labels come from NAV_LINKS (hrefs) but are translated by key.

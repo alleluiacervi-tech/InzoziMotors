@@ -55,22 +55,22 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-brand-dark flex items-center justify-center p-4">
-      <div className="w-full max-w-sm">
+    <div className="min-h-screen bg-surface-page flex items-center justify-center px-5 py-12">
+      <div className="w-full max-w-md">
         {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-surface/10 mb-4">
+        <div className="mb-8 flex flex-col items-center text-center">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-surface border border-line mb-5">
             <LogoMark size={40} />
           </div>
-          <h1 className="text-2xl font-bold text-white">Sawa Cars</h1>
-          <p className="text-white/60 text-sm mt-1">Operations console</p>
+          <h1 className="text-3xl font-bold tracking-tight text-content">Sawa Cars</h1>
+          <p className="text-content-muted text-base mt-2">Operations console</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-surface rounded-2xl p-8 shadow-xl">
+        <form onSubmit={handleSubmit} className="bg-surface rounded-2xl border border-line p-6 shadow-card sm:p-9">
           <h2 className="text-xl font-semibold text-gray-900 mb-6">Sign in</h2>
 
           {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+            <div role="alert" className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
               {error}
             </div>
           )}
@@ -80,10 +80,13 @@ export default function LoginPage() {
               <label htmlFor="login-email" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
               <input id="login-email"
                 type="email"
+                name="email"
+                autoComplete="username"
+                spellCheck={false}
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
+                className="h-12 w-full bg-surface px-4 border border-line rounded-xl text-base text-content transition-colors hover:border-content-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
                 placeholder="admin@sawacars.com"
               />
             </div>
@@ -91,10 +94,12 @@ export default function LoginPage() {
               <label htmlFor="login-password" className="block text-sm font-medium text-gray-700 mb-1">Password</label>
               <input id="login-password"
                 type="password"
+                name="password"
+                autoComplete="current-password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
+                className="h-12 w-full bg-surface px-4 border border-line rounded-xl text-base text-content transition-colors hover:border-content-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
                 placeholder="••••••••"
               />
             </div>
@@ -103,7 +108,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="mt-6 w-full py-2.5 bg-brand text-brand-on font-semibold rounded-lg hover:bg-brand-light transition-colors disabled:opacity-50"
+            className="mt-7 h-12 w-full bg-brand text-brand-on font-semibold rounded-xl hover:opacity-90 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-50"
           >
             {loading ? 'Signing in…' : 'Sign in'}
           </button>

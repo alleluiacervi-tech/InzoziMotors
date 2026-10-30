@@ -15,7 +15,7 @@ export function VerificationStatus({
   action?: { href: string; label: string }
 }) {
   return (
-    <Card className="p-8 text-center">
+    <Card className="p-7 text-center sm:p-10">
       <div
         className={`mx-auto flex h-16 w-16 items-center justify-center rounded-2xl ${
           approved ? 'bg-success-tint text-success-text' : 'bg-surface-alt text-content-muted'
@@ -24,7 +24,7 @@ export function VerificationStatus({
         <Icon name={approved ? 'shield-check' : 'clock'} size={30} />
       </div>
       <h2 className="mt-5 text-title-sm font-extrabold text-content">{title}</h2>
-      <p className="mx-auto mt-2 max-w-md text-caption leading-relaxed text-content-secondary">{body}</p>
+      <p className="mx-auto mt-2 max-w-md text-body leading-relaxed text-content-secondary">{body}</p>
       {action ? (
         <div className="mt-6">
           <Button href={action.href}>{action.label}</Button>

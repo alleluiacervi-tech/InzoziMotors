@@ -206,7 +206,7 @@ export default async function CarDetailPage({ params }: PageProps) {
       </Container>
 
       <Container className="pb-16 pt-6 sm:pb-24">
-        <div className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,1fr)_392px] lg:gap-14">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-10 xl:grid-cols-[minmax(0,1fr)_392px] xl:gap-12">
           {/* Explicit placement so the price and CTA sit directly under the
               gallery on a phone, instead of below every report on the page. */}
           <div className="min-w-0 space-y-6 lg:col-start-1 lg:row-start-1">
@@ -295,7 +295,7 @@ export default async function CarDetailPage({ params }: PageProps) {
 
           <aside id="purchase-panel" className="scroll-mt-24 lg:col-start-2 lg:row-start-1 lg:row-span-2">
             <div className="lg:sticky lg:top-[calc(var(--header-h)+24px)]">
-              <Card className="relative overflow-hidden rounded-3xl border-line bg-surface p-6 shadow-float sm:p-7">
+              <Card className="relative overflow-hidden rounded-2xl border-line bg-surface p-6 shadow-card sm:p-7">
                                 <p className="mb-3 text-micro font-bold text-content-muted">{t('cars.detail.purchaseOverview')}</p>
                 {/* Zone 1 — price. The market sentence shows its work: amount
                     and sample size, never a bare percentage in a pill. */}
@@ -439,7 +439,7 @@ export default async function CarDetailPage({ params }: PageProps) {
           </aside>
 
           <div className="min-w-0 space-y-8 lg:col-start-1 lg:row-start-2">
-            <section aria-labelledby="specs-heading" className="rounded-3xl border border-line-soft bg-surface p-5 shadow-card sm:p-7">
+            <section aria-labelledby="specs-heading" className="rounded-2xl border border-line bg-surface p-5 shadow-card sm:p-7">
               <h2 id="specs-heading" className="mb-4 text-title font-extrabold text-content">
                 {t('cars.detail.specification')}
               </h2>
