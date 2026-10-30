@@ -9,6 +9,7 @@ import { setJSON } from '../storage';
 import { setUpdateMode, UPDATE_MODE } from '../utils/updates';
 import { colors, fonts } from '../theme';
 import { useApp } from '../context/AppContext';
+import useReducedMotion from '../hooks/useReducedMotion';
 
 const { width, height } = Dimensions.get('window');
 
@@ -20,6 +21,7 @@ const SLIDES = [
 
 export default function OnboardingScreen({ navigation }) {
   const insets = useSafeAreaInsets();
+  const reducedMotion = useReducedMotion();
   const { language, languageInfo, t } = useApp();
   const [idx, setIdx] = useState(0);
   const ref = useRef(null);
@@ -43,12 +45,12 @@ export default function OnboardingScreen({ navigation }) {
     setJSON('onboardingSeen', true);
     if (sawTheChoice) setUpdateMode(autoUpdate ? UPDATE_MODE.AUTOMATIC : UPDATE_MODE.ASK);
     if (navigation.canGoBack()) navigation.goBack();
-    else navigation.replace('Welcome');
+    else navigation.replace('Main');
   };
 
   const go = () => {
     if (last) finish(true);
-    else ref.current?.scrollTo({ x: width * (idx + 1), animated: true });
+    else ref.current?.scrollTo({ x: width * (idx + 1), animated: !reducedMotion });
   };
 
   return (

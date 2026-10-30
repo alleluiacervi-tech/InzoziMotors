@@ -110,7 +110,7 @@ function makeStyles(colors) {
   return StyleSheet.create({
     card: {
       flexDirection: 'row',
-      height: ROW_H,
+      minHeight: ROW_H,
       backgroundColor: colors.surface,
       borderWidth: 1,
       borderColor: colors.borderSoft,
@@ -122,10 +122,10 @@ function makeStyles(colors) {
       // Fixed size — iOS lets an unconstrained image's natural dimensions
       // inflate the row height, so never rely on stretch here.
       width: PHOTO_W,
-      height: ROW_H,
+      minHeight: ROW_H,
       backgroundColor: colors.surfaceAlt,
     },
-    image: { width: '100%', height: '100%' },
+    image: { ...StyleSheet.absoluteFillObject },
     body: { flex: 1, paddingLeft: spacing.md, paddingRight: 10, paddingVertical: 10, justifyContent: 'space-between' },
     titleRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 7 },
     brand: { marginTop: 0 },
@@ -135,18 +135,18 @@ function makeStyles(colors) {
     shrink: { flexShrink: 1 },
     dot: { ...typography.cardMeta, color: colors.textMuted, marginHorizontal: 2 },
     scoreText: { ...typography.cardMeta, fontFamily: typography.bodyStrong.fontFamily, color: colors.greenText, flexShrink: 0 },
-    priceRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6 },
+    priceRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 6 },
     tagGreen: {
       backgroundColor: colors.greenTint,
       paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.sm, flexShrink: 0,
     },
     // Red is reserved for prices, primary actions, selected states and the
     // Certified+ badge. None of those is a tag.
-    tagGreenText: { ...typography.badge, fontSize: 10, color: colors.greenText },
+    tagGreenText: { ...typography.badge, fontSize: 12, color: colors.greenText },
     tagAmber: {
       backgroundColor: colors.amberTint,
       paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.sm, flexShrink: 0,
     },
-    tagAmberText: { ...typography.badge, fontSize: 10, color: colors.amberText },
+    tagAmberText: { ...typography.badge, fontSize: 12, color: colors.amberText },
   });
 }

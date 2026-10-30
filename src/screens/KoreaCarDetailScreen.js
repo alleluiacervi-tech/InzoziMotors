@@ -108,7 +108,7 @@ export default function KoreaCarDetailScreen({ navigation, route }) {
     if (!user) {
       Alert.alert(t('korea.signInTitle'), t('korea.signInBody'), [
         { text: t('korea.cancel'), style: 'cancel' },
-        { text: t('korea.signIn'), onPress: () => navigation.navigate('SignIn') },
+        { text: t('korea.signIn'), onPress: () => navigation.navigate('SignIn', { returnTo: 'KoreaCarDetail', returnParams: route?.params }) },
       ]);
       return;
     }

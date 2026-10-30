@@ -9,37 +9,6 @@ import { showToast } from '../components/Feedback';
 import rentalsApi from '../api/rentals';
 import { SAWA_WHATSAPP, SAWA_EMAIL, WHATSAPP_VERIFIED } from '../utils/whatsapp';
 
-const MENU_SELLER = [
-  { icon: 'shield-checkmark-outline', label: 'Identity Verification', screen: 'IDVerification' },
-  { icon: 'call-outline', label: 'Contact Visibility', screen: 'ContactSettings' },
-  { icon: 'car-outline', label: 'My Submissions', screen: 'SellerDashboard' },
-  { icon: 'trending-up-outline', label: "What's My Car Worth?", screen: 'CarValuation' },
-];
-
-const MENU_ACCOUNT = [
-  { icon: 'key-outline', label: 'Rental Inquiries', screen: 'MyRentals' },
-  { icon: 'boat-outline', label: 'My Vehicle Imports', screen: 'ImportOrders' },
-  { icon: 'chatbubbles-outline', label: 'Messages', screen: 'Messages' },
-  { icon: 'shield-checkmark-outline', label: 'Marketplace Safety', screen: 'SawaPromise' },
-  { icon: 'book-outline', label: 'How Buying Works', screen: 'BuyingGuide' },
-  { icon: 'settings-outline', label: 'Settings', screen: 'Settings' },
-  // This row was `screen: null` — it rendered a chevron and did nothing at all.
-  // It now opens the business line, which is the whole point of a Help row.
-  // Gated like every other contact surface: if the line is ever unverified, the
-  // row falls back to the mailbox rather than going dead again.
-  WHATSAPP_VERIFIED
-    ? {
-        icon: 'logo-whatsapp',
-        label: 'Help & Support',
-        link: `https://wa.me/${SAWA_WHATSAPP}`,
-      }
-    : {
-        icon: 'help-circle-outline',
-        label: 'Help & Support',
-        link: `mailto:${SAWA_EMAIL}`,
-      },
-];
-
 function MenuSection({ title, items, navigation }) {
   return (
     <View style={styles.menuSection}>
@@ -132,7 +101,7 @@ export default function ProfileScreen({ navigation }) {
           <Text style={styles.guestSub}>
             {t('profile.guestSub')}
           </Text>
-          <Pressable style={styles.guestBtn} onPress={() => navigation.navigate('SignIn')}>
+          <Pressable style={styles.guestBtn} onPress={() => navigation.navigate('SignIn', { returnTo: 'Main', returnParams: { screen: 'Profile' } })}>
             <Text style={styles.guestBtnText}>{t('profile.signInBtn')}</Text>
           </Pressable>
           {demoMode && (

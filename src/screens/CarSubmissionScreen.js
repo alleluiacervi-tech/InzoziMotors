@@ -1,4 +1,5 @@
-import React, { useMemo, useState } from 'react';
+import { usePreventRemove } from '@react-navigation/native';
+import React, { useMemo, useState, useRef } from 'react';
 import { STUDIO } from '../data/carImageAssets';
 import {
   View, Text, StyleSheet, ScrollView, Pressable, Image,
@@ -128,6 +129,13 @@ export default function CarSubmissionScreen({ navigation, route }) {
   });
   const [photos, setPhotos] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  const completed = useRef(false);
+  usePreventRemove(Object.values(form).some(Boolean) || Object.keys(photos).length > 0, ({ data }) => {
+    if (completed.current) { navigation.dispatch(data.action); return; }
+    if (submitting) { showToast(t('common.loading'), 'info'); return; }
+    showConfirm({ title: t('refinement.discardTitle'), message: t('refinement.discardBody'), confirmLabel: t('refinement.discardLabel'), destructive: true })
+      .then((discard) => { if (discard) navigation.dispatch(data.action); });
+  });
 
   const set = (key, val) => setForm((f) => ({ ...f, [key]: val }));
 
@@ -208,6 +216,7 @@ export default function CarSubmissionScreen({ navigation, route }) {
           showToast(t('submission.photoUploadFailed'), 'error');
         }
       }
+      completed.current = true;
       showConfirm({
         title: t('submission.submissionReceived'),
         message: t('submission.submissionReceivedMsg', { title: carTitle }),
@@ -215,7 +224,7 @@ export default function CarSubmissionScreen({ navigation, route }) {
         cancelLabel: t('submission.later'),
       }).then((ok) => {
         if (ok) navigation.replace('InspectionScheduling', { carName: carTitle, submissionId });
-        else navigation.navigate('SellerDashboard');
+        else navigation.replace('SellerDashboard');
       });
     } catch (err) {
       showToast(err.message || t('submission.errorSave'), 'error');

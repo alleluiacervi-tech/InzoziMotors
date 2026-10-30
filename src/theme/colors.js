@@ -31,6 +31,7 @@ export const lightColors = {
   // (5) an inline action link. Informational icons, section decorations
   // and menu rows are textSecondary — never red.
   primary: '#CC050F',
+  accentText: '#CC050F',
   primaryBright: '#DE0714',
   // Soft wash of the brand red — icon chips and other quiet brand surfaces.
   primaryTint: '#FDEBEC',
@@ -140,6 +141,7 @@ export const darkColors = {
   // which fails AA. This one: white on it 4.79:1, it on the page 3.83:1
   // (prices are large bold text, so 3:1 is the bar).
   primary: '#DA2C32',
+  accentText: '#FF7A80',
   primaryBright: '#FF7A80',
   primaryTint: '#2F1618',
   blueLight: '#FFA8AC',

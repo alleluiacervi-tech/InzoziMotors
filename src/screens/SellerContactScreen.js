@@ -78,7 +78,7 @@ export default function SellerContactScreen({ navigation, route }) {
 
   const submit = async () => {
     if (!isLoggedIn) {
-      navigation.navigate('SignIn');
+      navigation.navigate('SignIn', { returnTo: 'SellerContact', returnParams: route?.params });
       return;
     }
     if (!acknowledged) {

@@ -53,14 +53,7 @@ function StatusScreen({ status }) {
           ? t('idVerification.verifiedSub')
           : t('idVerification.pendingSub')}
       </Text>
-      <View style={styles.docList}>
-        {UPLOAD_STEPS.map((s) => (
-          <View key={s.key} style={styles.docRow}>
-            <Ionicons name="checkmark-circle" size={18} color={colors.green} />
-            <Text style={styles.docText}>{t(s.labelKey)}</Text>
-          </View>
-        ))}
-      </View>
+
     </View>
   );
 }

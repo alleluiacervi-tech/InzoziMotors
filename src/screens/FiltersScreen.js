@@ -115,30 +115,7 @@ export default function FiltersScreen({ navigation, route }) {
   const toggle = (group, val) =>
     setSelected((s) => ({ ...s, [group]: s[group] === val ? null : val }));
 
-  const getMatchingCount = () => {
-    let list = cars;
-    // Lower-cased through a helper because any of these can be missing on a
-    // record — a car with no fuel type recorded used to crash this screen on
-    // `undefined.toLowerCase()` the moment anyone tapped a fuel chip.
-    const same = (value, want) => String(value || '').toLowerCase() === String(want).toLowerCase();
-    if (selected.make) list = list.filter((c) => same(c.make, selected.make));
-    if (selected.body) list = list.filter((c) => same(c.category, selected.body));
-    if (selected.fuel) list = list.filter((c) => same(c.fuel, selected.fuel));
-    if (selected.transmission) list = list.filter((c) => same(c.transmission, selected.transmission));
-    // `includes`, matching the server's ILIKE: "Kicukiro" has to find
-    // "Kicukiro, Kigali" or the count here disagrees with the results screen.
-    if (selected.location) {
-      list = list.filter((c) => String(c.location || '').toLowerCase()
-        .includes(String(selected.location).toLowerCase()));
-    }
-    const priceOf = (c) => (c.type === 'auction' ? c.currentBid : c.price);
-    if (selected.maxPrice) list = list.filter((c) => priceOf(c) <= selected.maxPrice);
-    if (selected.minPrice) list = list.filter((c) => priceOf(c) >= selected.minPrice);
-    if (selected.minYear) list = list.filter((c) => Number(c.year) >= selected.minYear);
-    if (selected.maxMileage) list = list.filter((c) => Number(c.mileage ?? Infinity) <= selected.maxMileage);
-    if (selected.minScore) list = list.filter((c) => Number(c.inspectionScore || 0) >= selected.minScore);
-    return list.length;
-  };
+
 
   return (
     <Screen background={colors.surface}>
@@ -261,11 +238,12 @@ export default function FiltersScreen({ navigation, route }) {
           <Text style={styles.resetText}>{t('filters.reset')}</Text>
         </Pressable>
         <Button
-          title={t('filters.viewCount', { count: getMatchingCount() })}
+          title={t('refinement.applyFilters')}
           fullWidth={false}
           style={{ flex: 1 }}
           onPress={() => {
-            navigation.navigate('SearchResults', { filters: selected });
+            if (route.params?.returnToCars) navigation.navigate('Main', { screen: 'Search', params: { filters: selected, query: route.params?.query || '' } });
+            else navigation.navigate('SearchResults', { filters: selected, query: route.params?.query || '', mode: route.params?.mode });
           }}
         />
       </StickyFooter>

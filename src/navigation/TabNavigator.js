@@ -27,14 +27,6 @@ const ICONS = {
 
 // Route names stay as they are so every existing navigate() call keeps working;
 // only what the user reads changes.
-const LABELS = {
-  Home: 'Home',
-  Search: 'Cars',
-  Saved: 'Saved',
-  Messages: 'Messages',
-  Profile: 'Account',
-};
-
 function TabBar({ state, descriptors, navigation }) {
   const insets = useSafeAreaInsets();
   const { conversations, notifications, comparisonCars, t } = useApp();
@@ -79,7 +71,7 @@ function TabBar({ state, descriptors, navigation }) {
           if (!focused && !event.defaultPrevented) navigation.navigate(route.name);
         };
 
-        const color = focused ? colors.primary : colors.textMuted;
+        const color = focused ? colors.accentText : colors.textMuted;
 
         // Badge count for this tab
         const badge = route.name === 'Messages' ? messagesBadge
@@ -87,7 +79,11 @@ function TabBar({ state, descriptors, navigation }) {
           : 0;
 
         return (
-          <Touchable key={route.key} scaleTo={0.92} haptic="selection" style={styles.item} onPress={onPress}>
+          <Touchable key={route.key} scaleTo={0.97} haptic="selection" style={styles.item} onPress={onPress}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: focused }}
+            accessibilityLabel={`${labels[route.name]}${badge > 0 ? `, ${t('refinement.unread', { count: badge })}` : ''}`}>
+
             <View style={styles.iconWrap}>
               <Ionicons
                 name={focused ? ICONS[route.name] : `${ICONS[route.name]}-outline`}
@@ -142,13 +138,13 @@ function makeStyles(colors) {
       paddingHorizontal: 16,
       alignItems: 'center',
     },
-    item: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 3 },
+    item: { flex: 1, minHeight: 48, alignItems: 'center', justifyContent: 'center', gap: 3 },
     iconWrap: { position: 'relative' },
     label: { fontSize: 11, fontFamily: fonts.medium },
     badge: {
       position: 'absolute', top: -5, right: -8,
       minWidth: 17, height: 17, borderRadius: 9,
-      backgroundColor: colors.statusRejected,
+      backgroundColor: colors.primary,
       alignItems: 'center', justifyContent: 'center',
       paddingHorizontal: 4,
       borderWidth: 1.5, borderColor: colors.surface,

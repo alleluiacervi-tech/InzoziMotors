@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { View, Text, StyleSheet, TextInput, Pressable, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
+import { authContinuation, resumeAfterAuth } from '../utils/authContinuation';
 import BackHeader from '../components/BackHeader';
 import Button from '../components/Button';
 import { LogoMark } from '../components/Logo';
@@ -17,6 +18,8 @@ export default function SignInScreen({ navigation, route }) {
   const [password, setPassword] = useState('');
   const [show, setShow] = useState(false);
   const [errors, setErrors] = useState({});
+  const [submitting, setSubmitting] = useState(false);
+  const pending = useRef(false);
 
   const handleSignIn = async () => {
     const errs = {};
@@ -24,9 +27,12 @@ export default function SignInScreen({ navigation, route }) {
     if (!password || password.length < 6) errs.password = t('auth.passwordMin');
     setErrors(errs);
     if (Object.keys(errs).length > 0) return;
+    if (pending.current) return;
+    pending.current = true;
+    setSubmitting(true);
     try {
       await loginUser(email.trim(), password);
-      navigation.replace('Main');
+      resumeAfterAuth(navigation, route?.params);
     } catch (err) {
       // The password was right and the account is closed but not yet erased.
       // This is the only moment the thirty-day window is worth anything: the
@@ -46,13 +52,16 @@ export default function SignInScreen({ navigation, route }) {
         try {
           await reopenAccount(email.trim(), password);
           showToast(t('auth.welcomeBack'), 'success');
-          navigation.replace('Main');
+          resumeAfterAuth(navigation, route?.params);
         } catch (reopenErr) {
           showToast(reopenErr.message || t('auth.reopenError'), 'error');
         }
         return;
       }
       showToast(err.message || t('auth.invalidCredentials'), 'error');
+    } finally {
+      pending.current = false;
+      setSubmitting(false);
     }
   };
 
@@ -68,7 +77,7 @@ export default function SignInScreen({ navigation, route }) {
         <Text style={styles.title}>{t('auth.signInTitle')}</Text>
         <Text style={styles.sub}>{t('auth.signInSub')}</Text>
 
-        <SocialAuthButtons navigation={navigation} />
+        <SocialAuthButtons continuation={authContinuation(route?.params)} navigation={navigation} />
 
         <Text style={[styles.label, { marginTop: 22 }]}>{t('auth.email')}</Text>
         <TextInput
@@ -78,13 +87,17 @@ export default function SignInScreen({ navigation, route }) {
           onChangeText={(t) => { setEmail(t); setErrors((e) => ({ ...e, email: undefined })); }}
           placeholderTextColor={colors.textMuted}
           keyboardType="email-address"
+          autoComplete="email"
+          textContentType="emailAddress"
+          accessibilityLabel={t('auth.email')}
+          autoCorrect={false}
           autoCapitalize="none"
         />
         {errors.email ? <Text style={styles.errorText}>{errors.email}</Text> : null}
 
         <View style={styles.labelRow}>
           <Text style={styles.label}>{t('auth.password')}</Text>
-          <Pressable onPress={() => navigation.navigate('ForgotPassword', { email: email.trim() })}>
+          <Pressable onPress={() => navigation.navigate('ForgotPassword', { email: email.trim(), ...authContinuation(route?.params) })}>
             <Text style={styles.forgot}>{t('auth.forgot')}</Text>
           </Pressable>
         </View>
@@ -96,6 +109,9 @@ export default function SignInScreen({ navigation, route }) {
             onChangeText={(t) => { setPassword(t); setErrors((e) => ({ ...e, password: undefined })); }}
             placeholderTextColor={colors.textMuted}
             secureTextEntry={!show}
+            autoComplete="current-password"
+            textContentType="password"
+            accessibilityLabel={t('auth.password')}
           />
           <Pressable
             onPress={() => setShow((s) => !s)}
@@ -108,9 +124,9 @@ export default function SignInScreen({ navigation, route }) {
         </View>
         {errors.password ? <Text style={styles.errorText}>{errors.password}</Text> : null}
 
-        <Button title={t('auth.signIn')} style={{ marginTop: 28 }} onPress={handleSignIn} />
+        <Button title={t('auth.signIn')} style={{ marginTop: 28 }} loading={submitting} onPress={handleSignIn} />
 
-        <Pressable onPress={() => navigation.navigate('SignUp')} style={{ marginTop: 16 }}>
+        <Pressable onPress={() => navigation.navigate('SignUp', authContinuation(route?.params))} style={{ marginTop: 16 }}>
           <Text style={styles.footer}>
             {t('auth.noAccount')} <Text style={styles.link}>{t('auth.signUp')}</Text>
           </Text>
@@ -153,5 +169,5 @@ const styles = StyleSheet.create({
   passwordInput: { flex: 1, fontSize: 15, fontFamily: fonts.medium, color: colors.textPrimary },
   errorText: { fontSize: 13, color: colors.textSecondary, marginTop: 5, marginLeft: 4, lineHeight: 17 },
   footer: { textAlign: 'center', fontSize: 14, color: colors.textSecondary },
-  link: { color: colors.primary, fontFamily: fonts.bold },
+  link: { color: colors.accentText, fontFamily: fonts.bold },
 });

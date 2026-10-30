@@ -22,7 +22,7 @@ export function useSellerGate(navigation) {
           confirmLabel: 'Sign In',
           cancelLabel: 'Not now',
         });
-        if (ok) navigation.navigate('SignIn');
+        if (ok) navigation.navigate('SignIn', { returnTo: destination, returnParams: params });
         return false;
       }
 

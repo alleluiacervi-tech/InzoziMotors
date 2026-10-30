@@ -1,3 +1,4 @@
+import { resumeAfterAuth } from '../utils/authContinuation';
 // ─────────────────────────────────────────────────────────────────────────────
 // After a first sign-in with Apple or Google: the two things a provider cannot
 // tell us. A phone number (every account has one — inspection bookings, rental
@@ -56,11 +57,11 @@ export default function CompleteProfileScreen({ navigation, route }) {
     setSaving(true);
     try {
       await completeProfile(full, role);
-      navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
+      resumeAfterAuth(navigation, route?.params);
     } catch (err) {
       // Finished in another session already: nothing left to ask.
       if (err?.code === 'PROFILE_COMPLETE') {
-        navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
+        resumeAfterAuth(navigation, route?.params);
         return;
       }
       if (err?.code === 'INVALID_PHONE') setError(t('auth.validPhone'));

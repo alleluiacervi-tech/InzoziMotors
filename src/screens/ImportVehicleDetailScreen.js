@@ -110,7 +110,7 @@ export default function ImportVehicleDetailScreen({ navigation, route }) {
         t('importCatalog.signInBody'),
         [
           { text: t('common.cancel'), style: 'cancel' },
-          { text: t('importCatalog.signIn'), onPress: () => navigation.navigate('SignIn') },
+          { text: t('importCatalog.signIn'), onPress: () => navigation.navigate('SignIn', { returnTo: 'ImportVehicleDetail', returnParams: route?.params }) },
         ]
       );
       return;

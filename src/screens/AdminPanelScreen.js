@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator, Linki
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Screen from '../components/Screen';
+import Button from '../components/Button';
 import BackHeader from '../components/BackHeader';
 import { ErrorState } from '../components/StateViews';
 import adminApi from '../api/admin';
@@ -108,58 +109,26 @@ function StatusBadge({ status }) {
   );
 }
 
-function QueueTab({ verifications, onApprove, onReject }) {
-  const pending = verifications.filter((v) => v.status === 'pending');
+function QueueTab({ verifications }) {
+  const { t } = useApp();
+  const pending = verifications.filter((item) => item.status === 'pending');
   return (
     <View style={styles.tabContent}>
-      {pending.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Ionicons name="checkmark-done-circle" size={48} color={colors.textSecondary} />
-          <Text style={styles.emptyTitle}>All clear!</Text>
-          <Text style={styles.emptySub}>No pending ID verifications.</Text>
-        </View>
-      ) : (
-        pending.map((v) => (
-          <View key={v.id} style={styles.verifyCard}>
-            <View style={styles.verifyAvatar}>
-              <Text style={styles.verifyInitials}>{v.initials}</Text>
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.verifyName}>{v.name}</Text>
-              <Text style={styles.verifyTime}>Submitted {v.submitted}</Text>
-              <View style={styles.verifyDocs}>
-                {['National ID (front)', 'National ID (back)', 'Selfie with ID'].map((doc) => (
-                  <Pressable
-                    key={doc}
-                    style={styles.verifyDocChip}
-                    onPress={() => showToast('The full document viewer ships with the admin web dashboard.', 'info')}
-                  >
-                    <Ionicons name="document-text-outline" size={11} color={colors.primary} />
-                    <Text style={styles.verifyDocText}>{doc}</Text>
-                    <Ionicons name="eye-outline" size={11} color={colors.primary} />
-                  </Pressable>
-                ))}
-              </View>
-            </View>
-            <View style={styles.verifyActions}>
-              <Pressable
-                style={[styles.verifyBtn, styles.verifyBtnApprove]}
-                onPress={() => onApprove(v.id)}
-              >
-                <Ionicons name="checkmark" size={16} color="#fff" />
-                <Text style={styles.verifyBtnApproveText}>Approve</Text>
-              </Pressable>
-              <Pressable
-                style={[styles.verifyBtn, styles.verifyBtnReject]}
-                onPress={() => onReject(v.id)}
-              >
-                <Ionicons name="close" size={16} color={colors.statusRejected} />
-                <Text style={styles.verifyBtnRejectText}>Reject</Text>
-              </Pressable>
-            </View>
+      <View style={[styles.inspCard, { flexDirection: 'column', alignItems: 'stretch', gap: 12 }]}>
+        <Text style={styles.emptyTitle}>{t('refinement.reviewTitle')}</Text>
+        <Text style={styles.emptySub}>{t('refinement.reviewBody')}</Text>
+        <Button title={t('refinement.openConsole')} icon="open-outline"
+          onPress={() => Linking.openURL('https://sawacars.com/admin-portal').catch(() => showToast(t('home.offlineTitle'), 'error'))} />
+      </View>
+      {pending.map((person) => (
+        <View key={person.id} style={styles.verifyCard}>
+          <View style={styles.verifyAvatar}><Text style={styles.verifyInitials}>{person.initials}</Text></View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.verifyName}>{person.name}</Text>
+            <Text style={styles.verifyTime}>{person.submitted}</Text>
           </View>
-        ))
-      )}
+        </View>
+      ))}
     </View>
   );
 }
@@ -324,7 +293,7 @@ function ListingsTab({ navigation, cars }) {
 
 export default function AdminPanelScreen({ navigation }) {
   const {
-    pendingVerifications, adminInspections, adminApproveVerification, adminRejectVerification,
+    pendingVerifications, adminInspections,
     submissions, updateSubmissionStatus, cars,
     currentUser, demoMode,
   } = useApp();
@@ -357,22 +326,6 @@ export default function AdminPanelScreen({ navigation }) {
     }).then((ok) => {
       if (ok) updateSubmissionStatus(sub.id, 'rejected', 'Please update your submission details and resubmit');
     });
-  };
-
-  const handleApprove = (id) => {
-    showConfirm({
-      title: 'Approve seller?',
-      message: 'This seller will be notified and eligible inspected listings can proceed toward publication.',
-      confirmLabel: 'Approve',
-    }).then((ok) => { if (ok) adminApproveVerification(id); });
-  };
-
-  const handleReject = (id) => {
-    showConfirm({
-      title: 'Reject verification?',
-      message: 'The seller will be asked to resubmit clearer documents.',
-      confirmLabel: 'Reject', destructive: true,
-    }).then((ok) => { if (ok) adminRejectVerification(id); });
   };
 
   if (!isAdmin) {
@@ -458,8 +411,6 @@ export default function AdminPanelScreen({ navigation }) {
         {activeTab === 1 && (
           <QueueTab
             verifications={pendingVerifications}
-            onApprove={handleApprove}
-            onReject={handleReject}
           />
         )}
         {activeTab === 2 && <InspectionsTab inspections={adminInspections} navigation={navigation} />}
