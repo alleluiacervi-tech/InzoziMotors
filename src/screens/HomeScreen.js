@@ -1,7 +1,7 @@
 import React, { useState, useRef, useMemo } from 'react';
 import {
   View, Text, StyleSheet, Pressable, ScrollView,
-  FlatList, Dimensions, Image, RefreshControl, AppState,
+  FlatList, Dimensions, Image, RefreshControl,
 } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -31,10 +31,6 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 // what says "there is more".
 const FEATURED_CARD_W = SCREEN_WIDTH - 48;
 const FEATURED_GAP = 12;
-// Auto-advance: one card every five seconds, and a touch holds it still for
-// eight — long enough to read a price without the card moving under a thumb.
-const FEATURED_INTERVAL_MS = 5000;
-const FEATURED_TOUCH_PAUSE_MS = 8000;
 // One or two showrooms: full-width cards. Three or more: a rail where the next
 // card peeks in at the edge.
 const SHOWROOM_RAIL_W = Math.round(SCREEN_WIDTH * 0.84);
@@ -100,33 +96,8 @@ export default function HomeScreen({ navigation }) {
     return () => clearTimeout(t);
   }, []);
 
-  // The rail advances itself — the way a buyer expects a "featured" strip to
-  // behave — but only while somebody could be looking at it, and never in
-  // their way:
-  //   · every five seconds, looping back to the first card after the last;
-  //   · a touch or a drag holds it for eight seconds, so it never moves under
-  //     a thumb or while a price is being read;
-  //   · only while Home is the screen on top and the app is in the
-  //     foreground — a rail nobody can see does not count impressions;
-  //   · never with Reduce Motion on (the rail then only moves when swiped).
-  // The segmented line under it still says where you are.
-  const [appActive, setAppActive] = useState(AppState.currentState === 'active');
-  React.useEffect(() => {
-    const sub = AppState.addEventListener('change', (state) => setAppActive(state === 'active'));
-    return () => sub.remove();
-  }, []);
+  // Buyers control the featured rail; it never advances while they read.
   const railIndex = useRef(0);
-  const railPausedUntil = useRef(0);
-  const pauseRail = () => { railPausedUntil.current = Date.now() + FEATURED_TOUCH_PAUSE_MS; };
-  React.useEffect(() => {
-    if (reducedMotion || homeMode === 'rent' || slides.length < 2 || !isFocused || !appActive) return undefined;
-    const timer = setInterval(() => {
-      if (Date.now() < railPausedUntil.current) return;
-      const next = (railIndex.current + 1) % slides.length;
-      carouselRef.current?.scrollTo({ x: next * (FEATURED_CARD_W + FEATURED_GAP), animated: true });
-    }, FEATURED_INTERVAL_MS);
-    return () => clearInterval(timer);
-  }, [slides.length, reducedMotion, homeMode, isFocused, appActive]);
 
   const handleCarouselScroll = (event) => {
     const offset = event.nativeEvent.contentOffset.x;
@@ -468,8 +439,6 @@ export default function HomeScreen({ navigation }) {
               decelerationRate="fast"
               contentContainerStyle={styles.featuredRail}
               onScroll={handleCarouselScroll}
-              onScrollBeginDrag={pauseRail}
-              onTouchStart={pauseRail}
               scrollEventThrottle={16}
             >
               {slides.map((slide) => (
@@ -506,8 +475,8 @@ export default function HomeScreen({ navigation }) {
         <View style={styles.sectionContainer}>
           <SectionHeader
             title={originTab === 'All'
-              ? t('home.fresh')
-              : t('home.carsCount', { label: t(`home.${originTab === 'EV·Hybrid' ? 'evHybrid' : originTab.toLowerCase()}`), count: originCars.length })}
+              ? t('refinement.recentlyListed')
+              : t('home.carsCount', { label: t(originTab === 'Imported' ? 'refinement.rhd' : originTab === 'Local' ? 'refinement.lhd' : 'home.evHybrid'), count: originCars.length })}
             actionLabel={t('home.more')}
             onAction={() => navigation.navigate('SearchResults')}
           />
@@ -526,7 +495,7 @@ export default function HomeScreen({ navigation }) {
                   accessibilityRole="tab"
                   accessibilityState={{ selected: on }}
                 >
-                  <Text style={[styles.originText, on && styles.originTextOn]}>{t(`home.${tab === 'EV·Hybrid' ? 'evHybrid' : tab.toLowerCase()}`)}</Text>
+                  <Text style={[styles.originText, on && styles.originTextOn]}>{t(tab === 'Imported' ? 'refinement.rhd' : tab === 'Local' ? 'refinement.lhd' : `home.${tab === 'EV·Hybrid' ? 'evHybrid' : tab.toLowerCase()}`)}</Text>
                 </Pressable>
               );
             })}

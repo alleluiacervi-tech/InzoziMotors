@@ -7,6 +7,7 @@ import { RENTAL_CARS } from '../data/rentals';
 import { setRwfRate, setDutyRates, formatRWF } from '../data/marketData';
 import authApi from '../api/auth';
 import carsApi from '../api/cars';
+import { publicListingSnapshot, savedListings, resolveSavedRecords, reconcileSavedRecords } from '../utils/savedListings';
 import submissionsApi from '../api/submissions';
 import messagesApi from '../api/messages';
 import notificationsApi from '../api/notifications';
@@ -184,6 +185,11 @@ const AUTO_REPLIES = [
 export function AppProvider({ children }) {
   const [cars, setCars] = useState(demo(mockCars));
   const [savedCarIds, setSavedCarIds] = useState([]);
+  const [listingRecords, setListingRecords] = useState({});
+  const attemptedSaved = useRef(new Set());
+  const rememberListings = useCallback((rows) => {
+    setListingRecords((previous) => ({ ...previous, ...Object.fromEntries(rows.map((car) => [car.id, publicListingSnapshot(car)])) }));
+  }, []);
   const [sellerListings, setSellerListings] = useState(demo(initialSellerListings || []));
   const [conversations, setConversations] = useState(demo(initialConversations || []));
   const [chatMessages, setChatMessages] = useState(DEMO_MODE ? INITIAL_MESSAGES : {});
@@ -333,6 +339,7 @@ export function AppProvider({ children }) {
       // onto the wrong value. That exact bug has shipped twice in this repo.
       const [
         ids,
+        savedRecords,
         searches,
         inquiries,
         cur,
@@ -344,6 +351,7 @@ export function AppProvider({ children }) {
         languageCached,
       ] = await Promise.all([
         getJSON('savedCarIds'),
+        getJSON('savedCarRecords'),
         getJSON('savedSearches'),
         getJSON('rentalInquiries'),
         getJSON('currency'),
@@ -355,6 +363,7 @@ export function AppProvider({ children }) {
         getJSON('language'),
       ]);
       if (ids) setSavedCarIds(ids);
+      if (savedRecords && typeof savedRecords === 'object') setListingRecords((current) => ({ ...savedRecords, ...current }));
       if (searches) setSavedSearches(searches);
       if (inquiries) setRentalInquiries(inquiries);
       if (mode) setHomeMode(mode);
@@ -427,6 +436,9 @@ export function AppProvider({ children }) {
     })();
   }, []);
   useEffect(() => { if (hydrated) setJSON('savedCarIds', savedCarIds); }, [savedCarIds, hydrated]);
+  useEffect(() => {
+    if (hydrated) setJSON('savedCarRecords', Object.fromEntries(savedCarIds.filter((id) => listingRecords[id]).map((id) => [id, publicListingSnapshot(listingRecords[id])])));
+  }, [savedCarIds, listingRecords, hydrated]);
   useEffect(() => { if (hydrated) setJSON('savedSearches', savedSearches); }, [savedSearches, hydrated]);
   useEffect(() => { if (hydrated && DEMO_MODE) setJSON('rentalInquiries', rentalInquiries); }, [rentalInquiries, hydrated]);
   useEffect(() => { if (hydrated) setJSON('homeMode', homeMode); }, [homeMode, hydrated]);
@@ -576,7 +588,9 @@ export function AppProvider({ children }) {
       // allowed to substitute fixtures for it.
       if (carList && carList.length) {
         setJSON(CATALOGUE_KEYS.cars, { at: Date.now(), list: carList });
-        return carList.map(mapCar);
+        const mapped = carList.map(mapCar);
+        rememberListings(mapped);
+        return mapped;
       }
       if (DEMO_MODE) {
         console.warn('Cars API returned no listings — using bundled demo data');
@@ -593,7 +607,7 @@ export function AppProvider({ children }) {
       console.warn('Cars API unreachable:', err.message);
       return null;
     }
-  }, [mapCar]);
+  }, [mapCar, rememberListings]);
 
   // Server-side search. The database does the filtering, sorting and paging;
   // the app only renders. Returns { items, exhausted } on success, or null when
@@ -627,12 +641,14 @@ export function AppProvider({ children }) {
 
     try {
       const rows = await carsApi.getCars(params);
-      return { items: rows.map(mapCar), exhausted: rows.length < PAGE_SIZE };
+      const items = rows.map(mapCar);
+      rememberListings(items);
+      return { items, exhausted: rows.length < PAGE_SIZE };
     } catch (err) {
       console.warn('Search API unreachable — filtering the local set:', err.message);
       return null;
     }
-  }, [mapCar]);
+  }, [mapCar, rememberListings]);
 
   // Full detail for one listing — price history, seller phone, market position,
   // and the server-side view counter. Returns null when unavailable so callers
@@ -640,12 +656,14 @@ export function AppProvider({ children }) {
   const fetchCarDetail = useCallback(async (id) => {
     if (!id || !String(id).includes('-')) return null; // demo ids aren't on the server
     try {
-      return mapCar(await carsApi.getCar(id));
+      const car = mapCar(await carsApi.getCar(id));
+      rememberListings([car]);
+      return car;
     } catch (err) {
       console.warn('Car detail unreachable — keeping list data:', err.message);
       return null;
     }
-  }, [mapCar]);
+  }, [mapCar, rememberListings]);
 
   // Rental fleet: API rows -> mobile shape. Availability is confirmed by the
   // provider after an inquiry; the platform does not reserve dates.
@@ -807,6 +825,7 @@ export function AppProvider({ children }) {
       }],
       ['saved cars', async () => {
         const wishList = await carsApi.getSavedCars();
+        rememberListings(wishList.map(mapCar));
         setSavedCarIds(wishList.map((c) => c.id));
       }],
       // Admins get the whole pipeline instead (added below). Only one of the
@@ -870,7 +889,7 @@ export function AppProvider({ children }) {
 
     // Concurrent, and no rejection can escape: loadSection resolves either way.
     await Promise.all(sections.map(([label, run]) => loadSection(label, run)));
-  }, [loadSection, mapRentalInquiry, mapSubmission, mapNotification, mapAdminInspection]);
+  }, [loadSection, mapRentalInquiry, mapSubmission, mapNotification, mapAdminInspection, mapCar, rememberListings]);
 
   // After a sign-in: the catalogue and the person's rows, side by side. This
   // used to fetch cars, then rentals, then the rest, three round trips in a
@@ -1285,6 +1304,8 @@ export function AppProvider({ children }) {
     setCurrentUser(SIGNED_OUT_USER);
     setIsLoggedIn(false);
     setSavedCarIds([]);
+    setListingRecords({});
+    attemptedSaved.current.clear();
     setSubmissions(demo(INITIAL_SUBMISSIONS));
     setRentalInquiries([]);
     setNotifications(demo(INITIAL_NOTIFICATIONS || []));
@@ -1304,6 +1325,8 @@ export function AppProvider({ children }) {
     setCurrentUser(SIGNED_OUT_USER);
     setIsLoggedIn(false);
     setSavedCarIds([]);
+    setListingRecords({});
+    attemptedSaved.current.clear();
     setSubmissions(demo(INITIAL_SUBMISSIONS));
     setNotifications(demo(INITIAL_NOTIFICATIONS || []));
     setConversations(demo(initialConversations || []));
@@ -1434,14 +1457,32 @@ export function AppProvider({ children }) {
     }
     // Saving is the moment push has an obvious payoff (price-drop alerts on
     // this exact car) — the right moment to ask, once.
-    if (saving) maybeAskForPush();
-  }, [isLoggedIn, savedCarIds, maybeAskForPush]);
+    if (saving) {
+      const car = [...cars, ...rentalCars].find((item) => item.id === id);
+      if (car) rememberListings([car]);
+      maybeAskForPush();
+    }
+  }, [isLoggedIn, savedCarIds, maybeAskForPush, cars, rentalCars, rememberListings]);
 
   const isCarSaved = useCallback((id) => savedCarIds.includes(id), [savedCarIds]);
   const getSavedCars = useCallback(
-    () => [...cars, ...rentalCars].filter((c) => savedCarIds.includes(c.id)),
-    [cars, rentalCars, savedCarIds]
+    () => savedListings(savedCarIds, listingRecords, [...cars, ...rentalCars]),
+    [cars, rentalCars, savedCarIds, listingRecords]
   );
+
+  useEffect(() => {
+    if (!hydrated) return undefined;
+    let active = true;
+    const missing = savedCarIds.filter((id) => !cars.some((car) => car.id === id) && !rentalCars.some((car) => car.id === id) && !attemptedSaved.current.has(id));
+    for (const id of missing) attemptedSaved.current.add(id);
+    resolveSavedRecords(missing, (params) => carsApi.getCars(params), () => active)
+      .then((rows) => { if (active) setListingRecords((current) => reconcileSavedRecords(missing, current, rows.map(mapCar))); })
+      .catch(() => {}); // Keep cached records and unresolved rows during an outage.
+    return () => {
+      active = false;
+      for (const id of missing) attemptedSaved.current.delete(id);
+    };
+  }, [hydrated, savedCarIds, cars, rentalCars, mapCar, rememberListings]);
 
   // --- Seller listings (legacy fallback) ---
 

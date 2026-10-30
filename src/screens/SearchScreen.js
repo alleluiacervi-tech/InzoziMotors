@@ -1,7 +1,10 @@
-import React, { useState, useMemo, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, Pressable, TextInput, Platform } from 'react-native';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import { View, Text, StyleSheet, FlatList, Pressable, TextInput, Platform, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
+import useCarSearch from '../hooks/useCarSearch';
+import CatalogueNotice from '../components/CatalogueNotice';
+import { LoadingState } from '../components/StateViews';
 import CarListCard from '../components/CarListCard';
 import CarCard from '../components/CarCard';
 import ImportCarCard from '../components/ImportCarCard';
@@ -43,8 +46,8 @@ const LIST_TUNING = {
 
 const IMPORT_MODEL_COUNT = FALLBACK_IMPORT_CATALOG.length;
 
-export default function SearchScreen({ navigation }) {
-  const { cars, brandLogo, t } = useApp();
+export default function SearchScreen({ navigation, route }) {
+  const { brandLogo, t } = useApp();
   const [scope, setScope] = useState('local');
   const [sort, setSort] = useState('Best match');
   const [searchQuery, setSearchQuery] = useState('');
@@ -52,21 +55,12 @@ export default function SearchScreen({ navigation }) {
   const isGrid = layout === 'grid';
   const query = searchQuery.trim();
 
-  const localCars = useMemo(() => {
-    let list = cars;
-    if (query) {
-      const q = query.toLowerCase();
-      list = list.filter((c) =>
-        [c.title, c.make, c.model, c.category].some((v) => String(v || '').toLowerCase().includes(q))
-      );
-    }
-    const priceOf = (c) => (c.type === 'auction' ? c.currentBid : c.price);
-    if (sort === 'Price ↑') list = [...list].sort((a, b) => priceOf(a) - priceOf(b));
-    else if (sort === 'Price ↓') list = [...list].sort((a, b) => priceOf(b) - priceOf(a));
-    else if (sort === 'Mileage') list = [...list].sort((a, b) => a.mileage - b.mileage);
-    else if (sort === 'Newest') list = [...list].sort((a, b) => b.year - a.year);
-    return list;
-  }, [cars, query, sort]);
+  const [activeFilters, setActiveFilters] = useState(null);
+  useEffect(() => {
+    if (route.params?.filters !== undefined) setActiveFilters(route.params.filters);
+    if (route.params?.query !== undefined) setSearchQuery(route.params.query);
+  }, [route.params?.filters, route.params?.query]);
+  const { items: localCars, loading, loadingMore, exhausted, loadMore, failed, retry } = useCarSearch({ query, filters: activeFilters, sort, enabled: scope === 'local' });
 
   // The catalogue from the bundle, enriched from the server with approved
   // images and any prices — fetched only once somebody opens the import list.
@@ -120,7 +114,7 @@ export default function SearchScreen({ navigation }) {
             accessibilityState={{ selected: on }}
           >
             <Text style={[styles.sortText, on && styles.sortTextOn]}>
-              {t(`searchResults.${SORT_LABEL_KEYS[item]}`)}
+              {t(item === 'Newest' ? 'refinement.modelYear' : `searchResults.${SORT_LABEL_KEYS[item]}`)}
             </Text>
           </Pressable>
         );
@@ -148,7 +142,7 @@ export default function SearchScreen({ navigation }) {
     <View style={isGrid && styles.gridHeaderPad}>
       <View style={styles.resultRow}>
         <Text style={styles.resultCount} numberOfLines={1}>
-          {t(localCars.length === 1 ? 'browse.carsInRwandaOne' : 'browse.carsInRwanda', { count: localCars.length })}
+          {t(localCars.length === 1 ? 'browse.carsInRwandaOne' : 'browse.carsInRwanda', { count: `${localCars.length}${!exhausted ? '+' : ''}` })}
           {query ? <Text style={styles.resultQuery}>{` · ${t('browse.resultsFor', { query })}`}</Text> : null}
         </Text>
         <Pressable
@@ -162,11 +156,13 @@ export default function SearchScreen({ navigation }) {
         </Pressable>
       </View>
       {sortChips}
+      {failed ? <CatalogueNotice onRetry={retry} /> : null}
     </View>
   );
 
   const localFooter = (
     <View style={isGrid && styles.gridHeaderPad}>
+      {loadingMore ? <ActivityIndicator color={colors.primary} style={{ padding: 16 }} /> : !exhausted && !failed ? <Pressable onPress={loadMore} accessibilityRole="button" style={styles.primaryBtn}><Text style={styles.primaryBtnText}>{t('refinement.loadMore')}</Text></Pressable> : null}
       <Pressable
         style={styles.importEntry}
         onPress={() => setScope('import')}
@@ -307,7 +303,7 @@ export default function SearchScreen({ navigation }) {
         </View>
         <Pressable
           style={styles.filterBtn}
-          onPress={() => navigation.navigate('Filters')}
+          onPress={() => navigation.navigate('Filters', { filters: activeFilters, query: searchQuery, returnToCars: true })}
           accessibilityRole="button"
           accessibilityLabel={t('searchResults.filterButton')}
         >
@@ -344,7 +340,9 @@ export default function SearchScreen({ navigation }) {
           contentContainerStyle={[styles.listContent, isGrid && styles.gridContent]}
           ListHeaderComponent={localHeader}
           ListFooterComponent={localFooter}
-          ListEmptyComponent={localEmpty}
+          ListEmptyComponent={loading ? <LoadingState label={t('common.loading')} /> : failed ? null : localEmpty}
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.35}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
           {...LIST_TUNING}

@@ -1,3 +1,4 @@
+import { authContinuation, resumeAfterAuth } from '../utils/authContinuation';
 // ─────────────────────────────────────────────────────────────────────────────
 // Apple and Google sign-in as a row of two icon buttons, with an "or" rule
 // beneath. Both brands permit a logo-only button:
@@ -60,7 +61,7 @@ function GoogleMark() {
   );
 }
 
-export default function SocialAuthButtons({ navigation, role }) {
+export default function SocialAuthButtons({ navigation, role, continuation }) {
   const { socialSignIn, t } = useApp();
   const { isDark } = useTheme();
   const [show, setShow] = useState({ apple: false, google: false });
@@ -76,8 +77,8 @@ export default function SocialAuthButtons({ navigation, role }) {
   }, []);
 
   const finish = (result) => {
-    if (result.needsProfile) navigation.replace('CompleteProfile', { role });
-    else navigation.replace('Main');
+    if (result.needsProfile) navigation.replace('CompleteProfile', { role, ...authContinuation(continuation) });
+    else resumeAfterAuth(navigation, continuation);
   };
 
   const run = async (provider) => {

@@ -57,7 +57,7 @@ export default function KoreaMarketScreen({ navigation, route }) {
     if (!user) {
       Alert.alert(t('importCatalog.signInTitle'), t('importCatalog.signInBody'), [
         { text: t('common.cancel'), style: 'cancel' },
-        { text: t('importCatalog.signIn'), onPress: () => navigation.navigate('SignIn') },
+        { text: t('importCatalog.signIn'), onPress: () => navigation.navigate('SignIn', { returnTo: 'KoreaMarket', returnParams: route?.params }) },
       ]);
       return;
     }

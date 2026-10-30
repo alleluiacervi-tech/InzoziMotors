@@ -33,7 +33,9 @@ export default function Price({ amountRwf, size = 'card', align = 'left', inline
   const usd = usdFromRwf(amountRwf, fx?.rate);
   const formattedUsd = usd != null ? formatUsdApprox(usd) : '';
   const approxLabel = t ? t('price.approxUsdLabel', { usd: formattedUsd }) : `approximately ${formattedUsd} at today's exchange rate`;
-  const staleLabel = t ? t('price.rateMayBeOutOfDate') : '  rate may be out of date';
+  const staleLabel = size === 'detail'
+    ? t('price.rateMayBeOutOfDate')
+    : ` · ${t('refinement.unconfirmedRate')}`;
 
   return (
     <View style={[inline && styles.inline, align === 'right' && styles.right, style]}>
@@ -43,10 +45,10 @@ export default function Price({ amountRwf, size = 'card', align = 'left', inline
       {usd == null ? null : (
         <Text
           style={size === 'detail' ? styles.usdDetail : inline ? styles.usdInline : styles.usd}
-          numberOfLines={1}
+          numberOfLines={2}
           // Says the quiet part out loud for a screen reader: this is an
           // approximation at today's rate, not a second price.
-          accessibilityLabel={approxLabel}
+          accessibilityLabel={`${approxLabel}${fx?.stale ? t('price.rateMayBeOutOfDate') : ''}`}
         >
           {`≈ ${formattedUsd}`}
           {fx?.stale ? <Text style={styles.staleMark}>{staleLabel}</Text> : null}
@@ -100,12 +102,12 @@ function makeStyles(colors) {
       fontSize: 16,
       fontWeight: '800',
       letterSpacing: -0.3,
-      color: colors.primary,
+      color: colors.accentText,
       fontFamily: fonts?.bold,
       fontVariant: ['tabular-nums'],
     },
     usdInline: {
-      fontSize: 11.5,
+      fontSize: 12,
       color: colors.textMuted,
       fontVariant: ['tabular-nums'],
     },
@@ -113,7 +115,7 @@ function makeStyles(colors) {
       fontSize: 18,
       fontWeight: '800',
       letterSpacing: -0.4,
-      color: colors.primary,
+      color: colors.accentText,
       fontFamily: fonts?.bold,
       fontVariant: ['tabular-nums'],
     },
@@ -121,7 +123,7 @@ function makeStyles(colors) {
       fontSize: 30,
       fontWeight: '800',
       letterSpacing: -0.8,
-      color: colors.primary,
+      color: colors.accentText,
       fontFamily: fonts?.bold,
       fontVariant: ['tabular-nums'],
     },

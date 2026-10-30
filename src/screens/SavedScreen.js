@@ -13,6 +13,17 @@ import { PHOTO } from '../utils/photo';
 import Photo from '../components/Photo';
 
 function SavedCarRow({ car, onPress, onRemove, t }) {
+  if (car.detailsUnavailable) return (
+    <View style={styles.row}>
+      <Pressable onPress={onPress} accessibilityRole="button" style={styles.rowBody}>
+        <Text style={styles.rowTitle}>{car.title || t('refinement.savedVehicle')}</Text>
+        <Text style={styles.metaText}>{t('refinement.savedDetailsUnavailable')}</Text>
+      </Pressable>
+      <Pressable onPress={onRemove} accessibilityRole="button" accessibilityLabel={t('common.delete')} hitSlop={8} style={{ minWidth: 48, minHeight: 48, alignItems: 'center', justifyContent: 'center' }}>
+        <Ionicons name="close" size={20} color={colors.textSecondary} />
+      </Pressable>
+    </View>
+  );
   const drop = getPriceDrop(car);
   const saves = getSavedCount(car);
   const daysAgo = getListedDaysAgo(car);
@@ -196,7 +207,7 @@ export default function SavedScreen({ navigation }) {
             <SavedCarRow
               car={item}
               t={t}
-              onPress={() => navigation.navigate(item.listingType === 'rental' ? 'RentalDetail' : 'VehicleDetail', { car: item })}
+              onPress={() => navigation.navigate(item.listingType === 'rental' ? 'RentalDetail' : 'VehicleDetail', item.detailsUnavailable ? (item.listingType === 'rental' ? { rentalId: item.id } : { carId: item.id }) : { car: item })}
               onRemove={() => handleRemove(item.id)}
             />
           )}
@@ -305,17 +316,17 @@ const styles = StyleSheet.create({
   searchBody: { flex: 1 },
   searchLabel: { fontSize: 13, fontFamily: fonts.bold, color: colors.textPrimary },
   searchMeta: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 },
-  searchMatchText: { fontSize: 11, fontFamily: fonts.semiBold, color: colors.primary },
+  searchMatchText: { fontSize: 11, fontFamily: fonts.semiBold, color: colors.accentText },
   searchDot: { fontSize: 11, color: colors.textMuted },
   searchLastText: { fontSize: 11, fontFamily: fonts.regular, color: colors.textMuted },
-  searchModeText: { marginTop: 4, fontSize: 11, fontFamily: fonts.medium || fonts.regular, color: colors.primary },
+  searchModeText: { marginTop: 4, fontSize: 11, fontFamily: fonts.medium || fonts.regular, color: colors.accentText },
   deleteBtn: { padding: 4, marginLeft: 4 },
   searchHint: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
     backgroundColor: colors.surfaceAlt, borderRadius: radius.lg,
     padding: 10, marginBottom: 12,
   },
-  searchHintText: { fontSize: 12, fontFamily: fonts.regular, color: colors.primary, flex: 1 },
+  searchHintText: { fontSize: 12, fontFamily: fonts.regular, color: colors.accentText, flex: 1 },
 
   // Empty state
   empty: { alignItems: 'center', paddingTop: 52, paddingHorizontal: 36, paddingBottom: 20 },

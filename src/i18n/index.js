@@ -1,3 +1,4 @@
+import refinement from './refinement';
 // Sawa Cars Mobile Internationalization & Localization Layer (i18n)
 // Provides pure, natural, high-quality translations across all 6 supported languages:
 // English (en), Kinyarwanda (rw), French (fr), Swahili (sw), Korean (ko), Chinese (zh).
@@ -12158,6 +12159,8 @@ export const TRANSLATIONS = {
     }
   }
 };
+
+for (const [language, copy] of Object.entries(refinement)) TRANSLATIONS[language].refinement = copy;
 
 export function normalizeLanguage(value) {
   return LANGUAGES.some((item) => item.code === value) ? value : DEFAULT_LANGUAGE;

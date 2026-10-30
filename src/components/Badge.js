@@ -26,26 +26,26 @@ export default function Badge({ label, variant = 'neutral', icon, dot, style }) 
 
 function buildVariants(colors) {
   return {
-    inspected: { bg: colors.jeondanPlus, fg: '#FFFFFF' },
-    auction: { bg: colors.jeondanPlusPlus, fg: '#FFFFFF' },
+    inspected: { bg: colors.blueTint, fg: colors.infoText },
+    auction: { bg: colors.amberTint, fg: colors.amberText },
     tag: { bg: colors.surfaceAlt, fg: colors.textPrimary },
     live: { bg: colors.amberTint, fg: colors.amberText, dotColor: colors.amber },
     neutral: { bg: colors.surfaceAlt, fg: colors.slate600 },
-    success: { bg: colors.greenTint, fg: colors.green },
+    success: { bg: colors.greenTint, fg: colors.greenText },
 
     // Certification tiers (Encar-style graded trust)
     certPlus: { bg: colors.primary, fg: '#FFFFFF' },
     // Was a hand-typed '#FBE4EA' — the same soft brand wash `primaryTint`
     // already names, just never reused here.
-    cert: { bg: colors.primaryTint, fg: colors.primary },
+    cert: { bg: colors.primaryTint, fg: colors.accentText },
     inspectedTier: { bg: colors.surfaceAlt, fg: colors.slate600 },
 
     // Sawa Specifics
-    jeondan: { bg: colors.jeondan, fg: '#FFFFFF' },
-    jeondanPlus: { bg: colors.jeondanPlus, fg: '#FFFFFF' },
-    jeondanPlusPlus: { bg: colors.jeondanPlusPlus, fg: '#FFFFFF' },
+    jeondan: { bg: colors.primary, fg: colors.white },
+    jeondanPlus: { bg: colors.blueTint, fg: colors.infoText },
+    jeondanPlusPlus: { bg: colors.amberTint, fg: colors.amberText },
     contract: { bg: colors.contract, fg: '#FFFFFF' },
-    alert: { bg: colors.alert, fg: '#FFFFFF' },
+    alert: { bg: colors.amberTint, fg: colors.amberText },
   };
 }
 

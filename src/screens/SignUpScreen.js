@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View, Text, StyleSheet, TextInput, Pressable, ScrollView,
   KeyboardAvoidingView, Platform, Linking,
@@ -6,6 +6,7 @@ import {
 import Constants from 'expo-constants';
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
+import { authContinuation, resumeAfterAuth } from '../utils/authContinuation';
 import BackHeader from '../components/BackHeader';
 import Button from '../components/Button';
 import { LogoMark } from '../components/Logo';
@@ -19,7 +20,7 @@ const SITE_URL = (Constants.expoConfig?.extra?.siteUrl || 'https://sawacars.com'
 const openLegal = (path) => Linking.openURL(`${SITE_URL}${path}`).catch(() => {});
 
 
-export default function SignUpScreen({ navigation }) {
+export default function SignUpScreen({ navigation, route }) {
   const { signUpUser, t } = useApp();
   const [name, setName] = useState('');
   const [countryCode, setCountryCode] = useState('+250');
@@ -28,6 +29,8 @@ export default function SignUpScreen({ navigation }) {
   const [password, setPassword] = useState('');
   const [show, setShow] = useState(false);
   const [errors, setErrors] = useState({});
+  const [submitting, setSubmitting] = useState(false);
+  const pending = useRef(false);
 
   const handleSignUp = async () => {
     const errs = {};
@@ -43,11 +46,17 @@ export default function SignUpScreen({ navigation }) {
     if (!password || password.length < 6) errs.password = t('auth.passwordMin');
     setErrors(errs);
     if (Object.keys(errs).length > 0) return;
+    if (pending.current) return;
+    pending.current = true;
+    setSubmitting(true);
     try {
       await signUpUser(name.trim(), email.trim(), password, 'buyer', fullPhone);
-      navigation.replace('Main');
+      resumeAfterAuth(navigation, route?.params);
     } catch (err) {
       showToast(err.message || t('auth.createError'), 'error');
+    } finally {
+      pending.current = false;
+      setSubmitting(false);
     }
   };
 
@@ -63,7 +72,7 @@ export default function SignUpScreen({ navigation }) {
         <Text style={styles.title}>{t('auth.createTitle')}</Text>
         <Text style={styles.sub}>{t('auth.createSub')}</Text>
 
-        <SocialAuthButtons navigation={navigation} />
+        <SocialAuthButtons continuation={authContinuation(route?.params)} navigation={navigation} />
 
         <Text style={[styles.label, { marginTop: 22 }]}>{t('auth.fullName')}</Text>
         <TextInput
@@ -93,6 +102,10 @@ export default function SignUpScreen({ navigation }) {
           onChangeText={(t) => { setEmail(t); setErrors((e) => ({ ...e, email: undefined })); }}
           placeholderTextColor={colors.textMuted}
           keyboardType="email-address"
+          autoComplete="email"
+          textContentType="emailAddress"
+          accessibilityLabel={t('auth.email')}
+          autoCorrect={false}
           autoCapitalize="none"
         />
         {errors.email ? <Text style={styles.errorText}>{errors.email}</Text> : null}
@@ -106,6 +119,9 @@ export default function SignUpScreen({ navigation }) {
             onChangeText={(t) => { setPassword(t); setErrors((e) => ({ ...e, password: undefined })); }}
             placeholderTextColor={colors.textMuted}
             secureTextEntry={!show}
+            autoComplete="new-password"
+            textContentType="newPassword"
+            accessibilityLabel={t('auth.password')}
           />
           <Pressable
             onPress={() => setShow((s) => !s)}
@@ -121,7 +137,7 @@ export default function SignUpScreen({ navigation }) {
         <Button
           title={t('auth.createAccount')}
           style={{ marginTop: 28 }}
-          onPress={handleSignUp}
+          loading={submitting} onPress={handleSignUp}
         />
 
 
@@ -151,7 +167,7 @@ export default function SignUpScreen({ navigation }) {
           .
         </Text>
 
-        <Pressable onPress={() => navigation.navigate('SignIn')} style={{ marginTop: 16 }}>
+        <Pressable onPress={() => navigation.navigate('SignIn', authContinuation(route?.params))} style={{ marginTop: 16 }}>
           <Text style={styles.footer}>
             {t('auth.alreadyAccount')} <Text style={styles.link}>{t('auth.signIn')}</Text>
           </Text>
@@ -192,7 +208,7 @@ const styles = StyleSheet.create({
   passwordInput: { flex: 1, fontSize: 15, fontFamily: fonts.medium, color: colors.textPrimary },
   errorText: { fontSize: 13, color: colors.textSecondary, marginTop: 5, marginLeft: 4, lineHeight: 17 },
   footer: { textAlign: 'center', fontSize: 14, color: colors.textSecondary },
-  link: { color: colors.primary, fontFamily: fonts.bold },
+  link: { color: colors.accentText, fontFamily: fonts.bold },
   terms: {
     marginTop: 14, textAlign: 'center',
     fontFamily: fonts.regular, fontSize: 12, lineHeight: 17, color: colors.textMuted,

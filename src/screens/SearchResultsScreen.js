@@ -1,7 +1,9 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, FlatList, Pressable, TextInput, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
+import useCarSearch from '../hooks/useCarSearch';
+import CatalogueNotice from '../components/CatalogueNotice';
 import CarListCard from '../components/CarListCard';
 import CarCard from '../components/CarCard';
 import ImportCarCard from '../components/ImportCarCard';
@@ -18,45 +20,6 @@ const SORT_LABEL_KEYS = {
   Newest: 'newest', Mileage: 'mileage',
 };
 
-const priceOf = (c) =>
-  c.listingType === 'rental' ? c.dailyRate : c.type === 'auction' ? c.currentBid : c.price;
-
-function filterLocally(list, { query, filters, sort }) {
-  let out = list;
-  if (query?.trim()) {
-    const q = query.toLowerCase().trim();
-    out = out.filter(
-      (c) =>
-        c.title.toLowerCase().includes(q) ||
-        c.make.toLowerCase().includes(q) ||
-        c.model.toLowerCase().includes(q) ||
-        c.category.toLowerCase().includes(q)
-    );
-  }
-  if (filters) {
-    if (filters.make) out = out.filter((c) => c.make.toLowerCase() === filters.make.toLowerCase());
-    if (filters.body) out = out.filter((c) => c.category.toLowerCase() === filters.body.toLowerCase());
-    if (filters.fuel) out = out.filter((c) => c.fuel.toLowerCase() === filters.fuel.toLowerCase());
-    if (filters.transmission) {
-      out = out.filter((c) => String(c.transmission || '').toLowerCase() === filters.transmission.toLowerCase());
-    }
-    if (filters.location) {
-      out = out.filter((c) => String(c.location || '').toLowerCase()
-        .includes(filters.location.toLowerCase()));
-    }
-    if (filters.maxPrice) out = out.filter((c) => priceOf(c) <= filters.maxPrice);
-    if (filters.minPrice) out = out.filter((c) => priceOf(c) >= filters.minPrice);
-    if (filters.minYear) out = out.filter((c) => Number(c.year) >= filters.minYear);
-    if (filters.maxMileage) out = out.filter((c) => Number(c.mileage ?? Infinity) <= filters.maxMileage);
-    if (filters.minScore) out = out.filter((c) => Number(c.inspectionScore || 0) >= filters.minScore);
-  }
-  if (sort === 'Price ↑') out = [...out].sort((a, b) => priceOf(a) - priceOf(b));
-  else if (sort === 'Price ↓') out = [...out].sort((a, b) => priceOf(b) - priceOf(a));
-  else if (sort === 'Mileage') out = [...out].sort((a, b) => a.mileage - b.mileage);
-  else if (sort === 'Newest') out = [...out].sort((a, b) => b.year - a.year);
-  return out;
-}
-
 const SCOPES = [
   { id: 'all', labelKey: 'searchResults.scopeAll', icon: 'apps-outline' },
   { id: 'local', labelKey: 'searchResults.scopeLocal', icon: 'location-outline' },
@@ -64,7 +27,7 @@ const SCOPES = [
 ];
 
 export default function SearchResultsScreen({ navigation, route }) {
-  const { cars, rentalCars, createSavedSearch, searchCars, t } = useApp();
+  const { createSavedSearch, t } = useApp();
   const isRentMode = route.params?.mode === 'rent';
   const [scope, setScope] = useState(route.params?.mode === 'import' ? 'import' : 'all');
   const [sort, setSort] = useState('Best match');
@@ -73,48 +36,11 @@ export default function SearchResultsScreen({ navigation, route }) {
   const [layout, setLayout] = useState('list');
   const isGrid = layout === 'grid';
 
-  const [results, setResults] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [exhausted, setExhausted] = useState(false);
-  const requestId = useRef(0);
-
   useEffect(() => {
-    if (route.params?.filters) {
-      setActiveFilters(route.params.filters);
-    }
-  }, [route.params?.filters]);
-
-  useEffect(() => {
-    if (isRentMode) return;
-    const id = ++requestId.current;
-    setLoading(true);
-    const timer = setTimeout(async () => {
-      const page = await searchCars({ query: searchQuery, filters: activeFilters, sort, offset: 0 });
-      if (id !== requestId.current) return;
-      setResults(page ? page.items : null);
-      setExhausted(page ? page.exhausted : true);
-      setLoading(false);
-    }, searchQuery ? 350 : 0);
-    return () => clearTimeout(timer);
-  }, [searchQuery, activeFilters, sort, isRentMode, searchCars]);
-
-  const loadMore = useCallback(async () => {
-    if (isRentMode || loadingMore || exhausted || !results?.length) return;
-    setLoadingMore(true);
-    const id = requestId.current;
-    const page = await searchCars({
-      query: searchQuery, filters: activeFilters, sort, offset: results.length,
-    });
-    if (id === requestId.current && page) {
-      setResults((prev) => {
-        const seen = new Set((prev || []).map((c) => c.id));
-        return [...(prev || []), ...page.items.filter((c) => !seen.has(c.id))];
-      });
-      setExhausted(page.exhausted);
-    }
-    setLoadingMore(false);
-  }, [isRentMode, loadingMore, exhausted, results, searchQuery, activeFilters, sort, searchCars]);
+    if (route.params?.filters !== undefined) setActiveFilters(route.params.filters);
+    if (route.params?.query !== undefined) setSearchQuery(route.params.query);
+  }, [route.params?.filters, route.params?.query]);
+  const { items: filteredCars, loading, loadingMore, loadMore, failed, retry } = useCarSearch({ query: searchQuery, filters: activeFilters, sort, rental: isRentMode });
 
   const removeFilter = (key) => {
     setActiveFilters((prev) => {
@@ -125,26 +51,6 @@ export default function SearchResultsScreen({ navigation, route }) {
       return hasRemaining ? next : null;
     });
   };
-
-  const serverBacked = !isRentMode && results !== null;
-
-  const narrowUnsupported = (list) => {
-    if (!activeFilters) return list;
-    let out = list;
-    if (activeFilters.maxMileage) {
-      out = out.filter((c) => Number(c.mileage ?? Infinity) <= activeFilters.maxMileage);
-    }
-    if (activeFilters.minScore) {
-      out = out.filter((c) => Number(c.inspectionScore || 0) >= activeFilters.minScore);
-    }
-    return out;
-  };
-
-  const filteredCars = serverBacked
-    ? narrowUnsupported(results)
-    : filterLocally(isRentMode ? rentalCars : cars, {
-        query: searchQuery, filters: activeFilters, sort,
-      });
 
   // Global import matches
   const filteredImportCars = useMemo(() => {
@@ -186,7 +92,7 @@ export default function SearchResultsScreen({ navigation, route }) {
         </View>
         <Pressable
           style={styles.filterBtn}
-          onPress={() => navigation.navigate('Filters', { filters: activeFilters })} accessibilityRole="button" accessibilityLabel={t('searchResults.filterButton')}
+          onPress={() => navigation.navigate('Filters', { filters: activeFilters, query: searchQuery, mode: route.params?.mode })} accessibilityRole="button" accessibilityLabel={t('searchResults.filterButton')}
         >
           <Ionicons name="options-outline" size={20} color={colors.surface} />
         </Pressable>
@@ -326,14 +232,15 @@ export default function SearchResultsScreen({ navigation, route }) {
                 const on = item === sort;
                 return (
                   <Pressable style={[styles.sortChip, on && styles.sortChipOn]} onPress={() => setSort(item)}>
-                    <Text style={[styles.sortText, { color: on ? colors.surface : colors.slate600 }]}>{t(`searchResults.${SORT_LABEL_KEYS[item]}`)}</Text>
+                    <Text style={[styles.sortText, { color: on ? colors.white : colors.slate600 }]}>{t(item === 'Newest' ? 'refinement.modelYear' : `searchResults.${SORT_LABEL_KEYS[item]}`)}</Text>
                   </Pressable>
                 );
               }}
             />
 
+            {failed ? <CatalogueNotice onRetry={retry} /> : null}
             {/* Notice if 0 local cars in Kigali but import models exist */}
-            {!isRentMode && showLocal && filteredCars.length === 0 && filteredImportCars.length > 0 && (
+            {!loading && !failed && !isRentMode && showLocal && filteredCars.length === 0 && filteredImportCars.length > 0 && (
               <View style={styles.noLocalNotice}>
                 <Ionicons name="information-circle-outline" size={20} color={colors.infoText} />
                 <View style={{ flex: 1 }}>
@@ -426,7 +333,7 @@ export default function SearchResultsScreen({ navigation, route }) {
             <View style={{ gap: 12, paddingTop: 4 }}>
               {[0, 1, 2].map((i) => <SkeletonCard key={i} />)}
             </View>
-          ) : (!showImport || filteredImportCars.length === 0) && displayLocalCars.length === 0 ? (
+          ) : !failed && (!showImport || filteredImportCars.length === 0) && displayLocalCars.length === 0 ? (
             <View style={styles.emptyState}>
               <Ionicons name="car-outline" size={52} color={colors.border} />
               <Text style={styles.emptyTitle}>{t('filters.noResults')}</Text>
@@ -508,7 +415,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primaryTint,
     paddingVertical: 6, paddingHorizontal: 10, borderRadius: radius.pill,
   },
-  filterChipText: { fontSize: 12, fontFamily: fonts.bold, color: colors.primary },
+  filterChipText: { fontSize: 12, fontFamily: fonts.bold, color: colors.accentText },
   sortChip: { minHeight: 40, justifyContent: 'center', backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, paddingVertical: 6, paddingHorizontal: 14, borderRadius: radius.pill },
   sortChipOn: { backgroundColor: colors.textPrimary, borderColor: colors.textPrimary },
   sortText: { fontSize: 13, fontFamily: fonts.semiBold },

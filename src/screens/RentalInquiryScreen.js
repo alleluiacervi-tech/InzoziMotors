@@ -66,7 +66,7 @@ export default function RentalInquiryScreen({ navigation, route }) {
   if (!car) return <Screen background={colors.bg}><BackHeader title={t('rentalInquiry.title')} onBack={() => navigation.goBack()} /><View style={styles.center}><Text style={styles.title}>{t('rentalInquiry.unavailable')}</Text></View></Screen>;
 
   const submit = async () => {
-    if (!isLoggedIn) return navigation.navigate('SignIn');
+    if (!isLoggedIn) return navigation.navigate('SignIn', { returnTo: 'RentalInquiry', returnParams: route?.params });
     const count = Number(days);
     // Today in Kigali is allowed, as on the server and the website; the
     // phone's own clock and time zone don't decide which day "today" is.

@@ -117,7 +117,7 @@ export default function CarCard({ car, onPress, hideOverlay = false, rank = null
       </View>
 
       <View style={styles.body}>
-        <Text style={styles.title} numberOfLines={1}>{car.title}</Text>
+        <Text style={styles.title} numberOfLines={2}>{car.title}</Text>
         {isRental ? (
           <>
             <Text style={styles.meta} numberOfLines={1}>
@@ -221,9 +221,9 @@ function makeStyles(colors) {
     unavailableBadgeText: { ...typography.badge, color: colors.white },
 
     body: { paddingHorizontal: spacing.md, paddingVertical: spacing.md, flex: 1, gap: 3 },
-    title: { ...typography.cardTitle, color: colors.textPrimary },
+    title: { ...typography.cardTitle, minHeight: 38, color: colors.textPrimary },
     meta: { ...typography.cardMeta, color: colors.textMuted },
-    price: { ...typography.cardPrice, color: colors.primary, marginTop: spacing.xs },
+    price: { ...typography.cardPrice, color: colors.accentText, marginTop: spacing.xs },
     rentalPriceRow: { flexDirection: 'row', alignItems: 'baseline', marginTop: spacing.xs },
     perDay: { ...typography.cardMeta, color: colors.textMuted, marginLeft: 3 },
     });

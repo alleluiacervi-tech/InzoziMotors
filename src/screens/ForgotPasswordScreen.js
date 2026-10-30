@@ -1,3 +1,4 @@
+import { authContinuation } from '../utils/authContinuation';
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TextInput, Pressable, KeyboardAvoidingView, Platform,
@@ -61,7 +62,7 @@ export default function ForgotPasswordScreen({ navigation, route }) {
     try {
       await authApi.resetPassword(email.trim().toLowerCase(), code.trim(), password);
       showToast(t('forgotPassword.successToast'), 'success');
-      navigation.replace('SignIn', { email: email.trim().toLowerCase() });
+      navigation.replace('SignIn', { email: email.trim().toLowerCase(), ...authContinuation(route?.params) });
     } catch (err) {
       setError(err.message || t('forgotPassword.invalidCode'));
     } finally {

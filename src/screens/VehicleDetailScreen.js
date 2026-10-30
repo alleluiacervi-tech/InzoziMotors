@@ -700,7 +700,7 @@ export default function VehicleDetailScreen({ navigation, route }) {
         onClose={() => setLoginVisible(false)}
         onSignIn={() => {
           setLoginVisible(false);
-          navigation.navigate('SignIn');
+          navigation.navigate('SignIn', { returnTo: 'VehicleDetail', returnParams: route?.params });
         }}
         onContinueAsGuest={demoMode ? () => {
           setLoginVisible(false);
@@ -906,7 +906,7 @@ const styles = StyleSheet.create({
   },
   ctaPriceValue: {
     fontVariant: ['tabular-nums'], fontSize: 19, lineHeight: 24,
-    fontFamily: fonts.extraBold, color: colors.primary, letterSpacing: -0.4,
+    fontFamily: fonts.extraBold, color: colors.accentText, letterSpacing: -0.4,
   },
   ctaIconButton: {
     width: 48, height: 48, borderRadius: radius.lg,
